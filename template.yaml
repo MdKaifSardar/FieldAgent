@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  FieldGuard — Weather-Aware Irrigation Decision-Support System
+  FieldGuard — Autonomous Agronomic Intelligence & Water Resilience
+
+Globals:
+  Function:
+    Timeout: 10
+    MemorySize: 256
+    Runtime: nodejs22.x
+    Architectures:
+      - arm64
+
+Resources:
+  # DynamoDB Table 1: Farm Profiles
+  FieldGuardFarmsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: FieldGuard-Farms
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: farmId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: farmId
+          KeyType: HASH
+
+  # DynamoDB Table 2: Decision Logs & Environmental Ledger
+  FieldGuardDecisionLogsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: FieldGuard-DecisionLogs
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: farmId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: farmId
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+
+  # Serverless Compute Lambda Function
+  FieldGuardCalculationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: fieldguard-calculate-engine
+      Handler: src/aws/lambdaHandler.handler
+      Description: Deterministic FAO-56 Soil Water Balance and Resource-Constrained Feasibility Planner
+      Environment:
+        Variables:
+          DYNAMODB_FARMS_TABLE: !Ref FieldGuardFarmsTable
+          DYNAMODB_LOGS_TABLE: !Ref FieldGuardDecisionLogsTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FieldGuardFarmsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FieldGuardDecisionLogsTable
+      Events:
+        CalculateApi:
+          Type: HttpApi
+          Properties:
+            Path: /calculate
+            Method: post
+
+Outputs:
+  CalculateApiUrl:
+    Description: HTTP API endpoint URL for FieldGuard calculation engine
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/calculate"
+  FarmsTableName:
+    Description: DynamoDB Farms Table Name
+    Value: !Ref FieldGuardFarmsTable
+  LogsTableName:
+    Description: DynamoDB Decision Logs Table Name
+    Value: !Ref FieldGuardDecisionLogsTable
