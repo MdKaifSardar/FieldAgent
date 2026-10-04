@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     // 2. If user supplied a custom/live farm profile
     if (farm) {
       const farmProfile = farm as FarmProfile;
-      const forecast = await fetchLiveWeatherForecast(
+      const weatherRes = await fetchLiveWeatherForecast(
         farmProfile.location.latitude,
         farmProfile.location.longitude
       );
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         plots: farmProfile.plots,
         awc_mm_per_m: farmProfile.soil.awc_mm_per_m,
         reserve: farmProfile.reserve,
-        forecast,
+        forecast: weatherRes.forecast,
         isDemoPreset: false,
       });
 

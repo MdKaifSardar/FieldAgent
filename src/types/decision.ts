@@ -1,4 +1,5 @@
 import { EnvironmentalLedger } from './ledger';
+import { IrrigationMethod } from './farm';
 
 export type DecisionState = 
   | 'IRRIGATE_NOW' 
@@ -17,7 +18,10 @@ export interface PlotCalculationResult {
   runoffOrPercolation_mm: number;
   projectedDepletionTomorrow_mm: number;
   hoursToCriticalStress: number; // Hours until Dr reaches RAW
-  waterNeeded_liters: number; // Irrigation application volume in Litres
+  waterNeeded_liters: number; // Net irrigation application volume in Litres
+  grossWaterNeeded_liters: number; // Gross irrigation volume after method efficiency
+  irrigationMethod: IrrigationMethod;
+  irrigationEfficiency: number; // e.g. 0.90 for drip, 0.60 for flood
   urgencyLevel: 'low' | 'moderate' | 'critical';
 }
 
@@ -27,7 +31,8 @@ export interface DecisionResponse {
   actionWindow: string;
   confidence: 'HIGH' | 'MODERATE' | 'LOW';
   confidenceReason: string;
-  totalFarmDemand_liters: number;
+  totalFarmDemand_liters: number; // Gross total farm pumping demand
+  netFarmDemand_liters: number; // Net crop uptake demand
   availableWater_liters: number;
   waterShortfall_liters: number;
   plots: PlotCalculationResult[];

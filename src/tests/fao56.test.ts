@@ -99,6 +99,7 @@ describe('Feasibility Planner & Multi-Crop Decision Logic', () => {
       cropCoefficient_Kc: 1.05,
       depletionFraction_p: 0.45,
       currentDepletion_mm: 35.0,
+      irrigationMethod: 'drip',
     },
   ];
 
@@ -119,6 +120,7 @@ describe('Feasibility Planner & Multi-Crop Decision Logic', () => {
       temp_min_c: 24,
       relative_humidity_pct: 78,
       source: 'Open-Meteo',
+      isLive: false,
       timestamp: new Date().toISOString(),
     };
 
@@ -144,6 +146,7 @@ describe('Feasibility Planner & Multi-Crop Decision Logic', () => {
       temp_min_c: 26,
       relative_humidity_pct: 45,
       source: 'Open-Meteo',
+      isLive: false,
       timestamp: new Date().toISOString(),
     };
 

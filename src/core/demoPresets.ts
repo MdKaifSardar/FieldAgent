@@ -29,6 +29,9 @@ export const PRESET_1_RAIN_AVOIDANCE: DemoPreset = {
       latitude: 23.2324,
       longitude: 87.8615,
       villageOrPincode: 'Bardhaman, West Bengal (713101)',
+      district: 'Purba Bardhaman',
+      state: 'West Bengal',
+      displayName: 'Bardhaman, West Bengal, India',
     },
     soil: {
       texture: 'loamy',
@@ -56,6 +59,7 @@ export const PRESET_1_RAIN_AVOIDANCE: DemoPreset = {
         cropCoefficient_Kc: 1.05,
         depletionFraction_p: 0.45,
         currentDepletion_mm: 35.0,
+        irrigationMethod: 'drip',
         lastIrrigationDate: '2026-10-04',
       },
     ],
@@ -71,20 +75,21 @@ export const PRESET_1_RAIN_AVOIDANCE: DemoPreset = {
     temp_min_c: 24,
     relative_humidity_pct: 82,
     source: 'Open-Meteo Meteorological Feed',
+    isLive: false,
     timestamp: '2026-10-09T06:00:00.000Z',
   },
 };
 
 /**
  * PRESET 2: Resource Deficit Alert (Multi-Crop Water Rationing)
- * Context: Multi-crop farm (Tomato + Spinach) in Nashik facing high temperature (36°C) and zero rain.
+ * Context: Multi-crop farm (Tomato + Spinach) in Nashik facing high temperature (36.5°C) and zero rain.
  * Storage: Tank has only 800 L available against 3,300 L demand.
  * Outcome: "RESOURCE DEFICIT ALERT" -> flags Spinach shallow-root wilting deadline in 20 hours.
  */
 export const PRESET_2_RESOURCE_DEFICIT: DemoPreset = {
   id: 'preset_resource_deficit',
   title: 'Scenario B: Severe Drought / Tank Deficit',
-  subtitle: '36°C heatwave, zero rain. Total need is 3,300 L but tank only has 800 L.',
+  subtitle: '36.5°C heatwave, zero rain. Total need is 3,300 L but tank only has 800 L.',
   farm: {
     id: 'farm-nashik-02',
     userId: 'farmer-ramesh',
@@ -93,6 +98,9 @@ export const PRESET_2_RESOURCE_DEFICIT: DemoPreset = {
       latitude: 19.9975,
       longitude: 73.7898,
       villageOrPincode: 'Nashik, Maharashtra (422001)',
+      district: 'Nashik',
+      state: 'Maharashtra',
+      displayName: 'Nashik, Maharashtra, India',
     },
     soil: {
       texture: 'clay_black',
@@ -103,6 +111,11 @@ export const PRESET_2_RESOURCE_DEFICIT: DemoPreset = {
       storageType: 'custom_sump',
       totalCapacity_liters: 4000,
       currentAvailable_liters: 800, // Deficit!
+      sumpDimensions: {
+        length_m: 2.0,
+        width_m: 2.0,
+        waterDepth_m: 1.0,
+      },
       nextReplenishmentDate: '2026-10-12',
       pumpPower_hp: 3.0,
       knownFlowRate_liters_per_hr: 4500,
@@ -119,6 +132,7 @@ export const PRESET_2_RESOURCE_DEFICIT: DemoPreset = {
         cropCoefficient_Kc: 1.05,
         depletionFraction_p: 0.45,
         currentDepletion_mm: 38.0,
+        irrigationMethod: 'drip',
       },
       {
         id: 'plot-spinach-greens',
@@ -131,6 +145,7 @@ export const PRESET_2_RESOURCE_DEFICIT: DemoPreset = {
         cropCoefficient_Kc: 1.00,
         depletionFraction_p: 0.35,
         currentDepletion_mm: 14.5,
+        irrigationMethod: 'sprinkler',
       },
     ],
     createdAt: '2026-10-08T10:00:00.000Z',
@@ -145,6 +160,7 @@ export const PRESET_2_RESOURCE_DEFICIT: DemoPreset = {
     temp_min_c: 25.0,
     relative_humidity_pct: 38,
     source: 'Open-Meteo Meteorological Feed',
+    isLive: false,
     timestamp: '2026-10-09T06:00:00.000Z',
   },
 };
