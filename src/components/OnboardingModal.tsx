@@ -97,6 +97,7 @@ export function OnboardingModal({ isOpen, onClose, onSubmit }: OnboardingModalPr
           cropCoefficient_Kc,
           depletionFraction_p,
           currentDepletion_mm: 32.0, // Initial estimate
+          irrigationMethod: 'drip',
         },
       ],
       createdAt: new Date().toISOString(),

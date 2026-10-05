@@ -2,10 +2,12 @@
 
 import React from 'react';
 import { PlotCalculationResult } from '../types/decision';
-import { Database, Sprout, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from './common/LanguageContext';
+import { Database, Sprout, AlertCircle, CheckCircle2, Droplets } from 'lucide-react';
 
 interface WaterBudgetCardProps {
   totalDemand_liters: number;
+  netDemand_liters?: number;
   availableReserve_liters: number;
   waterShortfall_liters: number;
   plots: PlotCalculationResult[];
@@ -13,41 +15,43 @@ interface WaterBudgetCardProps {
 
 export function WaterBudgetCard({
   totalDemand_liters,
+  netDemand_liters,
   availableReserve_liters,
   waterShortfall_liters,
   plots,
 }: WaterBudgetCardProps) {
+  const { t } = useLanguage();
   const isDeficit = waterShortfall_liters > 0;
   const reservePct = totalDemand_liters > 0 
     ? Math.min(100, Math.round((availableReserve_liters / totalDemand_liters) * 100))
     : 100;
 
   return (
-    <div className="glass-panel p-6 border border-slate-800">
+    <div className="glass-panel p-5 sm:p-6 border border-slate-800">
       
       {/* Header & Shared Water Budget Bar */}
       <div className="border-b border-slate-800/80 pb-5 mb-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
-            <Database className="w-5 h-5 text-cyan-400" />
-            <h3 className="text-lg font-bold text-white font-['Outfit']">
-              Shared Water Budget & Multi-Crop Balance
+            <Database className="w-5 h-5 text-cyan-400 shrink-0" />
+            <h3 className="text-base sm:text-lg font-bold text-white font-['Outfit']">
+              {t.availableReserve} & Multi-Crop Balance
             </h3>
           </div>
-          <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
+          <span className={`self-start sm:self-auto text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
             isDeficit 
               ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' 
               : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
           }`}>
-            {isDeficit ? `Deficit: -${waterShortfall_liters.toLocaleString()} L` : 'Reserve Sufficient'}
+            {isDeficit ? `${t.shortfall}: -${waterShortfall_liters.toLocaleString()} L` : 'Reserve Sufficient'}
           </span>
         </div>
 
         {/* Progress Fill Bar */}
         <div className="space-y-1.5">
           <div className="flex justify-between text-xs text-slate-400">
-            <span>Usable Storage: <strong className="text-white">{availableReserve_liters.toLocaleString()} L</strong></span>
-            <span>Total Farm Demand: <strong className="text-white">{totalDemand_liters.toLocaleString()} L</strong></span>
+            <span>Usable Storage: <strong className="text-white font-mono">{availableReserve_liters.toLocaleString()} L</strong></span>
+            <span>Gross Demand: <strong className="text-white font-mono">{totalDemand_liters.toLocaleString()} L</strong></span>
           </div>
           <div className="w-full h-3 rounded-full bg-slate-900 border border-slate-800 overflow-hidden relative">
             <div 
@@ -84,9 +88,14 @@ export function WaterBudgetCard({
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-white text-sm font-['Outfit'] flex items-center gap-1.5">
-                    {plot.cropName}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white text-sm font-['Outfit']">
+                      {plot.cropName}
+                    </span>
+                    <span className="text-[10px] bg-slate-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">
+                      {plot.irrigationMethod.toUpperCase()} ({Math.round(plot.irrigationEfficiency * 100)}%)
+                    </span>
+                  </div>
                   <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
                     isCritical
                       ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1'
@@ -99,13 +108,14 @@ export function WaterBudgetCard({
 
                 <div className="grid grid-cols-2 gap-2 text-xs text-slate-400 my-2">
                   <div>
-                    <span className="text-slate-500 block text-[10px] uppercase">Water Requirement</span>
-                    <strong className="text-slate-200">{plot.waterNeeded_liters.toLocaleString()} Litres</strong>
+                    <span className="text-slate-500 block text-[10px] uppercase">Gross Pump Volume</span>
+                    <strong className="text-slate-200 font-mono">{plot.grossWaterNeeded_liters.toLocaleString()} L</strong>
+                    <span className="text-[10px] text-slate-500 block">(Net: {plot.waterNeeded_liters.toLocaleString()} L)</span>
                   </div>
                   <div>
-                    <span className="text-slate-500 block text-[10px] uppercase">Stress Deadline</span>
-                    <strong className={isCritical ? 'text-rose-400' : 'text-emerald-400'}>
-                      {plot.hoursToCriticalStress} Hours
+                    <span className="text-slate-500 block text-[10px] uppercase">{t.stressDeadline}</span>
+                    <strong className={`font-mono text-sm ${isCritical ? 'text-rose-400' : 'text-emerald-400'}`}>
+                      {plot.hoursToCriticalStress} {t.hours}
                     </strong>
                   </div>
                 </div>
@@ -113,12 +123,12 @@ export function WaterBudgetCard({
                 {/* Root Zone Depletion Gauge */}
                 <div className="mt-3 pt-2.5 border-t border-slate-800/60">
                   <div className="flex justify-between text-[11px] text-slate-400 mb-1">
-                    <span>Root Depletion (Dr): {plot.currentDepletion_mm} mm</span>
-                    <span>Stress Line (RAW): {plot.raw_mm} mm</span>
+                    <span>Root Depletion (Dr): <strong className="text-slate-200">{plot.currentDepletion_mm} mm</strong></span>
+                    <span>Stress Limit (RAW): <strong className="text-slate-200">{plot.raw_mm} mm</strong></span>
                   </div>
                   <div className="w-full h-1.5 rounded-full bg-slate-950 overflow-hidden">
                     <div 
-                      className={`h-full rounded-full ${isCritical ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                      className={`h-full rounded-full transition-all duration-300 ${isCritical ? 'bg-rose-500' : 'bg-emerald-500'}`}
                       style={{ width: `${stressPct}%` }}
                     />
                   </div>
