@@ -49,10 +49,13 @@ Measurable Environmental Ledger (Groundwater & Pump Energy Conserved)
 
 | Feature | CropSpy / Farmonaut / Standard Apps | FieldGuard |
 | :--- | :--- | :--- |
-| **Calculation Model** | Pure theoretical crop thirst ($ET_c$) | **Dual-Engine**: Balances crop thirst against usable storage volume and replenishment timing |
+| **Calculation Model** | Pure theoretical crop thirst ($ET_c$) | **Dual-Engine**: Balances crop thirst against usable storage volume, replenishment timing, and irrigation application method efficiency (Drip 90%, Sprinkler 75%, Flood 60%) |
 | **Effective Rain Infiltration** | Flat monthly estimates or raw rainfall totals | **Daily Soil Water Balance**: Infiltration capped by actual root-zone deficit ($D_r$), excess goes to runoff |
 | **Resource Constraints** | Assumes infinite water availability | **Objective Shortfall Alert**: Flags exact shortfall volume and hours to critical stress deadline |
 | **Environmental Output** | Generic carbon score or none | **Quantified Environmental Ledger**: Calculates exact deferred irrigation litres, pump run-time saved, and kWh saved |
+| **Field Onboarding** | Rigid, technical desktop forms | **Mobile-First 4-Step Wizard**: 1-tap GPS, OpenStreetMap geocoding, local units (Bigha/Acre), visual soil tiles, and custom pond/sump ($L \times W \times D$) calculator |
+| **Meteorological Feed** | Manual entry or static graphs | **Live Meteorological Station**: Real-time Open-Meteo sync (Temp, Humidity, Wind, ET₀, PoP% rain probability) |
+| **Accessibility & Voice** | English-only text dashboards | **Multilingual Audio Engine**: Full English, Hindi (हिंदी), and Bengali (বাংলা) translations with native Web Speech API read-aloud |
 | **Hardware Barrier** | Requires ₹15,000–₹40,000 sensor probes | **100% Software-First**: Uses FAO-56 physics with optional sensor extensibility |
 
 ---
