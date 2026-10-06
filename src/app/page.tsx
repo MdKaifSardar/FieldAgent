@@ -8,10 +8,12 @@ import { WaterBudgetCard } from '../components/WaterBudgetCard';
 import { AwsProofDrawer } from '../components/AwsProofDrawer';
 import { StepperWizard } from '../components/onboarding/StepperWizard';
 import { LiveClimateStation } from '../components/climate/LiveClimateStation';
+import { AuthModal } from '../components/auth/AuthModal';
 import { LanguageProvider, useLanguage } from '../components/common/LanguageContext';
 import { executePreset, DEMO_PRESETS, PRESET_1_RAIN_AVOIDANCE } from '../core/demoPresets';
 import { runFeasibilityPlanner } from '../core/feasibilityPlanner';
 import { fetchLiveWeatherForecast } from '../adapters/openMeteoAdapter';
+import { AuthSession } from '../adapters/cognitoAdapter';
 import { DecisionResponse } from '../types/decision';
 import { FarmProfile } from '../types/farm';
 import { DailyWeatherForecast } from '../types/weather';
@@ -25,6 +27,8 @@ function FieldGuardApp() {
   const [currentForecast, setCurrentForecast] = useState<DailyWeatherForecast>(PRESET_1_RAIN_AVOIDANCE.forecast);
   const [storageStatus, setStorageStatus] = useState<string>('aws_dynamodb');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
+  const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
+  const [authSession, setAuthSession] = useState<AuthSession | null>(null);
   const [isLiveLoading, setIsLiveLoading] = useState<boolean>(false);
   const [isRefreshingWeather, setIsRefreshingWeather] = useState<boolean>(false);
   const [weatherErrorMessage, setWeatherErrorMessage] = useState<string | undefined>(undefined);
@@ -33,6 +37,25 @@ function FieldGuardApp() {
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [interactiveTankLiters, setInteractiveTankLiters] = useState<number>(3200);
   const [interactiveRainMm, setInteractiveRainMm] = useState<number>(22.0);
+
+  // Check saved session on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedAuth = localStorage.getItem('fieldguard_auth');
+      if (savedAuth) {
+        try {
+          setAuthSession(JSON.parse(savedAuth));
+        } catch (e) {}
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    setAuthSession(null);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('fieldguard_auth');
+    }
+  };
 
   // Initialize on preset 1
   useEffect(() => {
@@ -248,11 +271,14 @@ function FieldGuardApp() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-emerald-500 selection:text-slate-950">
       
-      {/* 1. Header with Language Switcher and Presets */}
+      {/* 1. Header with Language Switcher, Presets, and AWS Cognito Auth */}
       <Header
         activePresetId={activePresetId}
         onSelectPreset={loadPreset}
         onOpenOnboarding={() => setIsOnboardingOpen(true)}
+        onOpenAuth={() => setIsAuthOpen(true)}
+        authSession={authSession}
+        onLogout={handleLogout}
         isLiveLoading={isLiveLoading}
         onTriggerLiveLocation={handleLiveLocation}
       />
@@ -380,6 +406,13 @@ function FieldGuardApp() {
         onClose={() => setIsOnboardingOpen(false)}
         onSubmit={handleCustomFarmSubmit}
         initialFarm={currentFarm}
+      />
+
+      {/* 10. Amazon Cognito OTP Auth Modal */}
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        onAuthSuccess={(session) => setAuthSession(session)}
       />
 
     </div>
