@@ -38,7 +38,6 @@ interface StepperWizardProps {
 
 export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: StepperWizardProps) {
   const { t } = useLanguage();
-  if (!isOpen) return null;
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
@@ -229,6 +228,8 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
   };
 
   const calculatedAreaM2 = normalizeAreaToSqMeters(areaValue, areaUnit);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">

@@ -93,7 +93,7 @@ export function WaterBudgetCard({
                       {plot.cropName}
                     </span>
                     <span className="text-[10px] bg-slate-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">
-                      {plot.irrigationMethod.toUpperCase()} ({Math.round(plot.irrigationEfficiency * 100)}%)
+                      {(plot.irrigationMethod || 'surface_flood').toUpperCase()} ({Math.round((plot.irrigationEfficiency || 0.75) * 100)}%)
                     </span>
                   </div>
                   <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${

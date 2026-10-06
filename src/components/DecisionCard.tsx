@@ -110,7 +110,7 @@ export function DecisionCard({ decision }: DecisionCardProps) {
           <div className="flex items-center gap-3">
             {primaryPlot && (
               <span className="text-cyan-300 font-mono">
-                Method: {primaryPlot.irrigationMethod.toUpperCase()} (Eff: {Math.round(primaryPlot.irrigationEfficiency * 100)}%)
+                Method: {(primaryPlot.irrigationMethod || 'surface_flood').toUpperCase()} (Eff: {Math.round((primaryPlot.irrigationEfficiency || 0.75) * 100)}%)
               </span>
             )}
             <span className="flex items-center gap-1 text-slate-500 font-mono text-[11px]">
