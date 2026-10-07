@@ -23,6 +23,7 @@ interface LiveClimateStationProps {
   onRefreshWeather: () => void;
   isRefreshing?: boolean;
   errorMessage?: string;
+  showDevLevers?: boolean;
 }
 
 export function LiveClimateStation({
@@ -33,6 +34,7 @@ export function LiveClimateStation({
   onRefreshWeather,
   isRefreshing = false,
   errorMessage,
+  showDevLevers = false,
 }: LiveClimateStationProps) {
   const { t } = useLanguage();
   const [showOutlook, setShowOutlook] = useState(false);
@@ -63,20 +65,22 @@ export function LiveClimateStation({
           </h2>
         </div>
 
-        {/* Action Controls: Live vs Simulation Switch + Refresh */}
+        {/* Action Controls: Live vs Simulation Switch (Dev Only) + Refresh */}
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={() => onToggleSimulation(!isSimulating)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border ${
-              isSimulating 
-                ? 'bg-amber-500/20 border-amber-500/50 text-amber-300' 
-                : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:text-white'
-            }`}
-          >
-            <Sliders className="w-3.5 h-3.5" />
-            {isSimulating ? 'Simulation Mode Active' : 'What-If Levers'}
-          </button>
+          {showDevLevers && (
+            <button
+              type="button"
+              onClick={() => onToggleSimulation(!isSimulating)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border ${
+                isSimulating 
+                  ? 'bg-amber-500/20 border-amber-500/50 text-amber-300' 
+                  : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:text-white'
+              }`}
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              {isSimulating ? 'Simulation Mode Active' : 'What-If Levers'}
+            </button>
+          )}
 
           <button
             type="button"

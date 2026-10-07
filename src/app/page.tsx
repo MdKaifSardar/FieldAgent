@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from '../components/Header';
 import { DecisionCard } from '../components/DecisionCard';
 import { EnvironmentalLedgerCard } from '../components/EnvironmentalLedgerCard';
@@ -9,45 +9,164 @@ import { AwsProofDrawer } from '../components/AwsProofDrawer';
 import { StepperWizard } from '../components/onboarding/StepperWizard';
 import { LiveClimateStation } from '../components/climate/LiveClimateStation';
 import { AuthModal } from '../components/auth/AuthModal';
+import { DemoSandboxDock } from '../components/demo/DemoSandboxDock';
 import { LanguageProvider, useLanguage } from '../components/common/LanguageContext';
 import { executePreset, DEMO_PRESETS, PRESET_1_RAIN_AVOIDANCE } from '../core/demoPresets';
 import { runFeasibilityPlanner } from '../core/feasibilityPlanner';
 import { fetchLiveWeatherForecast } from '../adapters/openMeteoAdapter';
+import { saveFarmProfileToDynamo, logDecisionToDynamo } from '../adapters/dynamoDbAdapter';
 import { AuthSession } from '../adapters/cognitoAdapter';
 import { DecisionResponse } from '../types/decision';
 import { FarmProfile } from '../types/farm';
 import { DailyWeatherForecast } from '../types/weather';
-import { Sliders, RefreshCw, AlertCircle, Droplet, Sprout } from 'lucide-react';
+import { Sliders, RefreshCw, Sprout } from 'lucide-react';
 
 function FieldGuardApp() {
   const { t } = useLanguage();
-  const [activePresetId, setActivePresetId] = useState<string>('preset_rain_avoidance');
-  const [decision, setDecision] = useState<DecisionResponse | null>(null);
+  
+  // Real User Farm state vs Demo Sandbox Preset ID (null = viewing user's own real farm)
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
+  const [hasCustomFarm, setHasCustomFarm] = useState<boolean>(false);
   const [currentFarm, setCurrentFarm] = useState<FarmProfile>(PRESET_1_RAIN_AVOIDANCE.farm);
   const [currentForecast, setCurrentForecast] = useState<DailyWeatherForecast>(PRESET_1_RAIN_AVOIDANCE.forecast);
+  const [decision, setDecision] = useState<DecisionResponse | null>(null);
   const [storageStatus, setStorageStatus] = useState<string>('aws_dynamodb');
+  
+  // Modals
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
   const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
   const [authSession, setAuthSession] = useState<AuthSession | null>(null);
-  const [isLiveLoading, setIsLiveLoading] = useState<boolean>(false);
+  
+  // Loading & Diagnostics
   const [isRefreshingWeather, setIsRefreshingWeather] = useState<boolean>(false);
   const [weatherErrorMessage, setWeatherErrorMessage] = useState<string | undefined>(undefined);
 
-  // Simulation mode toggling
+  // Simulation mode toggling (strictly for developer what-if levers)
+  // Simulation mode toggling (strictly for developer what-if levers)
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [interactiveTankLiters, setInteractiveTankLiters] = useState<number>(3200);
   const [interactiveRainMm, setInteractiveRainMm] = useState<number>(22.0);
 
-  // Check saved session on mount
+  // Developer authorization gate (configured via .env.local or secret key/shortcut)
+  const [isDevAuthorized, setIsDevAuthorized] = useState<boolean>(false);
+  // Demo Sandbox toggle switch (dev turns ON for hackathon recording, OFF for clean production view)
+  const [isDemoModeActive, setIsDemoModeActive] = useState<boolean>(false);
+
+  // Function to run calculation on a real live farm profile
+  const runLiveFarmPlanning = useCallback(async (farm: FarmProfile) => {
+    setIsRefreshingWeather(true);
+    setWeatherErrorMessage(undefined);
+    try {
+      // 1. Fetch live weather for the farmer's coordinates
+      const wRes = await fetchLiveWeatherForecast(
+        farm.location.latitude,
+        farm.location.longitude
+      );
+      setCurrentForecast(wRes.forecast);
+      setInteractiveRainMm(wRes.forecast.rainfall_mm);
+      setInteractiveTankLiters(farm.reserve.currentAvailable_liters);
+      if (wRes.errorMessage) {
+        setWeatherErrorMessage(wRes.errorMessage);
+      }
+
+      // 2. Run deterministic FAO-56 feasibility planner
+      const planRes = runFeasibilityPlanner({
+        plots: farm.plots,
+        awc_mm_per_m: farm.soil.awc_mm_per_m,
+        reserve: farm.reserve,
+        forecast: wRes.forecast,
+        isDemoPreset: false,
+      });
+
+      setDecision(planRes);
+      setStorageStatus('aws_dynamodb');
+
+      // 3. Log decision to Amazon DynamoDB in background
+      logDecisionToDynamo(farm.id, planRes).catch((e) => {
+        console.warn('Background DynamoDB logging notice:', e);
+      });
+    } catch (err: any) {
+      console.warn('Live calculation error:', err);
+      // Fallback calculation using existing forecast
+      const planRes = runFeasibilityPlanner({
+        plots: farm.plots,
+        awc_mm_per_m: farm.soil.awc_mm_per_m,
+        reserve: farm.reserve,
+        forecast: currentForecast,
+        isDemoPreset: false,
+      });
+      setDecision(planRes);
+    } finally {
+      setIsRefreshingWeather(false);
+    }
+  }, [currentForecast]);
+
+  // ON MOUNT: Load persistent custom farm from localStorage, NEVER override with Demo Preset!
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      // Check auth session
       const savedAuth = localStorage.getItem('fieldguard_auth');
       if (savedAuth) {
+        try { setAuthSession(JSON.parse(savedAuth)); } catch (e) {}
+      }
+
+      // Check developer authorization from env or secret query param
+      const envFlag = process.env.NEXT_PUBLIC_ENABLE_DEMO_SANDBOX === 'true';
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlHasDev = urlParams.get('dev') === 'true' || 
+                        urlParams.get('demo') === 'true' || 
+                        urlParams.get('key') === 'fieldguard2026';
+      const storedDevAuth = localStorage.getItem('fieldguard_dev_auth') === 'true';
+      const authorized = envFlag || urlHasDev || storedDevAuth;
+      setIsDevAuthorized(authorized);
+
+      // Check toggle state for demo testing mode
+      const savedDemoToggle = localStorage.getItem('fieldguard_demo_mode_active');
+      const shouldDemoBeActive = authorized && savedDemoToggle === 'true';
+      setIsDemoModeActive(shouldDemoBeActive);
+
+      // Check if user has their own saved farm profile
+      const savedFarmJson = localStorage.getItem('fieldguard_saved_farm');
+      if (savedFarmJson) {
         try {
-          setAuthSession(JSON.parse(savedAuth));
-        } catch (e) {}
+          const parsed = JSON.parse(savedFarmJson) as FarmProfile;
+          setCurrentFarm(parsed);
+          setHasCustomFarm(true);
+          setActivePresetId(null); // Real farmer mode!
+          runLiveFarmPlanning(parsed);
+          return;
+        } catch (e) {
+          console.error('Failed to parse saved farm:', e);
+        }
+      }
+
+      // First time visitor check
+      const hasVisited = localStorage.getItem('fieldguard_visited');
+      if (!hasVisited) {
+        localStorage.setItem('fieldguard_visited', 'true');
+        setIsOnboardingOpen(true);
       }
     }
+
+    // Default baseline if no saved farm exists yet
+    runLiveFarmPlanning(currentFarm);
+  }, []);
+
+  // Keyboard shortcut for developer mode toggle: Ctrl + Shift + D
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
+        setIsDevAuthorized((prev) => {
+          const next = !prev;
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('fieldguard_dev_auth', next ? 'true' : 'false');
+          }
+          return next;
+        });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const handleLogout = () => {
@@ -57,12 +176,26 @@ function FieldGuardApp() {
     }
   };
 
-  // Initialize on preset 1
-  useEffect(() => {
-    loadPreset('preset_rain_avoidance');
-  }, []);
+  // Called when the user configures their farm via the 4-step wizard
+  const handleCustomFarmSubmit = (newFarm: FarmProfile) => {
+    setCurrentFarm(newFarm);
+    setHasCustomFarm(true);
+    setActivePresetId(null); // Clear any demo preset
 
-  const loadPreset = (presetId: string) => {
+    // 1. Persist to localStorage so refreshes NEVER erase it
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('fieldguard_saved_farm', JSON.stringify(newFarm));
+    }
+
+    // 2. Persist to Amazon DynamoDB
+    saveFarmProfileToDynamo(newFarm).catch(console.error);
+
+    // 3. Run planning with fresh weather for new coordinates
+    runLiveFarmPlanning(newFarm);
+  };
+
+  // Developer Sandbox: Load a benchmark scenario
+  const handleSelectDemoPreset = (presetId: string) => {
     setActivePresetId(presetId);
     const preset = DEMO_PRESETS[presetId];
     if (preset) {
@@ -78,100 +211,42 @@ function FieldGuardApp() {
     }
   };
 
-  const handleRefreshWeather = async () => {
-    setIsRefreshingWeather(true);
-    setWeatherErrorMessage(undefined);
-    try {
-      const res = await fetchLiveWeatherForecast(
-        currentFarm.location.latitude,
-        currentFarm.location.longitude
-      );
-      setCurrentForecast(res.forecast);
-      setInteractiveRainMm(res.forecast.rainfall_mm);
-      if (res.errorMessage) {
-        setWeatherErrorMessage(res.errorMessage);
+  // Developer Sandbox: Exit demo and restore the user's real saved farm
+  const handleExitDemo = () => {
+    setActivePresetId(null);
+    if (typeof window !== 'undefined') {
+      const savedFarmJson = localStorage.getItem('fieldguard_saved_farm');
+      if (savedFarmJson) {
+        try {
+          const parsed = JSON.parse(savedFarmJson) as FarmProfile;
+          setCurrentFarm(parsed);
+          runLiveFarmPlanning(parsed);
+          return;
+        } catch (e) {}
       }
+    }
+    // Fallback if no custom farm was saved
+    runLiveFarmPlanning(PRESET_1_RAIN_AVOIDANCE.farm);
+  };
 
-      // Re-run planner with fresh forecast
-      const planRes = runFeasibilityPlanner({
-        plots: currentFarm.plots,
-        awc_mm_per_m: currentFarm.soil.awc_mm_per_m,
-        reserve: {
-          ...currentFarm.reserve,
-          currentAvailable_liters: isSimulating ? interactiveTankLiters : currentFarm.reserve.currentAvailable_liters,
-        },
-        forecast: isSimulating ? {
-          ...res.forecast,
-          rainfall_mm: interactiveRainMm,
-        } : res.forecast,
-        isDemoPreset: false,
-      });
-
-      setDecision(planRes);
-    } catch (err: any) {
-      setWeatherErrorMessage(err.message || 'Weather sync failed');
-    } finally {
-      setIsRefreshingWeather(false);
+  // Developer Toggle Switch: Turn Hackathon Demo Mode ON / OFF
+  const handleToggleDemoMode = (active: boolean) => {
+    setIsDemoModeActive(active);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('fieldguard_demo_mode_active', active ? 'true' : 'false');
+    }
+    if (!active) {
+      handleExitDemo();
+      setIsSimulating(false);
     }
   };
 
-  const handleLiveLocation = async () => {
-    setIsLiveLoading(true);
-    setActivePresetId('live_gps');
-
-    const defaultLat = 23.2324;
-    const defaultLon = 87.8615;
-
-    if (typeof window !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          await runLiveCalculation(pos.coords.latitude, pos.coords.longitude);
-        },
-        async () => {
-          await runLiveCalculation(defaultLat, defaultLon);
-        }
-      );
-    } else {
-      await runLiveCalculation(defaultLat, defaultLon);
-    }
+  // Weather Refresh button handler
+  const handleRefreshWeather = () => {
+    runLiveFarmPlanning(currentFarm);
   };
 
-  const runLiveCalculation = async (lat: number, lon: number) => {
-    try {
-      const weatherResult = await fetchLiveWeatherForecast(lat, lon);
-      setCurrentForecast(weatherResult.forecast);
-      setInteractiveRainMm(weatherResult.forecast.rainfall_mm);
-
-      const liveFarm: FarmProfile = {
-        ...currentFarm,
-        id: `live-farm-${Date.now()}`,
-        location: {
-          latitude: lat,
-          longitude: lon,
-          villageOrPincode: `GPS (${lat.toFixed(3)}°N, ${lon.toFixed(3)}°E)`,
-          displayName: `Field at ${lat.toFixed(3)}, ${lon.toFixed(3)}`,
-        },
-      };
-      setCurrentFarm(liveFarm);
-
-      const res = runFeasibilityPlanner({
-        plots: liveFarm.plots,
-        awc_mm_per_m: liveFarm.soil.awc_mm_per_m,
-        reserve: liveFarm.reserve,
-        forecast: weatherResult.forecast,
-        isDemoPreset: false,
-      });
-
-      setDecision(res);
-      setStorageStatus('aws_dynamodb');
-    } catch (err) {
-      console.error('Live calculation error:', err);
-    } finally {
-      setIsLiveLoading(false);
-    }
-  };
-
-  // Interactive levers handler
+  // Interactive levers handler (only used during what-if tests)
   const handleTankSliderChange = (newVal: number) => {
     setInteractiveTankLiters(newVal);
     if (!currentFarm || !currentForecast) return;
@@ -193,7 +268,7 @@ function FieldGuardApp() {
         ...currentForecast,
         rainfall_mm: interactiveRainMm,
       },
-      isDemoPreset: activePresetId !== 'live_gps',
+      isDemoPreset: activePresetId !== null,
     });
 
     setDecision(res);
@@ -218,43 +293,10 @@ function FieldGuardApp() {
         currentAvailable_liters: interactiveTankLiters,
       },
       forecast: updatedForecast,
-      isDemoPreset: activePresetId !== 'live_gps',
+      isDemoPreset: activePresetId !== null,
     });
 
     setDecision(res);
-  };
-
-  const handleCustomFarmSubmit = (newFarm: FarmProfile) => {
-    setCurrentFarm(newFarm);
-    setInteractiveTankLiters(newFarm.reserve.currentAvailable_liters);
-    setActivePresetId('custom_farm');
-
-    // Fetch weather for new farm coordinates
-    fetchLiveWeatherForecast(newFarm.location.latitude, newFarm.location.longitude)
-      .then((wRes) => {
-        setCurrentForecast(wRes.forecast);
-        setInteractiveRainMm(wRes.forecast.rainfall_mm);
-
-        const res = runFeasibilityPlanner({
-          plots: newFarm.plots,
-          awc_mm_per_m: newFarm.soil.awc_mm_per_m,
-          reserve: newFarm.reserve,
-          forecast: wRes.forecast,
-          isDemoPreset: false,
-        });
-
-        setDecision(res);
-      })
-      .catch(() => {
-        const res = runFeasibilityPlanner({
-          plots: newFarm.plots,
-          awc_mm_per_m: newFarm.soil.awc_mm_per_m,
-          reserve: newFarm.reserve,
-          forecast: currentForecast,
-          isDemoPreset: false,
-        });
-        setDecision(res);
-      });
   };
 
   if (!decision) {
@@ -262,7 +304,7 @@ function FieldGuardApp() {
       <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white p-4">
         <div className="flex items-center gap-3 text-emerald-400">
           <RefreshCw className="w-6 h-6 animate-spin" />
-          <span className="text-sm font-semibold">Initializing FieldGuard Agronomic Engine...</span>
+          <span className="text-sm font-semibold">Loading Your Field Soil-Water Balance...</span>
         </div>
       </div>
     );
@@ -271,19 +313,37 @@ function FieldGuardApp() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-emerald-500 selection:text-slate-950">
       
-      {/* 1. Header with Language Switcher, Presets, and AWS Cognito Auth */}
+      {/* 1. Clean Production Header */}
       <Header
-        activePresetId={activePresetId}
-        onSelectPreset={loadPreset}
         onOpenOnboarding={() => setIsOnboardingOpen(true)}
         onOpenAuth={() => setIsAuthOpen(true)}
         authSession={authSession}
         onLogout={handleLogout}
-        isLiveLoading={isLiveLoading}
-        onTriggerLiveLocation={handleLiveLocation}
       />
 
-      {/* 2. Main Mobile-First Container */}
+      {/* 2. Top Banner if currently testing a demo preset */}
+      {activePresetId && (
+        <div className="w-full bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-slate-950 px-4 py-2 text-xs font-bold flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-2 truncate">
+            <span className="px-1.5 py-0.5 rounded bg-black/20 text-white font-mono text-[10px] uppercase">
+              Demo Active
+            </span>
+            <span className="text-white">
+              Currently simulating: <strong>{activePresetId === 'preset_rain_avoidance' ? 'Scenario A (Rain Avoidance)' : 'Scenario B (Tank Deficit)'}</strong>
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleExitDemo}
+            className="px-3 py-1 rounded-lg bg-black/30 hover:bg-black/50 text-white text-xs font-bold transition-colors cursor-pointer shrink-0 ml-2"
+          >
+            Exit Demo & Return to My Field
+          </button>
+        </div>
+      )}
+
+      {/* 3. Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
         
         {/* Active Field Profile Strip */}
@@ -291,7 +351,7 @@ function FieldGuardApp() {
           <div className="flex items-center gap-2">
             <Sprout className="w-4 h-4 text-emerald-400 shrink-0" />
             <div>
-              <span className="text-slate-400">Current Field:</span>{' '}
+              <span className="text-slate-400">Active Parcel:</span>{' '}
               <strong className="text-white font-semibold">{currentFarm.farmName}</strong>
               <span className="text-slate-500 mx-1.5">•</span>
               <span className="text-cyan-300">{currentFarm.location.villageOrPincode}</span>
@@ -308,7 +368,7 @@ function FieldGuardApp() {
           </div>
         </div>
 
-        {/* 3. Live Climate Station (Prominent Weather Card) */}
+        {/* 4. Live Climate Station (Connected to real Open-Meteo) */}
         <LiveClimateStation
           forecast={currentForecast}
           locationName={currentFarm.location.displayName || currentFarm.location.villageOrPincode}
@@ -317,10 +377,11 @@ function FieldGuardApp() {
           onRefreshWeather={handleRefreshWeather}
           isRefreshing={isRefreshingWeather}
           errorMessage={weatherErrorMessage}
+          showDevLevers={isDevAuthorized && isDemoModeActive}
         />
 
-        {/* 4. Interactive Simulation Levers (Visible when toggled or testing scenarios) */}
-        {isSimulating && (
+        {/* 5. What-If Simulation Levers (Only visible when demo mode is toggled active and simulating) */}
+        {isDevAuthorized && isDemoModeActive && isSimulating && (
           <div className="glass-panel p-4 sm:p-5 border border-amber-500/30 bg-amber-950/10 fade-in">
             <div className="flex items-center gap-2 mb-3">
               <Sliders className="w-4 h-4 text-amber-400" />
@@ -330,7 +391,6 @@ function FieldGuardApp() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-              {/* Lever 1: Rain Forecast */}
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs">
                   <span className="text-slate-300">Simulate Forecast Rain:</span>
@@ -345,12 +405,8 @@ function FieldGuardApp() {
                   onChange={(e) => handleRainSliderChange(parseFloat(e.target.value))}
                   className="w-full accent-cyan-400 cursor-pointer min-h-[36px]"
                 />
-                <span className="text-[10px] text-slate-400 block">
-                  Slide to 0 mm for dry spell, or 22 mm to test the rain-avoidance threshold.
-                </span>
               </div>
 
-              {/* Lever 2: Tank Storage Reserve */}
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs">
                   <span className="text-slate-300">Simulate Tank Available Reserve:</span>
@@ -365,21 +421,18 @@ function FieldGuardApp() {
                   onChange={(e) => handleTankSliderChange(parseInt(e.target.value))}
                   className="w-full accent-amber-400 cursor-pointer min-h-[36px]"
                 />
-                <span className="text-[10px] text-slate-400 block">
-                  Slide below 1,000 L to test Resource Deficit Alert & stress countdown.
-                </span>
               </div>
             </div>
           </div>
         )}
 
-        {/* 5. Primary Recommendation Card with Audio Read-Aloud */}
+        {/* 6. Primary Recommendation Card with Audio Read-Aloud */}
         <DecisionCard decision={decision} />
 
-        {/* 6. Environmental Impact Ledger */}
+        {/* 7. Environmental Impact Ledger */}
         <EnvironmentalLedgerCard ledger={decision.environmentalLedger} />
 
-        {/* 7. Shared Water Budget & Plot Stress Matrix */}
+        {/* 8. Shared Water Budget & Plot Stress Matrix */}
         <WaterBudgetCard
           totalDemand_liters={decision.totalFarmDemand_liters}
           netDemand_liters={decision.netFarmDemand_liters}
@@ -388,7 +441,7 @@ function FieldGuardApp() {
           plots={decision.plots}
         />
 
-        {/* 8. AWS Architecture Demonstration Drawer (Judging Rubric Proof) */}
+        {/* 9. AWS Architecture Demonstration Drawer */}
         <AwsProofDrawer decision={decision} storageStatus={storageStatus} />
 
       </main>
@@ -396,11 +449,11 @@ function FieldGuardApp() {
       {/* Footer */}
       <footer className="w-full border-t border-slate-900 bg-slate-950 py-5 text-center text-xs text-slate-500">
         <p className="px-4">
-          FieldGuard — Autonomous Agronomic Decision Cockpit & Field Telemetry • Built with Next.js & AWS Serverless (DynamoDB + Lambda + Bedrock)
+          FieldGuard — Autonomous Agronomic Decision Cockpit & Field Telemetry • Built with Next.js & AWS Serverless
         </p>
       </footer>
 
-      {/* 9. Mobile-First 4-Step Onboarding Wizard */}
+      {/* 10. Mobile-First 4-Step Onboarding Wizard */}
       <StepperWizard
         isOpen={isOnboardingOpen}
         onClose={() => setIsOnboardingOpen(false)}
@@ -408,12 +461,26 @@ function FieldGuardApp() {
         initialFarm={currentFarm}
       />
 
-      {/* 10. Amazon Cognito OTP Auth Modal */}
+      {/* 11. Amazon Cognito OTP Auth Modal */}
       <AuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
         onAuthSuccess={(session) => setAuthSession(session)}
       />
+
+      {/* 12. Isolated Developer Demo Sandbox Dock (Only if authorized by env key) */}
+      {isDevAuthorized && (
+        <DemoSandboxDock
+          isDemoModeActive={isDemoModeActive}
+          onToggleDemoMode={handleToggleDemoMode}
+          activePresetId={activePresetId}
+          onSelectPreset={handleSelectDemoPreset}
+          onExitDemo={handleExitDemo}
+          hasCustomFarm={hasCustomFarm}
+          isSimulating={isSimulating}
+          onToggleSimulation={setIsSimulating}
+        />
+      )}
 
     </div>
   );
