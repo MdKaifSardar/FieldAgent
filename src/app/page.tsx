@@ -188,7 +188,13 @@ function FieldGuardApp() {
     }
 
     // 2. Persist to Amazon DynamoDB
-    saveFarmProfileToDynamo(newFarm).catch(console.error);
+    saveFarmProfileToDynamo(newFarm)
+      .then((res) => {
+        setStorageStatus(res.storage);
+      })
+      .catch((err) => {
+        console.error('DynamoDB save error:', err);
+      });
 
     // 3. Run planning with fresh weather for new coordinates
     runLiveFarmPlanning(newFarm);
