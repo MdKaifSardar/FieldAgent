@@ -19,16 +19,24 @@ import { AuthSession } from '../adapters/cognitoAdapter';
 import { DecisionResponse } from '../types/decision';
 import { FarmProfile } from '../types/farm';
 import { DailyWeatherForecast } from '../types/weather';
-import { Sliders, RefreshCw, Sprout } from 'lucide-react';
+import { 
+  Sliders, 
+  RefreshCw, 
+  Sprout, 
+  MapPin, 
+  Layers, 
+  Droplets, 
+  SlidersHorizontal 
+} from 'lucide-react';
 
 function FieldGuardApp() {
   const { t } = useLanguage();
   
-  // Real User Farm state vs Demo Sandbox Preset ID (null = viewing user's own real farm)
+  // Real User Farm state vs Demo Sandbox Preset ID (null = viewing user's own real farm or empty dashboard)
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [hasCustomFarm, setHasCustomFarm] = useState<boolean>(false);
-  const [currentFarm, setCurrentFarm] = useState<FarmProfile>(PRESET_1_RAIN_AVOIDANCE.farm);
-  const [currentForecast, setCurrentForecast] = useState<DailyWeatherForecast>(PRESET_1_RAIN_AVOIDANCE.forecast);
+  const [currentFarm, setCurrentFarm] = useState<FarmProfile | null>(null);
+  const [currentForecast, setCurrentForecast] = useState<DailyWeatherForecast | null>(null);
   const [decision, setDecision] = useState<DecisionResponse | null>(null);
   const [storageStatus, setStorageStatus] = useState<string>('aws_dynamodb');
   
@@ -41,7 +49,6 @@ function FieldGuardApp() {
   const [isRefreshingWeather, setIsRefreshingWeather] = useState<boolean>(false);
   const [weatherErrorMessage, setWeatherErrorMessage] = useState<string | undefined>(undefined);
 
-  // Simulation mode toggling (strictly for developer what-if levers)
   // Simulation mode toggling (strictly for developer what-if levers)
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [interactiveTankLiters, setInteractiveTankLiters] = useState<number>(3200);
@@ -87,15 +94,17 @@ function FieldGuardApp() {
       });
     } catch (err: any) {
       console.warn('Live calculation error:', err);
-      // Fallback calculation using existing forecast
-      const planRes = runFeasibilityPlanner({
-        plots: farm.plots,
-        awc_mm_per_m: farm.soil.awc_mm_per_m,
-        reserve: farm.reserve,
-        forecast: currentForecast,
-        isDemoPreset: false,
-      });
-      setDecision(planRes);
+      // Fallback calculation using existing forecast if available
+      if (currentForecast) {
+        const planRes = runFeasibilityPlanner({
+          plots: farm.plots,
+          awc_mm_per_m: farm.soil.awc_mm_per_m,
+          reserve: farm.reserve,
+          forecast: currentForecast,
+          isDemoPreset: false,
+        });
+        setDecision(planRes);
+      }
     } finally {
       setIsRefreshingWeather(false);
     }
@@ -130,11 +139,17 @@ function FieldGuardApp() {
       if (savedFarmJson) {
         try {
           const parsed = JSON.parse(savedFarmJson) as FarmProfile;
-          setCurrentFarm(parsed);
-          setHasCustomFarm(true);
-          setActivePresetId(null); // Real farmer mode!
-          runLiveFarmPlanning(parsed);
-          return;
+          // Filter out stale demo presets accidentally saved during earlier prototype tests
+          if (parsed && parsed.id && !parsed.id.startsWith('farm-bardhaman') && parsed.userId !== 'farmer-ramesh') {
+            setCurrentFarm(parsed);
+            setHasCustomFarm(true);
+            setActivePresetId(null); // Real farmer mode!
+            runLiveFarmPlanning(parsed);
+            return;
+          } else {
+            // Clean up stale demo preset so farmer gets an empty dashboard
+            localStorage.removeItem('fieldguard_saved_farm');
+          }
         } catch (e) {
           console.error('Failed to parse saved farm:', e);
         }
@@ -147,9 +162,7 @@ function FieldGuardApp() {
         setIsOnboardingOpen(true);
       }
     }
-
-    // Default baseline if no saved farm exists yet
-    runLiveFarmPlanning(currentFarm);
+    // Note: If no saved custom farm exists, currentFarm remains null (Empty Dashboard)
   }, []);
 
   // Keyboard shortcut for developer mode toggle: Ctrl + Shift + D
@@ -225,14 +238,32 @@ function FieldGuardApp() {
       if (savedFarmJson) {
         try {
           const parsed = JSON.parse(savedFarmJson) as FarmProfile;
-          setCurrentFarm(parsed);
-          runLiveFarmPlanning(parsed);
-          return;
+          if (parsed && parsed.id && !parsed.id.startsWith('farm-bardhaman') && parsed.userId !== 'farmer-ramesh') {
+            setCurrentFarm(parsed);
+            setHasCustomFarm(true);
+            runLiveFarmPlanning(parsed);
+            return;
+          }
         } catch (e) {}
       }
     }
-    // Fallback if no custom farm was saved
-    runLiveFarmPlanning(PRESET_1_RAIN_AVOIDANCE.farm);
+    // Return cleanly to empty dashboard if no custom farm configured
+    setCurrentFarm(null);
+    setCurrentForecast(null);
+    setHasCustomFarm(false);
+    setDecision(null);
+  };
+
+  // Reset active farm profile to return to clean empty dashboard
+  const handleResetFarm = () => {
+    setCurrentFarm(null);
+    setCurrentForecast(null);
+    setHasCustomFarm(false);
+    setActivePresetId(null);
+    setDecision(null);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('fieldguard_saved_farm');
+    }
   };
 
   // Developer Toggle Switch: Turn Hackathon Demo Mode ON / OFF
@@ -249,7 +280,9 @@ function FieldGuardApp() {
 
   // Weather Refresh button handler
   const handleRefreshWeather = () => {
-    runLiveFarmPlanning(currentFarm);
+    if (currentFarm) {
+      runLiveFarmPlanning(currentFarm);
+    }
   };
 
   // Interactive levers handler (only used during what-if tests)
@@ -305,17 +338,6 @@ function FieldGuardApp() {
     setDecision(res);
   };
 
-  if (!decision) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white p-4">
-        <div className="flex items-center gap-3 text-emerald-400">
-          <RefreshCw className="w-6 h-6 animate-spin" />
-          <span className="text-sm font-semibold">Loading Your Field Soil-Water Balance...</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-emerald-500 selection:text-slate-950">
       
@@ -325,6 +347,8 @@ function FieldGuardApp() {
         onOpenAuth={() => setIsAuthOpen(true)}
         authSession={authSession}
         onLogout={handleLogout}
+        hasCustomFarm={hasCustomFarm}
+        onResetFarm={handleResetFarm}
       />
 
       {/* 2. Top Banner if currently testing a demo preset */}
@@ -352,103 +376,195 @@ function FieldGuardApp() {
       {/* 3. Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
         
-        {/* Active Field Profile Strip */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 sm:p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
-          <div className="flex items-center gap-2">
-            <Sprout className="w-4 h-4 text-emerald-400 shrink-0" />
-            <div>
-              <span className="text-slate-400">Active Parcel:</span>{' '}
-              <strong className="text-white font-semibold">{currentFarm.farmName}</strong>
-              <span className="text-slate-500 mx-1.5">•</span>
-              <span className="text-cyan-300">{currentFarm.location.villageOrPincode}</span>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 text-[11px] sm:text-xs">
-            <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-              Soil: <strong className="text-emerald-300 capitalize">{currentFarm.soil.texture}</strong> (AWC {currentFarm.soil.awc_mm_per_m} mm/m)
-            </span>
-            <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-              Method: <strong className="text-cyan-300 uppercase">{currentFarm.plots[0]?.irrigationMethod || 'DRIP'}</strong>
+        {/* Loading Spinner while fetching live weather & planning */}
+        {isRefreshingWeather && !decision && (
+          <div className="py-20 flex flex-col items-center justify-center gap-3 text-emerald-400">
+            <RefreshCw className="w-8 h-8 animate-spin" />
+            <span className="text-sm font-semibold text-slate-300">
+              Retrieving live climate & soil-water balance...
             </span>
           </div>
-        </div>
+        )}
 
-        {/* 4. Live Climate Station (Connected to real Open-Meteo) */}
-        <LiveClimateStation
-          forecast={currentForecast}
-          locationName={currentFarm.location.displayName || currentFarm.location.villageOrPincode}
-          isSimulating={isSimulating}
-          onToggleSimulation={setIsSimulating}
-          onRefreshWeather={handleRefreshWeather}
-          isRefreshing={isRefreshingWeather}
-          errorMessage={weatherErrorMessage}
-          showDevLevers={isDevAuthorized && isDemoModeActive}
-        />
-
-        {/* 5. What-If Simulation Levers (Only visible when demo mode is toggled active and simulating) */}
-        {isDevAuthorized && isDemoModeActive && isSimulating && (
-          <div className="glass-panel p-4 sm:p-5 border border-amber-500/30 bg-amber-950/10 fade-in">
-            <div className="flex items-center gap-2 mb-3">
-              <Sliders className="w-4 h-4 text-amber-400" />
-              <h4 className="text-xs font-bold uppercase tracking-wider text-amber-200">
-                What-If Scenario Levers (Instant Real-Time Decision Shifts)
-              </h4>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-300">Simulate Forecast Rain:</span>
-                  <strong className="text-cyan-400 font-mono text-sm">{interactiveRainMm} mm</strong>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="40"
-                  step="1"
-                  value={interactiveRainMm}
-                  onChange={(e) => handleRainSliderChange(parseFloat(e.target.value))}
-                  className="w-full accent-cyan-400 cursor-pointer min-h-[36px]"
-                />
+        {/* EMPTY STATE DASHBOARD: Displayed when no custom parcel is configured */}
+        {!currentFarm && !activePresetId && !isRefreshingWeather && (
+          <div className="max-w-3xl mx-auto py-8 sm:py-16 px-2 sm:px-4">
+            <div className="glass-panel p-6 sm:p-10 border border-slate-800 shadow-2xl rounded-3xl text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+              
+              <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-tr from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/10">
+                <Sprout className="w-8 h-8" />
               </div>
 
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-300">Simulate Tank Available Reserve:</span>
-                  <strong className="text-amber-400 font-mono text-sm">{interactiveTankLiters.toLocaleString()} L</strong>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white font-['Outfit'] mb-2.5">
+                No Farm Parcel Configured
+              </h2>
+              <p className="text-sm sm:text-base text-slate-400 max-w-lg mx-auto mb-8">
+                Your dashboard is currently empty. Configure your parcel to receive live Open-Meteo weather and precision irrigation decisions tailored to your exact soil texture and crop stage.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-8 text-left">
+                <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold mb-1">
+                      <MapPin className="w-4 h-4 shrink-0" />
+                      <span>1. Geo-Location</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      GPS or village pin code lookup for live meteorological forecasts.
+                    </p>
+                  </div>
                 </div>
-                <input
-                  type="range"
-                  min="200"
-                  max="5000"
-                  step="200"
-                  value={interactiveTankLiters}
-                  onChange={(e) => handleTankSliderChange(parseInt(e.target.value))}
-                  className="w-full accent-amber-400 cursor-pointer min-h-[36px]"
-                />
+
+                <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold mb-1">
+                      <Layers className="w-4 h-4 shrink-0" />
+                      <span>2. Soil & Crop</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Soil texture AWC capacity and crop root zone depletion dynamics.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 text-amber-400 text-xs font-bold mb-1">
+                      <Droplets className="w-4 h-4 shrink-0" />
+                      <span>3. Water Reserve</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Sump or tank capacity calculation to eliminate pump dry-run risk.
+                    </p>
+                  </div>
+                </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setIsOnboardingOpen(true)}
+                className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/25 transition-all transform hover:scale-[1.02] cursor-pointer inline-flex items-center gap-2"
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                <span>Configure My Field Parcel</span>
+              </button>
             </div>
           </div>
         )}
 
-        {/* 6. Primary Recommendation Card with Audio Read-Aloud */}
-        <DecisionCard decision={decision} />
+        {/* ACTIVE DASHBOARD: Displayed when a farm profile or demo scenario is active */}
+        {currentFarm && currentForecast && decision && (
+          <>
+            {/* Active Field Profile Strip */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 sm:p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
+              <div className="flex items-center gap-2">
+                <Sprout className="w-4 h-4 text-emerald-400 shrink-0" />
+                <div>
+                  <span className="text-slate-400">Active Parcel:</span>{' '}
+                  <strong className="text-white font-semibold">{currentFarm.farmName}</strong>
+                  <span className="text-slate-500 mx-1.5">•</span>
+                  <span className="text-cyan-300">{currentFarm.location.villageOrPincode}</span>
+                </div>
+              </div>
 
-        {/* 7. Environmental Impact Ledger */}
-        <EnvironmentalLedgerCard ledger={decision.environmentalLedger} />
+              <div className="flex flex-wrap items-center gap-2 text-[11px] sm:text-xs">
+                <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                  Soil: <strong className="text-emerald-300 capitalize">{currentFarm.soil.texture}</strong> (AWC {currentFarm.soil.awc_mm_per_m} mm/m)
+                </span>
+                <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                  Method: <strong className="text-cyan-300 uppercase">{currentFarm.plots[0]?.irrigationMethod || 'DRIP'}</strong>
+                </span>
+                {hasCustomFarm && (
+                  <button
+                    type="button"
+                    onClick={handleResetFarm}
+                    className="px-2 py-0.5 rounded bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-rose-300 transition-colors cursor-pointer text-[10px]"
+                    title="Clear parcel configuration"
+                  >
+                    Clear Parcel
+                  </button>
+                )}
+              </div>
+            </div>
 
-        {/* 8. Shared Water Budget & Plot Stress Matrix */}
-        <WaterBudgetCard
-          totalDemand_liters={decision.totalFarmDemand_liters}
-          netDemand_liters={decision.netFarmDemand_liters}
-          availableReserve_liters={decision.availableWater_liters}
-          waterShortfall_liters={decision.waterShortfall_liters}
-          plots={decision.plots}
-        />
+            {/* 4. Live Climate Station (Connected to real Open-Meteo) */}
+            <LiveClimateStation
+              forecast={currentForecast}
+              locationName={currentFarm.location.displayName || currentFarm.location.villageOrPincode}
+              isSimulating={isSimulating}
+              onToggleSimulation={setIsSimulating}
+              onRefreshWeather={handleRefreshWeather}
+              isRefreshing={isRefreshingWeather}
+              errorMessage={weatherErrorMessage}
+              showDevLevers={isDevAuthorized && isDemoModeActive}
+            />
 
-        {/* 9. AWS Architecture Demonstration Drawer */}
-        <AwsProofDrawer decision={decision} storageStatus={storageStatus} />
+            {/* 5. What-If Simulation Levers (Only visible when demo mode is toggled active and simulating) */}
+            {isDevAuthorized && isDemoModeActive && isSimulating && (
+              <div className="glass-panel p-4 sm:p-5 border border-amber-500/30 bg-amber-950/10 fade-in">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sliders className="w-4 h-4 text-amber-400" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-amber-200">
+                    What-If Scenario Levers (Instant Real-Time Decision Shifts)
+                  </h4>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-300">Simulate Forecast Rain:</span>
+                      <strong className="text-cyan-400 font-mono text-sm">{interactiveRainMm} mm</strong>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="40"
+                      step="1"
+                      value={interactiveRainMm}
+                      onChange={(e) => handleRainSliderChange(parseFloat(e.target.value))}
+                      className="w-full accent-cyan-400 cursor-pointer min-h-[36px]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-300">Simulate Tank Available Reserve:</span>
+                      <strong className="text-amber-400 font-mono text-sm">{interactiveTankLiters.toLocaleString()} L</strong>
+                    </div>
+                    <input
+                      type="range"
+                      min="200"
+                      max="5000"
+                      step="200"
+                      value={interactiveTankLiters}
+                      onChange={(e) => handleTankSliderChange(parseInt(e.target.value))}
+                      className="w-full accent-amber-400 cursor-pointer min-h-[36px]"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 6. Primary Recommendation Card with Audio Read-Aloud */}
+            <DecisionCard decision={decision} />
+
+            {/* 7. Environmental Impact Ledger */}
+            <EnvironmentalLedgerCard ledger={decision.environmentalLedger} />
+
+            {/* 8. Shared Water Budget & Plot Stress Matrix */}
+            <WaterBudgetCard
+              totalDemand_liters={decision.totalFarmDemand_liters}
+              netDemand_liters={decision.netFarmDemand_liters}
+              availableReserve_liters={decision.availableWater_liters}
+              waterShortfall_liters={decision.waterShortfall_liters}
+              plots={decision.plots}
+            />
+
+            {/* 9. AWS Architecture Demonstration Drawer */}
+            <AwsProofDrawer decision={decision} storageStatus={storageStatus} />
+          </>
+        )}
 
       </main>
 

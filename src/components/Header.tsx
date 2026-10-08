@@ -18,6 +18,8 @@ interface HeaderProps {
   onOpenAuth: () => void;
   authSession: AuthSession | null;
   onLogout: () => void;
+  hasCustomFarm?: boolean;
+  onResetFarm?: () => void;
 }
 
 export function Header({
@@ -25,6 +27,8 @@ export function Header({
   onOpenAuth,
   authSession,
   onLogout,
+  hasCustomFarm = false,
+  onResetFarm,
 }: HeaderProps) {
   const { language, setLanguage, t } = useLanguage();
 
@@ -79,11 +83,15 @@ export function Header({
             <button
               type="button"
               onClick={onOpenOnboarding}
-              className="min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shadow-cyan-600/30 shrink-0"
+              className={`min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0 ${
+                hasCustomFarm
+                  ? 'bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white'
+                  : 'bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 shadow-emerald-500/20'
+              }`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t.editFarm}</span>
-              <span className="sm:hidden">Edit</span>
+              <span className="hidden sm:inline">{hasCustomFarm ? t.editFarm : '+ Set Up Farm'}</span>
+              <span className="sm:hidden">{hasCustomFarm ? 'Edit' : '+ Set Up'}</span>
             </button>
 
             {/* Auth Badge / Button */}

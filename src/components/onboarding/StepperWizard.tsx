@@ -12,7 +12,6 @@ import {
   IRRIGATION_EFFICIENCIES 
 } from '../../types/farm';
 import { geocodeLocationQuery, getDeviceCoordinates } from '../../adapters/geocodingAdapter';
-import { PRESET_1_RAIN_AVOIDANCE, PRESET_2_RESOURCE_DEFICIT } from '../../core/demoPresets';
 import { useLanguage } from '../common/LanguageContext';
 import { 
   MapPin, 
@@ -23,7 +22,6 @@ import {
   ArrowLeft, 
   Check, 
   Compass, 
-  Zap, 
   Info,
   X,
   Calculator
@@ -33,7 +31,7 @@ interface StepperWizardProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (farm: FarmProfile) => void;
-  initialFarm?: FarmProfile;
+  initialFarm?: FarmProfile | null;
 }
 
 export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: StepperWizardProps) {
@@ -43,12 +41,12 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
 
   // STEP 1: Location state
   const [queryLocation, setQueryLocation] = useState(
-    initialFarm?.location.villageOrPincode || 'Bardhaman, West Bengal (713101)'
+    initialFarm?.location.villageOrPincode || ''
   );
   const [lat, setLat] = useState(initialFarm?.location.latitude || 23.2324);
   const [lon, setLon] = useState(initialFarm?.location.longitude || 87.8615);
-  const [district, setDistrict] = useState(initialFarm?.location.district || 'Purba Bardhaman');
-  const [stateName, setStateName] = useState(initialFarm?.location.state || 'West Bengal');
+  const [district, setDistrict] = useState(initialFarm?.location.district || '');
+  const [stateName, setStateName] = useState(initialFarm?.location.state || '');
   const [isLocatingGPS, setIsLocatingGPS] = useState(false);
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [locationFeedback, setLocationFeedback] = useState<string | null>(null);
@@ -91,12 +89,6 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
 
   // Pump & flow
   const [pumpHp, setPumpHp] = useState(initialFarm?.reserve.pumpPower_hp || 5.0);
-
-  // Quick preset loader
-  const handleLoadPreset = (preset: typeof PRESET_1_RAIN_AVOIDANCE) => {
-    onSubmit(preset.farm);
-    onClose();
-  };
 
   // GPS 1-Tap Handler
   const handleGPSDetect = async () => {
@@ -259,30 +251,6 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
           >
             <X className="w-5 h-5" />
           </button>
-        </div>
-
-        {/* Quick Presets Shortcut Bar for Hackathon Testing */}
-        <div className="mt-3 p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
-            <Zap className="w-3.5 h-3.5 text-amber-400" />
-            <span>Quick Demo Presets:</span>
-          </div>
-          <div className="flex gap-1.5">
-            <button
-              type="button"
-              onClick={() => handleLoadPreset(PRESET_1_RAIN_AVOIDANCE)}
-              className="px-2.5 py-1 rounded bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/40 text-[11px] text-cyan-200 font-medium transition-colors cursor-pointer"
-            >
-              Bardhaman (Rain Avoidance)
-            </button>
-            <button
-              type="button"
-              onClick={() => handleLoadPreset(PRESET_2_RESOURCE_DEFICIT)}
-              className="px-2.5 py-1 rounded bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/40 text-[11px] text-amber-200 font-medium transition-colors cursor-pointer"
-            >
-              Nashik (Drought Deficit)
-            </button>
-          </div>
         </div>
 
         {/* Progress Stepper Line */}
