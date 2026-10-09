@@ -1,37 +1,55 @@
 @import "tailwindcss";
 
 :root {
-  --bg-primary: #0a0f14;
-  --bg-secondary: #111a22;
-  --bg-card: rgba(18, 28, 38, 0.75);
-  --border-color: rgba(45, 75, 95, 0.35);
-  --accent-emerald: #10b981;
-  --accent-cyan: #06b6d4;
-  --accent-blue: #3b82f6;
-  --accent-amber: #f59e0b;
-  --accent-rose: #f43f5e;
+  --bg-page: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.96);
+  --border-color: rgba(226, 232, 240, 0.9);
+  --border-highlight: rgba(16, 185, 129, 0.4);
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --accent-emerald: #059669;
+  --accent-cyan: #0284c7;
+  --accent-amber: #d97706;
+  --accent-rose: #e11d48;
+  --glass-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.06), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+}
+
+.dark {
+  --bg-page: #020617;
+  --bg-surface: #0f172a;
+  --bg-card: rgba(15, 23, 42, 0.88);
+  --border-color: rgba(51, 65, 85, 0.7);
+  --border-highlight: rgba(16, 185, 129, 0.3);
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
+  --accent-emerald: #10b981;
+  --accent-cyan: #06b6d4;
+  --accent-amber: #f59e0b;
+  --accent-rose: #f43f5e;
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.42);
 }
 
 body {
-  background: radial-gradient(circle at 50% 0%, #0d1e2d 0%, #080c10 100%);
+  background-color: var(--bg-page);
   color: var(--text-main);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   min-height: 100vh;
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* Glassmorphism card styling */
+/* Professional Card Styling (Adaptive to Light/Dark) */
 .glass-panel {
   background: var(--bg-card);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-color);
   border-radius: 16px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  box-shadow: var(--glass-shadow);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .glass-panel-glow {
@@ -42,14 +60,14 @@ body {
   position: absolute;
   top: -1px; left: -1px; right: -1px; bottom: -1px;
   border-radius: 17px;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(6, 182, 212, 0.1), transparent);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.1), transparent);
   pointer-events: none;
   z-index: -1;
 }
 
 /* Micro-animations */
 .fade-in {
-  animation: fadeIn 0.35s ease-in-out;
+  animation: fadeIn 0.3s ease-in-out;
 }
 
 @keyframes fadeIn {
@@ -58,7 +76,6 @@ body {
 }
 
 .pulse-glow {
-  box-shadow: 0 0 25px rgba(16, 185, 129, 0.25);
   animation: pulseGlow 3s infinite alternate;
 }
 
@@ -67,18 +84,18 @@ body {
   100% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.45); }
 }
 
-/* Smooth custom scrollbars */
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(51, 65, 85, 0.8);
+  background: rgba(148, 163, 184, 0.4);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 1);
+  background: rgba(148, 163, 184, 0.7);
 }

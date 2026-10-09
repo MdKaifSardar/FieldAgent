@@ -147,9 +147,10 @@ export function OnboardingModal({ isOpen, onClose, onSubmit }: OnboardingModalPr
               <button
                 type="button"
                 onClick={handleDetectGPS}
-                className="px-3 py-2 rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/40 text-cyan-200 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1"
+                className="px-3 py-2 rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/40 text-cyan-200 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5"
               >
-                {isLocating ? 'Detecting...' : '📍 GPS Detect'}
+                <MapPin className="w-3.5 h-3.5" />
+                <span>{isLocating ? 'Detecting...' : 'GPS Detect'}</span>
               </button>
             </div>
           </div>
@@ -240,7 +241,10 @@ export function OnboardingModal({ isOpen, onClose, onSubmit }: OnboardingModalPr
                     : 'bg-slate-900/60 border-slate-800 text-slate-400'
                 }`}
               >
-                <div className="font-bold text-xs mb-0.5">🟫 Loamy</div>
+                <div className="font-bold text-xs mb-0.5 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-800 inline-block" />
+                  <span>Loamy</span>
+                </div>
                 <div className="text-[10px] text-slate-400">Dark brown, holds water well</div>
               </button>
 
@@ -253,7 +257,10 @@ export function OnboardingModal({ isOpen, onClose, onSubmit }: OnboardingModalPr
                     : 'bg-slate-900/60 border-slate-800 text-slate-400'
                 }`}
               >
-                <div className="font-bold text-xs mb-0.5">⚫ Black / Clay</div>
+                <div className="font-bold text-xs mb-0.5 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-slate-900 border border-slate-600 inline-block" />
+                  <span>Black / Clay</span>
+                </div>
                 <div className="text-[10px] text-slate-400">Sticky, cracks when dry</div>
               </button>
 
@@ -266,7 +273,10 @@ export function OnboardingModal({ isOpen, onClose, onSubmit }: OnboardingModalPr
                     : 'bg-slate-900/60 border-slate-800 text-slate-400'
                 }`}
               >
-                <div className="font-bold text-xs mb-0.5">🟤 Sandy</div>
+                <div className="font-bold text-xs mb-0.5 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-600 inline-block" />
+                  <span>Sandy</span>
+                </div>
                 <div className="text-[10px] text-slate-400">Gritty, drains fast</div>
               </button>
             </div>

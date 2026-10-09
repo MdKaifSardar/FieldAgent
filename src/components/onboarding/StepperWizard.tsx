@@ -24,7 +24,9 @@ import {
   Compass, 
   Info,
   X,
-  Calculator
+  Calculator,
+  Cylinder,
+  Waves
 } from 'lucide-react';
 
 interface StepperWizardProps {
@@ -237,11 +239,31 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
               <span className="text-xs text-slate-500">•</span>
               <span className="text-xs text-slate-400">Mobile Onboarding</span>
             </div>
-            <h2 className="text-lg sm:text-xl font-bold text-white font-['Outfit']">
-              {step === 1 && `📍 ${t.locationStep}`}
-              {step === 2 && `🟤 ${t.soilStep}`}
-              {step === 3 && `🌾 ${t.cropStep}`}
-              {step === 4 && `💧 ${t.reserveStep}`}
+            <h2 className="text-lg sm:text-xl font-bold text-white font-['Outfit'] flex items-center gap-2">
+              {step === 1 && (
+                <>
+                  <MapPin className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <span>{t.locationStep}</span>
+                </>
+              )}
+              {step === 2 && (
+                <>
+                  <Layers className="w-5 h-5 text-amber-400 shrink-0" />
+                  <span>{t.soilStep}</span>
+                </>
+              )}
+              {step === 3 && (
+                <>
+                  <Sprout className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <span>{t.cropStep}</span>
+                </>
+              )}
+              {step === 4 && (
+                <>
+                  <Droplets className="w-5 h-5 text-cyan-400 shrink-0" />
+                  <span>{t.reserveStep}</span>
+                </>
+              )}
             </h2>
           </div>
           <button 
@@ -350,7 +372,10 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
               >
                 <div>
                   <div className="text-base font-bold flex items-center justify-between">
-                    <span>🟤 Sandy Soil</span>
+                    <span className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-600 inline-block shadow-sm" />
+                      <span>Sandy Soil</span>
+                    </span>
                     {soilTexture === 'sandy' && <Check className="w-4 h-4 text-amber-400" />}
                   </div>
                   <div className="text-[11px] text-slate-400 mt-1">Gritty, drains quickly</div>
@@ -372,7 +397,10 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
               >
                 <div>
                   <div className="text-base font-bold flex items-center justify-between">
-                    <span>🟫 Loamy Soil</span>
+                    <span className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-800 inline-block shadow-sm" />
+                      <span>Loamy Soil</span>
+                    </span>
                     {soilTexture === 'loamy' && <Check className="w-4 h-4 text-emerald-400" />}
                   </div>
                   <div className="text-[11px] text-slate-400 mt-1">Balanced retention, crumbly</div>
@@ -394,7 +422,10 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
               >
                 <div>
                   <div className="text-base font-bold flex items-center justify-between">
-                    <span>⚫ Clay / Black</span>
+                    <span className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-600 inline-block shadow-sm" />
+                      <span>Clay / Black</span>
+                    </span>
                     {soilTexture === 'clay_black' && <Check className="w-4 h-4 text-cyan-400" />}
                   </div>
                   <div className="text-[11px] text-slate-400 mt-1">Dense, high water hold</div>
@@ -551,7 +582,10 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                     : 'bg-slate-900/60 border-slate-800 text-slate-400'
                 }`}
               >
-                🛢️ Sintex / Standard Tank
+                <span className="flex items-center justify-center gap-1.5">
+                  <Cylinder className="w-4 h-4 shrink-0" />
+                  <span>Sintex / Standard Tank</span>
+                </span>
               </button>
               <button
                 type="button"
@@ -562,7 +596,10 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                     : 'bg-slate-900/60 border-slate-800 text-slate-400'
                 }`}
               >
-                🏊 Farm Pond / Custom Sump
+                <span className="flex items-center justify-center gap-1.5">
+                  <Waves className="w-4 h-4 shrink-0" />
+                  <span>Farm Pond / Custom Sump</span>
+                </span>
               </button>
             </div>
 
