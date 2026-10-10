@@ -72,6 +72,18 @@ const INDIAN_AGRI_CENTERS_FALLBACK: Record<string, GeocodedLocation> = {
   },
 };
 
+export interface LocationSuggestion {
+  id: string;
+  name: string;
+  displayName: string;
+  district?: string;
+  state?: string;
+  latitude: number;
+  longitude: number;
+  postcode?: string;
+  type: 'pincode' | 'village' | 'district' | 'town';
+}
+
 export interface GeocodingResponse {
   location: GeocodedLocation;
   isFallback: boolean;
@@ -79,35 +91,45 @@ export interface GeocodingResponse {
 }
 
 /**
- * Resolves Indian village name, district, or 6-digit postal pincode to coordinates.
+ * Real-time debounced location suggestion search for Indian villages, tehsils, and PIN codes.
  */
-export async function geocodeLocationQuery(query: string): Promise<GeocodingResponse> {
-  const cleanQuery = query.trim().toLowerCase();
-  if (!cleanQuery) {
-    return {
-      location: INDIAN_AGRI_CENTERS_FALLBACK['713101'],
-      isFallback: true,
-    };
-  }
+export async function fetchLocationSuggestions(query: string): Promise<LocationSuggestion[]> {
+  const cleanQuery = query.trim();
+  if (cleanQuery.length < 2) return [];
 
-  // 1. Check instant offline dictionary
+  const suggestions: LocationSuggestion[] = [];
+  const seenCoords = new Set<string>();
+
+  // 1. Instant check against offline curated agricultural hubs
+  const lowerQuery = cleanQuery.toLowerCase();
   for (const [key, center] of Object.entries(INDIAN_AGRI_CENTERS_FALLBACK)) {
-    if (cleanQuery.includes(key) || key.includes(cleanQuery)) {
-      return {
-        location: center,
-        isFallback: false,
-      };
+    if (key.includes(lowerQuery) || lowerQuery.includes(key)) {
+      const coordKey = `${center.latitude.toFixed(3)},${center.longitude.toFixed(3)}`;
+      if (!seenCoords.has(coordKey)) {
+        seenCoords.add(coordKey);
+        suggestions.push({
+          id: `fallback-${key}`,
+          name: center.villageOrPincode.split(',')[0],
+          displayName: center.displayName || center.villageOrPincode,
+          district: center.district || '',
+          state: center.state || 'India',
+          latitude: center.latitude,
+          longitude: center.longitude,
+          type: /^\d+$/.test(key) ? 'pincode' : 'district',
+        });
+      }
     }
   }
 
-  // 2. Query OpenStreetMap Nominatim with 3-second timeout
+  // 2. Query OSM Nominatim locked to India (countrycodes=in)
   try {
+    const isPincode = /^\d{3,6}$/.test(cleanQuery);
+    const endpoint = isPincode
+      ? `https://nominatim.openstreetmap.org/search?postalcode=${encodeURIComponent(cleanQuery)}&countrycodes=in&format=json&addressdetails=1&limit=5`
+      : `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanQuery)}&countrycodes=in&format=json&addressdetails=1&limit=6`;
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3500);
-
-    const endpoint = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-      query + ', India'
-    )}&format=json&addressdetails=1&limit=1`;
 
     const res = await fetch(endpoint, {
       signal: controller.signal,
@@ -118,35 +140,76 @@ export async function geocodeLocationQuery(query: string): Promise<GeocodingResp
     });
     clearTimeout(timeoutId);
 
-    if (!res.ok) {
-      throw new Error(`Nominatim HTTP ${res.status}`);
-    }
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        for (const item of data) {
+          const lat = parseFloat(item.lat);
+          const lon = parseFloat(item.lon);
+          const coordKey = `${lat.toFixed(3)},${lon.toFixed(3)}`;
+          if (seenCoords.has(coordKey)) continue;
+          seenCoords.add(coordKey);
 
-    const data = await res.json();
-    if (Array.isArray(data) && data.length > 0) {
-      const item = data[0];
-      const address = item.address || {};
-      const district = address.state_district || address.county || address.city || 'District';
-      const state = address.state || 'India';
-      const postcode = address.postcode || query;
+          const addr = item.address || {};
+          const district = addr.state_district || addr.county || addr.city || addr.town || '';
+          const state = addr.state || 'India';
+          const postcode = addr.postcode || '';
+          const name = addr.village || addr.suburb || addr.town || addr.city || item.name || cleanQuery;
 
-      return {
-        location: {
-          latitude: parseFloat(item.lat),
-          longitude: parseFloat(item.lon),
-          villageOrPincode: `${district}, ${state} (${postcode})`,
-          district,
-          state,
-          displayName: item.display_name,
-        },
-        isFallback: false,
-      };
+          const parts = [name, district, state].filter(Boolean);
+          const displayName = parts.length > 0 ? parts.join(', ') : item.display_name;
+
+          suggestions.push({
+            id: String(item.place_id || Math.random()),
+            name,
+            displayName,
+            district,
+            state,
+            latitude: lat,
+            longitude: lon,
+            postcode,
+            type: isPincode ? 'pincode' : addr.village ? 'village' : 'district',
+          });
+        }
+      }
     }
   } catch (err: any) {
-    console.warn('[GeocodingAdapter] Online search failed, using default baseline:', err.message);
+    console.warn('[GeocodingAdapter] Online suggestion search warning:', err.message);
   }
 
-  // Fallback to safe Bardhaman baseline with helpful trace
+  return suggestions.slice(0, 5);
+}
+
+/**
+ * Resolves Indian village name, district, or 6-digit postal pincode to coordinates.
+ */
+export async function geocodeLocationQuery(query: string): Promise<GeocodingResponse> {
+  const cleanQuery = query.trim();
+  if (!cleanQuery) {
+    return {
+      location: INDIAN_AGRI_CENTERS_FALLBACK['713101'],
+      isFallback: true,
+    };
+  }
+
+  // 1. Try suggestions engine first
+  const suggestions = await fetchLocationSuggestions(cleanQuery);
+  if (suggestions.length > 0) {
+    const top = suggestions[0];
+    return {
+      location: {
+        latitude: top.latitude,
+        longitude: top.longitude,
+        villageOrPincode: top.displayName,
+        district: top.district || 'Selected Region',
+        state: top.state || 'India',
+        displayName: top.displayName,
+      },
+      isFallback: false,
+    };
+  }
+
+  // 2. Fallback to safe Bardhaman baseline
   return {
     location: {
       latitude: 23.2324,

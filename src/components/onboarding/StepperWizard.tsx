@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   FarmProfile, 
   AreaUnit, 
@@ -11,7 +11,12 @@ import {
   calculateSumpVolumeLiters,
   IRRIGATION_EFFICIENCIES 
 } from '../../types/farm';
-import { geocodeLocationQuery, getDeviceCoordinates } from '../../adapters/geocodingAdapter';
+import { 
+  geocodeLocationQuery, 
+  getDeviceCoordinates,
+  fetchLocationSuggestions,
+  LocationSuggestion
+} from '../../adapters/geocodingAdapter';
 import { useLanguage } from '../common/LanguageContext';
 import { 
   MapPin, 
@@ -26,7 +31,11 @@ import {
   X,
   Calculator,
   Cylinder,
-  Waves
+  Waves,
+  Search,
+  Loader2,
+  Building2,
+  Hash
 } from 'lucide-react';
 import { LocationMapPicker } from '../map/LocationMapPicker';
 
@@ -53,6 +62,89 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
   const [isLocatingGPS, setIsLocatingGPS] = useState(false);
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [locationFeedback, setLocationFeedback] = useState<string | null>(null);
+
+  // Instant Search-As-You-Type Autocomplete State
+  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Debounced search-as-you-type (280ms)
+  useEffect(() => {
+    const trimmed = queryLocation.trim();
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      setIsDropdownOpen(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsLoadingSuggestions(true);
+      try {
+        const results = await fetchLocationSuggestions(trimmed);
+        setSuggestions(results);
+        setIsDropdownOpen(results.length > 0);
+        setSelectedIndex(-1);
+      } catch (err) {
+        setSuggestions([]);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    }, 280);
+
+    return () => clearTimeout(timer);
+  }, [queryLocation]);
+
+  // Click-away listener to dismiss autocomplete dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Handle selecting an autocomplete suggestion
+  const handleSelectSuggestion = (sug: LocationSuggestion) => {
+    setQueryLocation(sug.displayName);
+    setLat(sug.latitude);
+    setLon(sug.longitude);
+    setDistrict(sug.district || 'Selected Region');
+    setStateName(sug.state || 'India');
+    setIsDropdownOpen(false);
+    setLocationFeedback(`Locked onto ${sug.displayName}`);
+  };
+
+  // Keyboard navigation for suggestions
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isDropdownOpen || suggestions.length === 0) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSearchLocation();
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
+        handleSelectSuggestion(suggestions[selectedIndex]);
+      } else {
+        handleSearchLocation();
+      }
+    } else if (e.key === 'Escape') {
+      setIsDropdownOpen(false);
+    }
+  };
 
   // STEP 2: Soil state
   const [soilTexture, setSoilTexture] = useState<SoilTexture>(
@@ -307,27 +399,114 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
               FieldGuard pulls live meteorological and rainfall forecasts from Open-Meteo for your coordinates.
             </p>
 
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                Village, Pincode or District
+            {/* Search as you type with live autocomplete popover */}
+            <div className="space-y-1.5 relative">
+              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                <span>Search Village, Pincode or Tehsil</span>
+                {isLoadingSuggestions && (
+                  <span className="text-[10px] text-cyan-400 font-mono flex items-center gap-1 font-normal">
+                    <Loader2 className="w-3 h-3 animate-spin" /> Searching India...
+                  </span>
+                )}
               </label>
-              <div className="flex gap-2">
+
+              <div className="relative flex items-center">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
                 <input
                   type="text"
                   value={queryLocation}
                   onChange={(e) => setQueryLocation(e.target.value)}
-                  placeholder="e.g. Bardhaman, 713101, Nashik, or Karnal"
-                  className="flex-1 px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-500"
+                  onKeyDown={handleInputKeyDown}
+                  onFocus={() => {
+                    if (suggestions.length > 0) setIsDropdownOpen(true);
+                  }}
+                  placeholder="e.g. Bardhaman, 713101, Nashik, or Galsi..."
+                  className="w-full pl-10 pr-20 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-500 placeholder:text-slate-500"
                 />
-                <button
-                  type="button"
-                  onClick={handleSearchLocation}
-                  disabled={isSearchingLocation}
-                  className="min-h-[44px] px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-white font-medium transition-colors cursor-pointer"
-                >
-                  {isSearchingLocation ? 'Searching...' : 'Find'}
-                </button>
+
+                <div className="absolute right-2 flex items-center gap-1">
+                  {queryLocation && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQueryLocation('');
+                        setSuggestions([]);
+                        setIsDropdownOpen(false);
+                      }}
+                      className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                      title="Clear input"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleSearchLocation}
+                    disabled={isSearchingLocation}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-white transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {isSearchingLocation ? 'Locating...' : 'Find'}
+                  </button>
+                </div>
               </div>
+
+              {/* Floating Autocomplete Popover (Top-ranking Indian locations) */}
+              {isDropdownOpen && suggestions.length > 0 && (
+                <div 
+                  ref={dropdownRef}
+                  className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-xl bg-slate-900/95 backdrop-blur-xl border border-slate-700 shadow-2xl overflow-hidden divide-y divide-slate-800/80 animate-in fade-in slide-in-from-top-1"
+                >
+                  <div className="px-3 py-1.5 bg-slate-800/50 text-[10px] font-semibold text-slate-400 flex items-center justify-between uppercase tracking-wider">
+                    <span>Indian Location Suggestions</span>
+                    <span className="font-mono text-[9px] text-slate-500">Tap or Press Enter</span>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto">
+                    {suggestions.map((item, idx) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleSelectSuggestion(item)}
+                        className={`w-full min-h-[44px] px-3.5 py-2.5 text-left flex items-center justify-between gap-2.5 transition-colors cursor-pointer ${
+                          selectedIndex === idx
+                            ? 'bg-cyan-600/20 text-white'
+                            : 'hover:bg-slate-800/60 text-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="p-1.5 rounded-lg bg-slate-800 text-emerald-400 shrink-0">
+                            {item.type === 'pincode' ? (
+                              <Hash className="w-3.5 h-3.5 text-amber-400" />
+                            ) : item.type === 'district' ? (
+                              <Building2 className="w-3.5 h-3.5 text-cyan-400" />
+                            ) : (
+                              <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-white truncate">
+                              {item.name}
+                            </div>
+                            <div className="text-[11px] text-slate-400 truncate">
+                              {[item.district, item.state].filter(Boolean).join(', ')}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span className="text-[10px] font-mono text-cyan-400 font-semibold block">
+                            {item.latitude.toFixed(2)}°, {item.longitude.toFixed(2)}°
+                          </span>
+                          <span className="text-[9px] uppercase font-bold text-slate-500">
+                            {item.type}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2 pt-1">
