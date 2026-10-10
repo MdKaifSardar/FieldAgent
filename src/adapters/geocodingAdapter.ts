@@ -197,3 +197,36 @@ export async function getDeviceCoordinates(): Promise<{
     );
   });
 }
+
+/**
+ * Reverse geocodes latitude/longitude to a human-readable village/district name.
+ */
+export async function reverseGeocodeCoordinates(lat: number, lon: number): Promise<string> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500);
+    const endpoint = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=14`;
+    const res = await fetch(endpoint, {
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'FieldGuard-Agronomic-Engine/1.0',
+      },
+    });
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.address) {
+        const addr = data.address;
+        const place = addr.village || addr.suburb || addr.town || addr.city || addr.county || 'Field Parcel';
+        const district = addr.state_district || addr.county || '';
+        const state = addr.state || '';
+        const formatted = [place, district, state].filter(Boolean).join(', ');
+        if (formatted) return formatted;
+      }
+    }
+  } catch (e) {
+    // Fallback to coordinates
+  }
+  return `Parcel (${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E)`;
+}

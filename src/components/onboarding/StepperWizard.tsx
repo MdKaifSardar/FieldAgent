@@ -28,6 +28,7 @@ import {
   Cylinder,
   Waves
 } from 'lucide-react';
+import { LocationMapPicker } from '../map/LocationMapPicker';
 
 interface StepperWizardProps {
   isOpen: boolean;
@@ -128,6 +129,18 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
       setLocationFeedback('Could not resolve location. Using fallback coordinates.');
     } finally {
       setIsSearchingLocation(false);
+    }
+  };
+
+  // Live Map Drag / Tap Repositioning Handler
+  const handleMapLocationChange = (newLat: number, newLon: number, resolvedName?: string) => {
+    setLat(newLat);
+    setLon(newLon);
+    if (resolvedName) {
+      setQueryLocation(resolvedName);
+      setLocationFeedback(`Plot pinned: ${resolvedName} (${newLat.toFixed(4)}°, ${newLon.toFixed(4)}°)`);
+    } else {
+      setLocationFeedback(`Plot coordinates refined: ${newLat.toFixed(4)}° N, ${newLon.toFixed(4)}° E`);
     }
   };
 
@@ -340,13 +353,36 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
               </div>
             )}
 
+            {/* Live Interactive Map Preview (Draggable Pin & Satellite/Street View) */}
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-300 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Live Parcel Map (Drag Pin or Tap to Set)</span>
+                </span>
+                <span className="text-[11px] font-mono text-cyan-300">
+                  {lat.toFixed(4)}°, {lon.toFixed(4)}°
+                </span>
+              </div>
+              
+              <LocationMapPicker
+                latitude={lat}
+                longitude={lon}
+                onChangeLocation={handleMapLocationChange}
+                interactive={true}
+                height="220px"
+              />
+            </div>
+
             <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs space-y-1">
-              <div className="text-slate-400">Current Calibrated Coordinates:</div>
-              <div className="font-mono text-cyan-300 font-bold">
-                Lat: {lat.toFixed(4)}° N, Lon: {lon.toFixed(4)}° E
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Selected Coordinates:</span>
+                <span className="font-mono text-cyan-300 font-bold">
+                  {lat.toFixed(4)}° N, {lon.toFixed(4)}° E
+                </span>
               </div>
               <div className="text-[11px] text-slate-400">
-                District: <span className="text-white">{district}</span>, State: <span className="text-white">{stateName}</span>
+                Region: <span className="text-white">{district || 'Local Cluster'}</span>, State: <span className="text-white">{stateName || 'India'}</span>
               </div>
             </div>
           </div>

@@ -511,6 +511,8 @@ function FieldGuardApp() {
               <LiveClimateStation
                 forecast={currentForecast}
                 locationName={currentFarm.location.displayName || currentFarm.location.villageOrPincode}
+                latitude={currentFarm.location.latitude}
+                longitude={currentFarm.location.longitude}
                 isSimulating={isSimulating}
                 onToggleSimulation={setIsSimulating}
                 onRefreshWeather={handleRefreshWeather}
