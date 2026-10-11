@@ -331,41 +331,41 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
-      <div className="glass-panel w-full max-w-xl border border-slate-700 p-4 sm:p-6 shadow-2xl relative my-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-md overflow-y-auto">
+      <div className="w-full max-w-xl rounded-2xl border border-[#E1E6DE] dark:border-[#1E3022] bg-[#F7F8F3] dark:bg-[#0E1711] p-4 sm:p-6 shadow-2xl relative my-auto text-[#111C15] dark:text-[#ECF2EC]">
         
         {/* Modal Top Bar */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="flex items-center justify-between pb-3 border-b border-[#E1E6DE] dark:border-[#1E3022]">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
+              <span className="text-[11px] font-bold text-[#2D6A4F] dark:text-[#52B788] uppercase tracking-wider">
                 Step {step} of 4
               </span>
-              <span className="text-xs text-slate-500">•</span>
-              <span className="text-xs text-slate-400">Mobile Onboarding</span>
+              <span className="text-xs text-[#8FA394]">•</span>
+              <span className="text-xs text-[#526356] dark:text-[#8FA394]">{t.onboardingSubtitle}</span>
             </div>
-            <h2 className="text-lg sm:text-xl font-bold text-white font-['Outfit'] flex items-center gap-2">
+            <h2 className="text-lg sm:text-xl font-bold text-[#111C15] dark:text-[#ECF2EC] font-['Outfit'] flex items-center gap-2">
               {step === 1 && (
                 <>
-                  <MapPin className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <MapPin className="w-5 h-5 text-[#2D6A4F] dark:text-[#52B788] shrink-0" />
                   <span>{t.locationStep}</span>
                 </>
               )}
               {step === 2 && (
                 <>
-                  <Layers className="w-5 h-5 text-amber-400 shrink-0" />
+                  <Layers className="w-5 h-5 text-[#D97706] dark:text-[#FBBF24] shrink-0" />
                   <span>{t.soilStep}</span>
                 </>
               )}
               {step === 3 && (
                 <>
-                  <Sprout className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <Sprout className="w-5 h-5 text-[#2D6A4F] dark:text-[#52B788] shrink-0" />
                   <span>{t.cropStep}</span>
                 </>
               )}
               {step === 4 && (
                 <>
-                  <Droplets className="w-5 h-5 text-cyan-400 shrink-0" />
+                  <Droplets className="w-5 h-5 text-[#1D4E89] dark:text-[#64B5F6] shrink-0" />
                   <span>{t.reserveStep}</span>
                 </>
               )}
@@ -374,7 +374,7 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
           <button 
             type="button"
             onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-2 rounded-lg text-[#526356] dark:text-[#8FA394] hover:text-[#111C15] dark:hover:text-white hover:bg-[#EAEFE8] dark:hover:bg-[#152319] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -386,7 +386,7 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
             <div 
               key={s} 
               className={`h-1.5 rounded-full transition-all ${
-                s <= step ? 'bg-cyan-400 shadow-sm shadow-cyan-400/50' : 'bg-slate-800'
+                s <= step ? 'bg-[#2D6A4F] dark:bg-[#52B788]' : 'bg-[#E1E6DE] dark:border-[#1E3022]'
               }`} 
             />
           ))}
@@ -395,23 +395,23 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
         {/* STEP 1: FIELD LOCATION */}
         {step === 1 && (
           <div className="space-y-4">
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-[#526356] dark:text-[#8FA394]">
               FieldGuard pulls live meteorological and rainfall forecasts from Open-Meteo for your coordinates.
             </p>
 
             {/* Search as you type with live autocomplete popover */}
             <div className="space-y-1.5 relative">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
-                <span>Search Village, Pincode or Tehsil</span>
+              <label className="text-xs font-semibold text-[#526356] dark:text-[#8FA394] uppercase tracking-wider flex items-center justify-between">
+                <span>{t.searchLocationPrompt}</span>
                 {isLoadingSuggestions && (
-                  <span className="text-[10px] text-cyan-400 font-mono flex items-center gap-1 font-normal">
-                    <Loader2 className="w-3 h-3 animate-spin" /> Searching India...
+                  <span className="text-[10px] text-[#2D6A4F] dark:text-[#52B788] font-mono flex items-center gap-1 font-normal">
+                    <Loader2 className="w-3 h-3 animate-spin" /> {t.locatingGPS}
                   </span>
                 )}
               </label>
 
               <div className="relative flex items-center">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
+                <Search className="w-4 h-4 text-[#8FA394] absolute left-3.5 pointer-events-none" />
                 <input
                   type="text"
                   value={queryLocation}
@@ -421,7 +421,7 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                     if (suggestions.length > 0) setIsDropdownOpen(true);
                   }}
                   placeholder="e.g. Bardhaman, 713101, Nashik, or Galsi..."
-                  className="w-full pl-10 pr-20 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-500 placeholder:text-slate-500"
+                  className="w-full pl-10 pr-20 py-2.5 rounded-xl bg-white dark:bg-[#121E15] border border-[#D5DFD3] dark:border-[#223828] text-sm text-[#111C15] dark:text-[#ECF2EC] focus:outline-none focus:border-[#2D6A4F] dark:focus:border-[#52B788] placeholder:text-[#8FA394]"
                 />
 
                 <div className="absolute right-2 flex items-center gap-1">
@@ -433,7 +433,7 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                         setSuggestions([]);
                         setIsDropdownOpen(false);
                       }}
-                      className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                      className="p-1 text-[#8FA394] hover:text-[#111C15] dark:hover:text-white transition-colors cursor-pointer"
                       title="Clear input"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -444,9 +444,9 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                     type="button"
                     onClick={handleSearchLocation}
                     disabled={isSearchingLocation}
-                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-white transition-colors cursor-pointer disabled:opacity-50"
+                    className="px-2.5 py-1 rounded-lg bg-[#2D6A4F] hover:bg-[#1B4332] text-[11px] font-semibold text-white transition-colors cursor-pointer disabled:opacity-50"
                   >
-                    {isSearchingLocation ? 'Locating...' : 'Find'}
+                    {isSearchingLocation ? '...' : t.findBtn}
                   </button>
                 </div>
               </div>
@@ -455,11 +455,11 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
               {isDropdownOpen && suggestions.length > 0 && (
                 <div 
                   ref={dropdownRef}
-                  className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-xl bg-slate-900/95 backdrop-blur-xl border border-slate-700 shadow-2xl overflow-hidden divide-y divide-slate-800/80 animate-in fade-in slide-in-from-top-1"
+                  className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-xl bg-white/95 dark:bg-[#121E15]/95 backdrop-blur-xl border border-[#D5DFD3] dark:border-[#223828] shadow-2xl overflow-hidden divide-y divide-[#E1E6DE] dark:divide-[#1E3022] animate-in fade-in slide-in-from-top-1"
                 >
-                  <div className="px-3 py-1.5 bg-slate-800/50 text-[10px] font-semibold text-slate-400 flex items-center justify-between uppercase tracking-wider">
-                    <span>Indian Location Suggestions</span>
-                    <span className="font-mono text-[9px] text-slate-500">Tap or Press Enter</span>
+                  <div className="px-3 py-1.5 bg-[#F0F4EE] dark:bg-[#1A2A1E] text-[10px] font-semibold text-[#526356] dark:text-[#8FA394] flex items-center justify-between uppercase tracking-wider">
+                    <span>{t.indianSuggestions}</span>
+                    <span className="font-mono text-[9px] text-[#8FA394]">Tap or Press Enter</span>
                   </div>
 
                   <div className="max-h-60 overflow-y-auto">
@@ -470,35 +470,35 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                         onClick={() => handleSelectSuggestion(item)}
                         className={`w-full min-h-[44px] px-3.5 py-2.5 text-left flex items-center justify-between gap-2.5 transition-colors cursor-pointer ${
                           selectedIndex === idx
-                            ? 'bg-cyan-600/20 text-white'
-                            : 'hover:bg-slate-800/60 text-slate-200'
+                            ? 'bg-[#2D6A4F]/10 dark:bg-[#52B788]/20 text-[#111C15] dark:text-white'
+                            : 'hover:bg-[#F0F4EE] dark:hover:bg-[#1A2A1E] text-[#526356] dark:text-[#C5D3C8]'
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="p-1.5 rounded-lg bg-slate-800 text-emerald-400 shrink-0">
+                          <div className="p-1.5 rounded-lg bg-[#EAEFE8] dark:bg-[#1A2A1E] text-[#2D6A4F] dark:text-[#52B788] shrink-0">
                             {item.type === 'pincode' ? (
-                              <Hash className="w-3.5 h-3.5 text-amber-400" />
+                              <Hash className="w-3.5 h-3.5 text-[#D97706]" />
                             ) : item.type === 'district' ? (
-                              <Building2 className="w-3.5 h-3.5 text-cyan-400" />
+                              <Building2 className="w-3.5 h-3.5 text-[#1D4E89]" />
                             ) : (
-                              <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                              <MapPin className="w-3.5 h-3.5 text-[#2D6A4F]" />
                             )}
                           </div>
                           <div className="min-w-0">
-                            <div className="text-xs font-bold text-white truncate">
+                            <div className="text-xs font-bold text-[#111C15] dark:text-[#ECF2EC] truncate">
                               {item.name}
                             </div>
-                            <div className="text-[11px] text-slate-400 truncate">
+                            <div className="text-[11px] text-[#526356] dark:text-[#8FA394] truncate">
                               {[item.district, item.state].filter(Boolean).join(', ')}
                             </div>
                           </div>
                         </div>
 
                         <div className="text-right shrink-0">
-                          <span className="text-[10px] font-mono text-cyan-400 font-semibold block">
+                          <span className="text-[10px] font-mono text-[#2D6A4F] dark:text-[#52B788] font-semibold block">
                             {item.latitude.toFixed(2)}°, {item.longitude.toFixed(2)}°
                           </span>
-                          <span className="text-[9px] uppercase font-bold text-slate-500">
+                          <span className="text-[9px] uppercase font-bold text-[#8FA394]">
                             {item.type}
                           </span>
                         </div>
@@ -510,36 +510,36 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
             </div>
 
             <div className="flex items-center gap-2 pt-1">
-              <div className="flex-1 h-px bg-slate-800" />
-              <span className="text-[11px] text-slate-500 uppercase font-semibold">OR</span>
-              <div className="flex-1 h-px bg-slate-800" />
+              <div className="flex-1 h-px bg-[#E1E6DE] dark:bg-[#1E3022]" />
+              <span className="text-[11px] text-[#8FA394] uppercase font-semibold">OR</span>
+              <div className="flex-1 h-px bg-[#E1E6DE] dark:bg-[#1E3022]" />
             </div>
 
-            {/* 1-Tap Browser GPS Button (Minimum 48px Touch Target) */}
+            {/* 1-Tap Browser GPS Button */}
             <button
               type="button"
               onClick={handleGPSDetect}
               disabled={isLocatingGPS}
-              className="w-full min-h-[48px] py-3 px-4 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/40 text-cyan-200 text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
+              className="w-full min-h-[48px] py-3 px-4 rounded-xl bg-[#2D6A4F]/10 hover:bg-[#2D6A4F]/20 dark:bg-[#52B788]/15 dark:hover:bg-[#52B788]/25 border border-[#2D6A4F]/30 dark:border-[#52B788]/30 text-[#1B4332] dark:text-[#74C69D] text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
               <Compass className={`w-4 h-4 ${isLocatingGPS ? 'animate-spin' : ''}`} />
               <span>{isLocatingGPS ? t.gpsLocating : t.gpsButton}</span>
             </button>
 
             {locationFeedback && (
-              <div className="p-2.5 rounded-lg bg-cyan-950/40 border border-cyan-500/30 text-xs text-cyan-300">
+              <div className="p-2.5 rounded-lg bg-[#EAEFE8] dark:bg-[#152319] border border-[#D5DFD3] dark:border-[#223828] text-xs text-[#2D6A4F] dark:text-[#52B788]">
                 {locationFeedback}
               </div>
             )}
 
-            {/* Live Interactive Map Preview (Draggable Pin & Satellite/Street View) */}
+            {/* Live Interactive Map Preview */}
             <div className="space-y-1.5 pt-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-slate-300 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="font-semibold text-[#526356] dark:text-[#8FA394] flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-[#2D6A4F] dark:text-[#52B788]" />
                   <span>Live Parcel Map (Drag Pin or Tap to Set)</span>
                 </span>
-                <span className="text-[11px] font-mono text-cyan-300">
+                <span className="text-[11px] font-mono text-[#2D6A4F] dark:text-[#52B788]">
                   {lat.toFixed(4)}°, {lon.toFixed(4)}°
                 </span>
               </div>
@@ -553,15 +553,15 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
               />
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs space-y-1">
+            <div className="p-3 rounded-xl bg-white dark:bg-[#121E15] border border-[#E1E6DE] dark:border-[#1E3022] text-xs space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-slate-400">Selected Coordinates:</span>
-                <span className="font-mono text-cyan-300 font-bold">
+                <span className="text-[#526356] dark:text-[#8FA394]">Selected Coordinates:</span>
+                <span className="font-mono text-[#2D6A4F] dark:text-[#52B788] font-bold">
                   {lat.toFixed(4)}° N, {lon.toFixed(4)}° E
                 </span>
               </div>
-              <div className="text-[11px] text-slate-400">
-                Region: <span className="text-white">{district || 'Local Cluster'}</span>, State: <span className="text-white">{stateName || 'India'}</span>
+              <div className="text-[11px] text-[#526356] dark:text-[#8FA394]">
+                Region: <span className="text-[#111C15] dark:text-[#ECF2EC] font-semibold">{district || 'Local Cluster'}</span>, State: <span className="text-[#111C15] dark:text-[#ECF2EC] font-semibold">{stateName || 'India'}</span>
               </div>
             </div>
           </div>
@@ -570,8 +570,8 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
         {/* STEP 2: SOIL TEXTURE SELECTION */}
         {step === 2 && (
           <div className="space-y-4">
-            <p className="text-xs text-slate-400">
-              Select your soil category. FieldGuard uses transparent Available Water Capacity (AWC) values without requiring expensive IoT moisture sensors.
+            <p className="text-xs text-[#526356] dark:text-[#8FA394]">
+              {t.stepSoilSubtitle}
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -581,21 +581,21 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                 onClick={() => setSoilTexture('sandy')}
                 className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[110px] ${
                   soilTexture === 'sandy'
-                    ? 'bg-amber-950/30 border-amber-500 ring-2 ring-amber-500/30 text-amber-200'
-                    : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                    ? 'bg-[#D97706]/10 border-[#D97706] ring-2 ring-[#D97706]/30 text-[#92400E] dark:text-[#FCD34D]'
+                    : 'bg-white dark:bg-[#121E15] border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394] hover:border-[#D97706]/40'
                 }`}
               >
                 <div>
-                  <div className="text-base font-bold flex items-center justify-between">
+                  <div className="text-base font-bold flex items-center justify-between text-[#111C15] dark:text-[#ECF2EC]">
                     <span className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-600 inline-block shadow-sm" />
-                      <span>Sandy Soil</span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#D97706] inline-block shadow-sm" />
+                      <span>{t.sandyLoamName}</span>
                     </span>
-                    {soilTexture === 'sandy' && <Check className="w-4 h-4 text-amber-400" />}
+                    {soilTexture === 'sandy' && <Check className="w-4 h-4 text-[#D97706]" />}
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-1">Gritty, drains quickly</div>
+                  <div className="text-[11px] text-[#526356] dark:text-[#8FA394] mt-1">{t.sandyLoamDesc}</div>
                 </div>
-                <div className="text-[11px] font-mono text-amber-400/90 font-semibold mt-2">
+                <div className="text-[11px] font-mono text-[#D97706] font-semibold mt-2">
                   AWC: 90 mm/m
                 </div>
               </button>
@@ -606,21 +606,21 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                 onClick={() => setSoilTexture('loamy')}
                 className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[110px] ${
                   soilTexture === 'loamy'
-                    ? 'bg-emerald-950/30 border-emerald-500 ring-2 ring-emerald-500/30 text-emerald-200'
-                    : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                    ? 'bg-[#2D6A4F]/10 border-[#2D6A4F] ring-2 ring-[#2D6A4F]/30 text-[#1B4332] dark:text-[#74C69D]'
+                    : 'bg-white dark:bg-[#121E15] border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394] hover:border-[#2D6A4F]/40'
                 }`}
               >
                 <div>
-                  <div className="text-base font-bold flex items-center justify-between">
+                  <div className="text-base font-bold flex items-center justify-between text-[#111C15] dark:text-[#ECF2EC]">
                     <span className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-800 inline-block shadow-sm" />
-                      <span>Loamy Soil</span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#2D6A4F] inline-block shadow-sm" />
+                      <span>{t.alluvialName}</span>
                     </span>
-                    {soilTexture === 'loamy' && <Check className="w-4 h-4 text-emerald-400" />}
+                    {soilTexture === 'loamy' && <Check className="w-4 h-4 text-[#2D6A4F]" />}
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-1">Balanced retention, crumbly</div>
+                  <div className="text-[11px] text-[#526356] dark:text-[#8FA394] mt-1">{t.alluvialDesc}</div>
                 </div>
-                <div className="text-[11px] font-mono text-emerald-400/90 font-semibold mt-2">
+                <div className="text-[11px] font-mono text-[#2D6A4F] dark:text-[#52B788] font-semibold mt-2">
                   AWC: 150 mm/m (Ideal)
                 </div>
               </button>
@@ -631,28 +631,28 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                 onClick={() => setSoilTexture('clay_black')}
                 className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[110px] ${
                   soilTexture === 'clay_black'
-                    ? 'bg-cyan-950/30 border-cyan-500 ring-2 ring-cyan-500/30 text-cyan-200'
-                    : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                    ? 'bg-[#1D4E89]/10 border-[#1D4E89] ring-2 ring-[#1D4E89]/30 text-[#0C2D57] dark:text-[#90CAF9]'
+                    : 'bg-white dark:bg-[#121E15] border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394] hover:border-[#1D4E89]/40'
                 }`}
               >
                 <div>
-                  <div className="text-base font-bold flex items-center justify-between">
+                  <div className="text-base font-bold flex items-center justify-between text-[#111C15] dark:text-[#ECF2EC]">
                     <span className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-600 inline-block shadow-sm" />
-                      <span>Clay / Black</span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#1D4E89] inline-block shadow-sm" />
+                      <span>{t.blackClayName}</span>
                     </span>
-                    {soilTexture === 'clay_black' && <Check className="w-4 h-4 text-cyan-400" />}
+                    {soilTexture === 'clay_black' && <Check className="w-4 h-4 text-[#1D4E89]" />}
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-1">Dense, high water hold</div>
+                  <div className="text-[11px] text-[#526356] dark:text-[#8FA394] mt-1">{t.blackClayDesc}</div>
                 </div>
-                <div className="text-[11px] font-mono text-cyan-400/90 font-semibold mt-2">
+                <div className="text-[11px] font-mono text-[#1D4E89] dark:text-[#64B5F6] font-semibold mt-2">
                   AWC: 180 mm/m
                 </div>
               </button>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400 flex items-start gap-2">
-              <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+            <div className="p-3 rounded-xl bg-white dark:bg-[#121E15] border border-[#E1E6DE] dark:border-[#1E3022] text-xs text-[#526356] dark:text-[#8FA394] flex items-start gap-2">
+              <Info className="w-4 h-4 text-[#2D6A4F] dark:text-[#52B788] shrink-0 mt-0.5" />
               <span>
                 <strong>AWC (Available Water Capacity)</strong> indicates how many millimetres of water 1 metre of this soil can store before draining.
               </span>
@@ -665,22 +665,31 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
           <div className="space-y-4">
             {/* Crop Selector */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-[#526356] dark:text-[#8FA394] uppercase tracking-wider">
                 Select Crop
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {['Tomato', 'Wheat', 'Paddy', 'Potato', 'Mustard', 'Spinach', 'Onion', 'Chilli'].map((c) => (
+                {[
+                  { id: 'Spinach', label: t.cropSpinach },
+                  { id: 'Wheat', label: t.cropWheat },
+                  { id: 'Paddy', label: t.cropPaddy },
+                  { id: 'Potato', label: t.cropPotato },
+                  { id: 'Tomato', label: 'Tomato' },
+                  { id: 'Mustard', label: 'Mustard' },
+                  { id: 'Onion', label: 'Onion' },
+                  { id: 'Chilli', label: 'Chilli' },
+                ].map((c) => (
                   <button
-                    key={c}
+                    key={c.id}
                     type="button"
-                    onClick={() => setCropName(c)}
-                    className={`py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
-                      cropName === c
-                        ? 'bg-emerald-600/30 border-emerald-500 text-emerald-200'
-                        : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                    onClick={() => setCropName(c.id)}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                      cropName === c.id
+                        ? 'bg-[#2D6A4F] text-white border-[#2D6A4F]'
+                        : 'bg-white dark:bg-[#121E15] border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394] hover:border-[#2D6A4F]/40'
                     }`}
                   >
-                    {c}
+                    {c.label}
                   </button>
                 ))}
               </div>
@@ -688,13 +697,13 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
 
             {/* Growth Stage */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-[#526356] dark:text-[#8FA394] uppercase tracking-wider">
                 Crop Growth Stage
               </label>
               <select
                 value={growthStage}
                 onChange={(e) => setGrowthStage(e.target.value as any)}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-500"
+                className="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-[#121E15] border border-[#D5DFD3] dark:border-[#223828] text-sm text-[#111C15] dark:text-[#ECF2EC] focus:outline-none focus:border-[#2D6A4F]"
               >
                 <option value="initial">Initial Stage (Germination / Seedling)</option>
                 <option value="development">Vegetative Development</option>
@@ -705,7 +714,7 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
 
             {/* Land Area and Regional Unit Converter */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-[#526356] dark:text-[#8FA394] uppercase tracking-wider">
                 Field Size & Local Unit
               </label>
               <div className="flex gap-2">
@@ -715,12 +724,12 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                   min="0.1"
                   value={areaValue}
                   onChange={(e) => setAreaValue(parseFloat(e.target.value) || 0.1)}
-                  className="w-1/2 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-500"
+                  className="w-1/2 px-3 py-2 rounded-xl bg-white dark:bg-[#121E15] border border-[#D5DFD3] dark:border-[#223828] text-sm text-[#111C15] dark:text-[#ECF2EC] focus:outline-none focus:border-[#2D6A4F]"
                 />
                 <select
                   value={areaUnit}
                   onChange={(e) => setAreaUnit(e.target.value as AreaUnit)}
-                  className="w-1/2 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-500"
+                  className="w-1/2 px-3 py-2 rounded-xl bg-white dark:bg-[#121E15] border border-[#D5DFD3] dark:border-[#223828] text-sm text-[#111C15] dark:text-[#ECF2EC] focus:outline-none focus:border-[#2D6A4F]"
                 >
                   <option value="bigha">Bigha (~1,338 m² East)</option>
                   <option value="acre">Acre (~4,047 m²)</option>
@@ -730,24 +739,24 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                   <option value="sq_meters">Square Metres (m²)</option>
                 </select>
               </div>
-              <div className="text-[11px] text-cyan-300 font-mono">
+              <div className="text-[11px] text-[#2D6A4F] dark:text-[#52B788] font-mono">
                 Normalized Area: <strong>{calculatedAreaM2.toLocaleString()} m²</strong>
               </div>
             </div>
 
             {/* Irrigation Method Selection */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-[#526356] dark:text-[#8FA394] uppercase tracking-wider">
                 {t.irrigationMethod}
               </label>
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setIrrigationMethod('drip')}
-                  className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer border text-center ${
+                  className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center ${
                     irrigationMethod === 'drip'
-                      ? 'bg-cyan-600/30 border-cyan-500 text-cyan-200'
-                      : 'bg-slate-900/60 border-slate-800 text-slate-400'
+                      ? 'bg-[#2D6A4F]/15 border-[#2D6A4F] text-[#1B4332] dark:text-[#74C69D]'
+                      : 'bg-white dark:bg-[#121E15] border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394]'
                   }`}
                 >
                   <div>{t.drip}</div>
@@ -755,10 +764,10 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                 <button
                   type="button"
                   onClick={() => setIrrigationMethod('sprinkler')}
-                  className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer border text-center ${
+                  className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center ${
                     irrigationMethod === 'sprinkler'
-                      ? 'bg-blue-600/30 border-blue-500 text-blue-200'
-                      : 'bg-slate-900/60 border-slate-800 text-slate-400'
+                      ? 'bg-[#1D4E89]/15 border-[#1D4E89] text-[#0C2D57] dark:text-[#90CAF9]'
+                      : 'bg-white dark:bg-[#121E15] border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394]'
                   }`}
                 >
                   <div>{t.sprinkler}</div>
@@ -766,10 +775,10 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                 <button
                   type="button"
                   onClick={() => setIrrigationMethod('surface_flood')}
-                  className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer border text-center ${
+                  className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center ${
                     irrigationMethod === 'surface_flood'
-                      ? 'bg-amber-600/30 border-amber-500 text-amber-200'
-                      : 'bg-slate-900/60 border-slate-800 text-slate-400'
+                      ? 'bg-[#D97706]/15 border-[#D97706] text-[#92400E] dark:text-[#FCD34D]'
+                      : 'bg-white dark:bg-[#121E15] border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394]'
                   }`}
                 >
                   <div>{t.flood}</div>
@@ -782,8 +791,8 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
         {/* STEP 4: WATER RESERVE & STORAGE */}
         {step === 4 && (
           <div className="space-y-4">
-            <p className="text-xs text-slate-400">
-              FieldGuard checks your usable water storage to make sure recommendations are practically achievable.
+            <p className="text-xs text-[#526356] dark:text-[#8FA394]">
+              {t.stepReserveSubtitle}
             </p>
 
             {/* Storage Type Tabs */}
@@ -793,13 +802,13 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                 onClick={() => setStorageType('sintex_tank')}
                 className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                   storageType === 'sintex_tank'
-                    ? 'bg-cyan-600/30 border-cyan-500 text-cyan-200'
-                    : 'bg-slate-900/60 border-slate-800 text-slate-400'
+                    ? 'bg-[#1D4E89]/15 border-[#1D4E89] text-[#0C2D57] dark:text-[#90CAF9]'
+                    : 'bg-white dark:bg-[#121E15] border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394]'
                 }`}
               >
                 <span className="flex items-center justify-center gap-1.5">
                   <Cylinder className="w-4 h-4 shrink-0" />
-                  <span>Sintex / Standard Tank</span>
+                  <span>{t.storageBorewell}</span>
                 </span>
               </button>
               <button
@@ -807,24 +816,24 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                 onClick={() => setStorageType('custom_sump')}
                 className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                   storageType === 'custom_sump'
-                    ? 'bg-cyan-600/30 border-cyan-500 text-cyan-200'
-                    : 'bg-slate-900/60 border-slate-800 text-slate-400'
+                    ? 'bg-[#2D6A4F]/15 border-[#2D6A4F] text-[#1B4332] dark:text-[#74C69D]'
+                    : 'bg-white dark:bg-[#121E15] border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394]'
                 }`}
               >
                 <span className="flex items-center justify-center gap-1.5">
                   <Waves className="w-4 h-4 shrink-0" />
-                  <span>Farm Pond / Custom Sump</span>
+                  <span>{t.storagePond}</span>
                 </span>
               </button>
             </div>
 
             {/* Tier 1: Standard Tank Slider */}
             {storageType === 'sintex_tank' && (
-              <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+              <div className="p-3.5 rounded-xl bg-white dark:bg-[#121E15] border border-[#E1E6DE] dark:border-[#1E3022] space-y-3">
                 <div className="space-y-1">
-                  <div className="flex justify-between text-xs text-slate-300">
+                  <div className="flex justify-between text-xs text-[#526356] dark:text-[#8FA394]">
                     <span>Tank Capacity</span>
-                    <span className="font-bold text-cyan-400 font-mono">{tankCapacity.toLocaleString()} Litres</span>
+                    <span className="font-bold text-[#1D4E89] dark:text-[#64B5F6] font-mono">{tankCapacity.toLocaleString()} Litres</span>
                   </div>
                   <div className="grid grid-cols-4 gap-1.5 pt-1">
                     {[1000, 2000, 5000, 10000].map((cap) => (
@@ -834,8 +843,8 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                         onClick={() => setTankCapacity(cap)}
                         className={`py-1.5 rounded-lg text-xs font-semibold border cursor-pointer ${
                           tankCapacity === cap
-                            ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
-                            : 'bg-slate-800/60 border-slate-700 text-slate-400'
+                            ? 'bg-[#1D4E89] text-white border-[#1D4E89]'
+                            : 'bg-[#F0F4EE] dark:bg-[#1A2A1E] border-[#D5DFD3] dark:border-[#223828] text-[#526356] dark:text-[#8FA394]'
                         }`}
                       >
                         {cap / 1000}k Litres
@@ -845,9 +854,9 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                 </div>
 
                 <div className="space-y-1 pt-1">
-                  <div className="flex justify-between text-xs text-slate-300">
+                  <div className="flex justify-between text-xs text-[#526356] dark:text-[#8FA394]">
                     <span>Visual Fill Level Gauge</span>
-                    <span className="font-bold text-emerald-400 font-mono">{fillPercent}% Full</span>
+                    <span className="font-bold text-[#2D6A4F] dark:text-[#52B788] font-mono">{fillPercent}% Full</span>
                   </div>
                   <input
                     type="range"
@@ -856,11 +865,11 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                     step="5"
                     value={fillPercent}
                     onChange={(e) => setFillPercent(parseInt(e.target.value))}
-                    className="w-full accent-emerald-500"
+                    className="w-full accent-[#2D6A4F]"
                   />
-                  <div className="text-[11px] text-slate-400 flex justify-between">
+                  <div className="text-[11px] text-[#526356] dark:text-[#8FA394] flex justify-between">
                     <span>Low (10%)</span>
-                    <span>Available: <strong>{Math.round((tankCapacity * fillPercent) / 100).toLocaleString()} L</strong></span>
+                    <span>Available: <strong className="text-[#111C15] dark:text-[#ECF2EC]">{Math.round((tankCapacity * fillPercent) / 100).toLocaleString()} L</strong></span>
                     <span>Full (100%)</span>
                   </div>
                 </div>
@@ -869,46 +878,46 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
 
             {/* Tier 2: Custom Sump Geometric Calculator */}
             {storageType === 'custom_sump' && (
-              <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
-                <div className="text-xs font-semibold text-cyan-400 flex items-center gap-1.5">
+              <div className="p-3.5 rounded-xl bg-white dark:bg-[#121E15] border border-[#E1E6DE] dark:border-[#1E3022] space-y-3">
+                <div className="text-xs font-semibold text-[#2D6A4F] dark:text-[#52B788] flex items-center gap-1.5">
                   <Calculator className="w-3.5 h-3.5" />
                   <span>Geometric Volume Calculator (L × W × D)</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="text-[10px] text-slate-400 uppercase">Length (m)</label>
+                    <label className="text-[10px] text-[#526356] dark:text-[#8FA394] uppercase">Length (m)</label>
                     <input
                       type="number"
                       step="0.5"
                       value={sumpLength}
                       onChange={(e) => setSumpLength(parseFloat(e.target.value) || 1)}
-                      className="w-full px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                      className="w-full px-2 py-1.5 rounded-lg bg-white dark:bg-[#121E15] border border-[#D5DFD3] dark:border-[#223828] text-xs text-[#111C15] dark:text-[#ECF2EC]"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-400 uppercase">Width (m)</label>
+                    <label className="text-[10px] text-[#526356] dark:text-[#8FA394] uppercase">Width (m)</label>
                     <input
                       type="number"
                       step="0.5"
                       value={sumpWidth}
                       onChange={(e) => setSumpWidth(parseFloat(e.target.value) || 1)}
-                      className="w-full px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                      className="w-full px-2 py-1.5 rounded-lg bg-white dark:bg-[#121E15] border border-[#D5DFD3] dark:border-[#223828] text-xs text-[#111C15] dark:text-[#ECF2EC]"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-400 uppercase">Depth (m)</label>
+                    <label className="text-[10px] text-[#526356] dark:text-[#8FA394] uppercase">Depth (m)</label>
                     <input
                       type="number"
                       step="0.2"
                       value={sumpDepth}
                       onChange={(e) => setSumpDepth(parseFloat(e.target.value) || 0.5)}
-                      className="w-full px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                      className="w-full px-2 py-1.5 rounded-lg bg-white dark:bg-[#121E15] border border-[#D5DFD3] dark:border-[#223828] text-xs text-[#111C15] dark:text-[#ECF2EC]"
                     />
                   </div>
                 </div>
-                <div className="p-2 rounded-lg bg-slate-950 border border-slate-800 text-xs flex justify-between items-center font-mono">
-                  <span className="text-slate-400">Calculated Capacity:</span>
-                  <span className="text-cyan-300 font-bold">
+                <div className="p-2 rounded-lg bg-[#EAEFE8] dark:bg-[#152319] border border-[#D5DFD3] dark:border-[#223828] text-xs flex justify-between items-center font-mono">
+                  <span className="text-[#526356] dark:text-[#8FA394]">Calculated Capacity:</span>
+                  <span className="text-[#2D6A4F] dark:text-[#52B788] font-bold">
                     {calculateSumpVolumeLiters(sumpLength, sumpWidth, sumpDepth).toLocaleString()} Litres
                   </span>
                 </div>
@@ -917,9 +926,9 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
 
             {/* Pump Power */}
             <div className="space-y-1">
-              <div className="flex justify-between text-xs text-slate-300">
+              <div className="flex justify-between text-xs text-[#526356] dark:text-[#8FA394]">
                 <span>Tube-well / Pump Power</span>
-                <span className="font-bold text-white font-mono">{pumpHp} HP</span>
+                <span className="font-bold text-[#111C15] dark:text-[#ECF2EC] font-mono">{pumpHp} HP</span>
               </div>
               <div className="grid grid-cols-4 gap-1.5">
                 {[2, 3, 5, 7.5].map((hp) => (
@@ -929,8 +938,8 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                     onClick={() => setPumpHp(hp)}
                     className={`py-1.5 rounded-lg text-xs font-semibold border cursor-pointer ${
                       pumpHp === hp
-                        ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
-                        : 'bg-slate-800/60 border-slate-700 text-slate-400'
+                        ? 'bg-[#2D6A4F] text-white border-[#2D6A4F]'
+                        : 'bg-white dark:bg-[#121E15] border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394]'
                     }`}
                   >
                     {hp} HP
@@ -941,13 +950,13 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
           </div>
         )}
 
-        {/* Bottom Thumb Navigation Bar (Min 48px Touch Targets) */}
-        <div className="flex items-center justify-between gap-3 pt-5 mt-4 border-t border-slate-800">
+        {/* Bottom Thumb Navigation Bar */}
+        <div className="flex items-center justify-between gap-3 pt-5 mt-4 border-t border-[#E1E6DE] dark:border-[#1E3022]">
           {step > 1 ? (
             <button
               type="button"
               onClick={() => setStep((s) => (s - 1) as any)}
-              className="min-h-[48px] px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-semibold text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="min-h-[48px] px-4 py-2.5 rounded-xl bg-[#EAEFE8] dark:bg-[#152319] hover:bg-[#D5DFD3] dark:hover:bg-[#1F3324] border border-[#D5DFD3] dark:border-[#223828] text-sm font-semibold text-[#111C15] dark:text-[#ECF2EC] flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>{t.prevStep}</span>
@@ -960,7 +969,7 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
             <button
               type="button"
               onClick={() => setStep((s) => (s + 1) as any)}
-              className="min-h-[48px] px-6 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-sm font-bold text-white flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-cyan-600/30"
+              className="min-h-[48px] px-6 py-2.5 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-sm font-bold text-white flex items-center gap-2 transition-all cursor-pointer shadow-sm"
             >
               <span>{t.nextStep}</span>
               <ArrowRight className="w-4 h-4" />
@@ -969,7 +978,7 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
             <button
               type="button"
               onClick={handleComplete}
-              className="min-h-[48px] px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-sm font-bold text-white flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-600/30"
+              className="min-h-[48px] px-6 py-2.5 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-sm font-bold text-white flex items-center gap-2 transition-all cursor-pointer shadow-sm"
             >
               <Check className="w-4 h-4" />
               <span>{t.finishSetup}</span>

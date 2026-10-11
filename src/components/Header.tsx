@@ -11,7 +11,8 @@ import {
   Sun,
   Moon,
   LayoutDashboard,
-  Home
+  Home,
+  Sprout
 } from 'lucide-react';
 import { useLanguage } from './common/LanguageContext';
 import { useTheme } from './common/ThemeContext';
@@ -42,7 +43,7 @@ export function Header({
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className="w-full border-b border-slate-200 dark:border-slate-800 bg-white/85 dark:bg-slate-950/85 backdrop-blur-md sticky top-0 z-30 transition-colors">
+    <header className="w-full border-b border-[#E1E5DC] dark:border-[#1E2F24] bg-white/95 dark:bg-[#0B130E]/95 backdrop-blur-md sticky top-0 z-30 transition-colors">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3">
         <div className="flex items-center justify-between gap-2.5 sm:gap-4">
           
@@ -53,37 +54,37 @@ export function Header({
               onClick={() => onViewChange('landing')}
               className="flex items-center gap-2.5 text-left cursor-pointer group"
             >
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 shrink-0">
-                <Droplets className="h-5 w-5 text-white" />
+              <div className="h-9 w-9 rounded-xl bg-[#2D6A4F] text-white flex items-center justify-center shadow-sm shrink-0">
+                <Sprout className="h-5 w-5" />
               </div>
               <div className="hidden xs:block">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white font-['Outfit'] group-hover:text-emerald-500 transition-colors">
+                  <span className="text-lg sm:text-xl font-bold tracking-tight text-[#111C15] dark:text-[#ECF2EC] font-['Outfit'] group-hover:text-[#2D6A4F] dark:group-hover:text-[#52B788] transition-colors">
                     {t.appName}
                   </span>
-                  <span className="hidden md:inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                  <span className="hidden md:inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-[#2D6A4F]/10 text-[#2D6A4F] dark:text-[#52B788] border border-[#2D6A4F]/25">
                     AI Telemetry
                   </span>
                 </div>
-                <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[150px] sm:max-w-none">
+                <p className="text-[10px] sm:text-[11px] text-[#5A6B60] dark:text-[#8E9F93] truncate max-w-[150px] sm:max-w-none">
                   {t.tagline}
                 </p>
               </div>
             </button>
 
             {/* Navigation View Switcher (Landing vs Field Dashboard) */}
-            <nav className="flex items-center bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs">
+            <nav className="flex items-center bg-stone-100 dark:bg-[#121D16] p-0.5 rounded-lg border border-[#E1E5DC] dark:border-[#1E2F24] text-xs">
               <button
                 type="button"
                 onClick={() => onViewChange('landing')}
                 className={`min-h-[32px] px-2.5 sm:px-3 py-1 rounded-md font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                   activeView === 'landing'
-                    ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-white dark:bg-[#1E2F24] text-[#2D6A4F] dark:text-[#52B788] shadow-xs'
+                    : 'text-[#5A6B60] dark:text-[#8E9F93] hover:text-[#111C15] dark:hover:text-[#ECF2EC]'
                 }`}
               >
                 <Home className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Overview</span>
+                <span className="hidden sm:inline">{t.overview}</span>
               </button>
 
               <button
@@ -91,12 +92,12 @@ export function Header({
                 onClick={() => onViewChange('dashboard')}
                 className={`min-h-[32px] px-2.5 sm:px-3 py-1 rounded-md font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                   activeView === 'dashboard'
-                    ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-white dark:bg-[#1E2F24] text-[#2D6A4F] dark:text-[#52B788] shadow-xs'
+                    : 'text-[#5A6B60] dark:text-[#8E9F93] hover:text-[#111C15] dark:hover:text-[#ECF2EC]'
                 }`}
               >
                 <LayoutDashboard className="w-3.5 h-3.5" />
-                <span>Field Advisor</span>
+                <span>{t.fieldAdvisor}</span>
               </button>
             </nav>
           </div>
@@ -108,20 +109,20 @@ export function Header({
             <button
               type="button"
               onClick={toggleTheme}
-              className="min-h-[36px] w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center transition-colors cursor-pointer"
+              className="min-h-[36px] w-9 h-9 rounded-lg bg-stone-100 hover:bg-stone-200 dark:bg-[#121D16] dark:hover:bg-[#1E2F24] border border-[#E1E5DC] dark:border-[#1E2F24] text-stone-700 dark:text-stone-300 flex items-center justify-center transition-colors cursor-pointer"
               title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
               aria-label="Toggle Theme"
             >
               {theme === 'dark' ? (
                 <Sun className="w-4 h-4 text-amber-400" />
               ) : (
-                <Moon className="w-4 h-4 text-slate-700" />
+                <Moon className="w-4 h-4 text-stone-700" />
               )}
             </button>
 
             {/* Language Switcher */}
-            <div className="hidden sm:flex items-center bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-0.5">
-              <Globe className="w-3.5 h-3.5 text-slate-400 ml-1 mr-0.5" />
+            <div className="hidden sm:flex items-center bg-stone-100 dark:bg-[#121D16] border border-[#E1E5DC] dark:border-[#1E2F24] rounded-lg p-0.5">
+              <Globe className="w-3.5 h-3.5 text-stone-400 ml-1 mr-0.5" />
               {(['en', 'hi', 'bn'] as SupportedLanguage[]).map((l) => (
                 <button
                   key={l}
@@ -129,8 +130,8 @@ export function Header({
                   onClick={() => setLanguage(l)}
                   className={`px-2 py-1 rounded text-xs font-bold transition-colors cursor-pointer ${
                     language === l
-                      ? 'bg-cyan-500 text-slate-950 shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      ? 'bg-[#2D6A4F] text-white shadow-xs'
+                      : 'text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
                   }`}
                 >
                   {l === 'en' ? 'EN' : l === 'hi' ? 'हिंदी' : 'বাংলা'}
@@ -142,30 +143,30 @@ export function Header({
             <button
               type="button"
               onClick={onOpenOnboarding}
-              className={`min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0 ${
+              className={`min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0 ${
                 hasCustomFarm
-                  ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white'
-                  : 'bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 shadow-emerald-500/20 font-bold'
+                  ? 'bg-stone-100 hover:bg-stone-200 dark:bg-[#1A291E] dark:hover:bg-[#243A2B] border border-[#E1E5DC] dark:border-[#2A4333] text-stone-800 dark:text-[#ECF2EC]'
+                  : 'bg-[#2D6A4F] hover:bg-[#23533E] text-white shadow-sm font-bold'
               }`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{hasCustomFarm ? t.editFarm : '+ Set Up Farm'}</span>
+              <span className="hidden sm:inline">{hasCustomFarm ? t.editFarm : t.setUpFarm}</span>
               <span className="sm:hidden">{hasCustomFarm ? 'Edit' : '+ Farm'}</span>
             </button>
 
             {/* Auth Badge / Button */}
             <div>
               {authSession ? (
-                <div className="flex items-center gap-1.5 p-1 px-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-500/40 text-xs">
-                  <User className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-slate-900 dark:text-white font-medium truncate max-w-[80px] sm:max-w-[130px]">
+                <div className="flex items-center gap-1.5 p-1 px-2.5 rounded-lg bg-emerald-50 dark:bg-[#1A291E] border border-emerald-300 dark:border-[#2A4333] text-xs">
+                  <User className="w-3.5 h-3.5 text-[#2D6A4F] dark:text-[#52B788]" />
+                  <span className="text-stone-900 dark:text-white font-medium truncate max-w-[80px] sm:max-w-[130px]">
                     {authSession.displayName}
                   </span>
                   <button
                     type="button"
                     onClick={onLogout}
-                    className="ml-1 p-0.5 text-slate-400 hover:text-rose-500 cursor-pointer"
-                    title="Sign Out"
+                    className="ml-1 p-0.5 text-stone-400 hover:text-rose-500 cursor-pointer"
+                    title={t.signOut}
                   >
                     <LogOut className="w-3.5 h-3.5" />
                   </button>
@@ -174,10 +175,10 @@ export function Header({
                 <button
                   type="button"
                   onClick={onOpenAuth}
-                  className="min-h-[36px] px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-emerald-300 transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="min-h-[36px] px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold bg-stone-100 hover:bg-stone-200 dark:bg-[#121D16] dark:hover:bg-[#1E2F24] border border-[#E1E5DC] dark:border-[#1E2F24] text-stone-800 dark:text-stone-200 transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <LogIn className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">Sign In</span>
+                  <span className="hidden md:inline">{t.signIn}</span>
                 </button>
               )}
             </div>

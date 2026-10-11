@@ -100,25 +100,25 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md">
-      <div className="glass-panel w-full max-w-md border border-slate-700 p-5 sm:p-6 shadow-2xl relative my-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md">
+      <div className="w-full max-w-md rounded-2xl border border-[#E1E6DE] dark:border-[#1E3022] bg-[#F7F8F3] dark:bg-[#0E1711] p-5 sm:p-6 shadow-2xl relative my-auto text-[#111C15] dark:text-[#ECF2EC]">
         
         {/* Header */}
-        <div className="flex items-center justify-between pb-3.5 border-b border-slate-800">
+        <div className="flex items-center justify-between pb-3.5 border-b border-[#E1E6DE] dark:border-[#1E3022]">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+            <div className="p-2 rounded-lg bg-[#2D6A4F]/10 text-[#2D6A4F] dark:text-[#52B788]">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-base font-bold text-white font-['Outfit']">
+                <span className="text-base font-bold text-[#111C15] dark:text-[#ECF2EC] font-['Outfit']">
                   Farmer Sign In
                 </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/30 font-semibold flex items-center gap-0.5">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#D97706]/10 text-[#92400E] dark:text-[#FCD34D] border border-[#D97706]/30 font-semibold flex items-center gap-0.5">
                   <Sparkles className="w-2.5 h-2.5" /> AWS Cognito
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-[#526356] dark:text-[#8FA394]">
                 Passwordless 6-Digit OTP Verification
               </p>
             </div>
@@ -126,7 +126,7 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
           <button 
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-[#526356] dark:text-[#8FA394] hover:text-[#111C15] dark:hover:text-white hover:bg-[#EAEFE8] dark:hover:bg-[#152319] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -140,8 +140,8 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
               onClick={() => { setAuthMethod('email'); setErrorMsg(null); }}
               className={`min-h-[44px] py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 authMethod === 'email'
-                  ? 'bg-cyan-600/30 border-cyan-500 text-cyan-200'
-                  : 'bg-slate-900/60 border-slate-800 text-slate-400'
+                  ? 'bg-[#2D6A4F]/15 border-[#2D6A4F] text-[#1B4332] dark:text-[#74C69D]'
+                  : 'bg-white dark:bg-[#121E15] border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394]'
               }`}
             >
               <Mail className="w-3.5 h-3.5" />
@@ -152,8 +152,8 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
               onClick={() => { setAuthMethod('phone'); setErrorMsg(null); }}
               className={`min-h-[44px] py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 authMethod === 'phone'
-                  ? 'bg-cyan-600/30 border-cyan-500 text-cyan-200'
-                  : 'bg-slate-900/60 border-slate-800 text-slate-400'
+                  ? 'bg-[#2D6A4F]/15 border-[#2D6A4F] text-[#1B4332] dark:text-[#74C69D]'
+                  : 'bg-white dark:bg-[#121E15] border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394]'
               }`}
             >
               <Phone className="w-3.5 h-3.5" />
@@ -164,16 +164,16 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
 
         {/* Error notification */}
         {errorMsg && (
-          <div className="mt-3 p-2.5 rounded-lg bg-rose-950/40 border border-rose-500/30 text-xs text-rose-300 flex items-start gap-1.5">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+          <div className="mt-3 p-2.5 rounded-lg bg-[#E5484D]/10 border border-[#E5484D]/30 text-xs text-[#C92A2A] dark:text-[#FFA8A8] flex items-start gap-1.5">
+            <AlertCircle className="w-4 h-4 text-[#E5484D] shrink-0 mt-0.5" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {/* Success / sent notification */}
         {successNotice && (
-          <div className="mt-3 p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-300 flex items-start gap-1.5">
-            <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+          <div className="mt-3 p-2.5 rounded-lg bg-[#2D6A4F]/10 border border-[#2D6A4F]/30 text-xs text-[#1B4332] dark:text-[#74C69D] flex items-start gap-1.5">
+            <Check className="w-4 h-4 text-[#2D6A4F] shrink-0 mt-0.5" />
             <span>{successNotice}</span>
           </div>
         )}
@@ -183,41 +183,41 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
           <form onSubmit={handleSendCode} className="space-y-4 mt-4">
             {authMethod === 'email' ? (
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                <label className="text-xs font-semibold text-[#526356] dark:text-[#8FA394] uppercase tracking-wider">
                   Farmer / Extension Email
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <Mail className="w-4 h-4 text-[#8FA394] absolute left-3 top-3" />
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="farmer@example.com"
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white dark:bg-[#121E15] border border-[#D5DFD3] dark:border-[#223828] text-sm text-[#111C15] dark:text-[#ECF2EC] focus:outline-none focus:border-[#2D6A4F]"
                   />
                 </div>
-                <p className="text-[10px] text-slate-400">
+                <p className="text-[10px] text-[#526356] dark:text-[#8FA394]">
                   AWS Cognito will send a real 6-digit confirmation code to this address.
                 </p>
               </div>
             ) : (
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                <label className="text-xs font-semibold text-[#526356] dark:text-[#8FA394] uppercase tracking-wider">
                   10-Digit Mobile Number
                 </label>
                 <div className="relative">
-                  <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <Phone className="w-4 h-4 text-[#8FA394] absolute left-3 top-3" />
                   <input
                     type="tel"
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+91 98765 43210"
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-500"
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white dark:bg-[#121E15] border border-[#D5DFD3] dark:border-[#223828] text-sm text-[#111C15] dark:text-[#ECF2EC] focus:outline-none focus:border-[#2D6A4F]"
                   />
                 </div>
-                <p className="text-[10px] text-slate-400">
+                <p className="text-[10px] text-[#526356] dark:text-[#8FA394]">
                   India mobile format (+91).
                 </p>
               </div>
@@ -226,7 +226,7 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full min-h-[48px] py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-cyan-600/30 disabled:opacity-50"
+              className="w-full min-h-[48px] py-3 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm disabled:opacity-50"
             >
               {isLoading ? (
                 <>
@@ -244,19 +244,19 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
         {step === 'verify' && (
           <form onSubmit={handleVerifyCode} className="space-y-4 mt-4">
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+              <label className="text-xs font-semibold text-[#526356] dark:text-[#8FA394] uppercase tracking-wider flex items-center justify-between">
                 <span>Enter 6-Digit Verification Code</span>
                 <button
                   type="button"
                   onClick={() => { setStep('input'); setOtpCode(''); }}
-                  className="text-[11px] text-cyan-400 hover:underline"
+                  className="text-[11px] text-[#2D6A4F] dark:text-[#52B788] hover:underline"
                 >
                   Change {authMethod}
                 </button>
               </label>
 
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <Lock className="w-4 h-4 text-[#8FA394] absolute left-3 top-3" />
                 <input
                   type="text"
                   maxLength={6}
@@ -265,7 +265,7 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
                   placeholder="• • • • • •"
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-lg tracking-[0.5em] font-mono text-center text-cyan-300 font-bold focus:outline-none focus:border-cyan-500"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white dark:bg-[#121E15] border border-[#D5DFD3] dark:border-[#223828] text-lg tracking-[0.5em] font-mono text-center text-[#2D6A4F] dark:text-[#52B788] font-bold focus:outline-none focus:border-[#2D6A4F]"
                 />
               </div>
             </div>
@@ -273,7 +273,7 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
             <button
               type="submit"
               disabled={isLoading || otpCode.length !== 6}
-              className="w-full min-h-[48px] py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-600/30 disabled:opacity-50"
+              className="w-full min-h-[48px] py-3 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm disabled:opacity-50"
             >
               {isLoading ? (
                 <>

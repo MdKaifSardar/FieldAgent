@@ -14,18 +14,18 @@ export function EnvironmentalLedgerCard({ ledger }: EnvironmentalLedgerProps) {
   const isDeferred = ledger.deferredVolume_liters > 0;
 
   return (
-    <div className="glass-panel p-5 sm:p-6 border border-emerald-500/20 bg-emerald-950/20 shadow-lg">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 border-b border-slate-800/80 gap-2">
+    <div className="p-5 sm:p-6 rounded-2xl border border-[#2D6A4F]/20 dark:border-[#2D6A4F]/35 bg-[#F4F7F2] dark:bg-[#0D1811] shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 border-b border-[#E1E6DE] dark:border-[#1E3022] gap-2">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#2D6A4F] dark:text-[#52B788]">
             {t.environmentalLedger}
           </span>
-          <h3 className="text-base sm:text-lg font-bold text-white font-['Outfit']">
-            Conserved Water & Emissions Balance
+          <h3 className="text-base sm:text-lg font-bold text-[#111C15] dark:text-[#ECF2EC] font-['Outfit']">
+            {t.ledgerSubtitle}
           </h3>
         </div>
-        <span className="self-start sm:self-auto px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-          Measurable Action Outcome
+        <span className="self-start sm:self-auto px-2.5 py-1 rounded-full text-xs font-semibold bg-[#2D6A4F]/10 dark:bg-[#52B788]/15 text-[#1B4332] dark:text-[#74C69D] border border-[#2D6A4F]/20 dark:border-[#52B788]/25">
+          {t.actionOutcome}
         </span>
       </div>
 
@@ -33,65 +33,65 @@ export function EnvironmentalLedgerCard({ ledger }: EnvironmentalLedgerProps) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
         
         {/* Metric 1: Water Volume */}
-        <div className="p-3.5 sm:p-4 rounded-xl bg-slate-900/70 border border-slate-800 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
+        <div className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-[#121E15] border border-[#E1E6DE] dark:border-[#1E3022] shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#526356] dark:text-[#8FA394] mb-1">
             <span className="text-[11px] font-medium">{t.waterDeferred}</span>
-            <Droplet className="w-4 h-4 text-cyan-400 shrink-0" />
+            <Droplet className="w-4 h-4 text-[#1D4E89] dark:text-[#64B5F6] shrink-0" />
           </div>
           <div>
-            <div className="text-xl sm:text-2xl font-black text-white font-['Outfit']">
-              {isDeferred ? ledger.deferredVolume_liters.toLocaleString() : '0'} <span className="text-xs font-normal text-slate-400">L</span>
+            <div className="text-xl sm:text-2xl font-black text-[#111C15] dark:text-[#ECF2EC] font-['Outfit']">
+              {isDeferred ? ledger.deferredVolume_liters.toLocaleString() : '0'} <span className="text-xs font-normal text-[#526356] dark:text-[#8FA394]">L</span>
             </div>
-            <p className="text-[10px] sm:text-[11px] text-cyan-300/80 mt-0.5">
-              {isDeferred ? `Avoiding ${ledger.deferredIrrigationDepth_mm} mm application` : 'No session avoided'}
+            <p className="text-[10px] sm:text-[11px] text-[#1D4E89] dark:text-[#90CAF9] mt-0.5">
+              {isDeferred ? `Avoiding ${ledger.deferredIrrigationDepth_mm} mm` : t.noSessionAvoided}
             </p>
           </div>
         </div>
 
         {/* Metric 2: Pump Hours */}
-        <div className="p-3.5 sm:p-4 rounded-xl bg-slate-900/70 border border-slate-800 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
+        <div className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-[#121E15] border border-[#E1E6DE] dark:border-[#1E3022] shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#526356] dark:text-[#8FA394] mb-1">
             <span className="text-[11px] font-medium">{t.pumpRuntimeSaved}</span>
-            <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+            <Zap className="w-4 h-4 text-[#D97706] dark:text-[#FBBF24] shrink-0" />
           </div>
           <div>
-            <div className="text-xl sm:text-2xl font-black text-white font-['Outfit']">
-              {isDeferred ? ledger.pumpingHoursSaved : '0'} <span className="text-xs font-normal text-slate-400">Hours</span>
+            <div className="text-xl sm:text-2xl font-black text-[#111C15] dark:text-[#ECF2EC] font-['Outfit']">
+              {isDeferred ? ledger.pumpingHoursSaved : '0'} <span className="text-xs font-normal text-[#526356] dark:text-[#8FA394]">{t.hours}</span>
             </div>
-            <p className="text-[10px] sm:text-[11px] text-amber-300/80 mt-0.5">
+            <p className="text-[10px] sm:text-[11px] text-[#B45309] dark:text-[#FCD34D] mt-0.5">
               {isDeferred ? `${ledger.electricitySaved_kwh} kWh avoided` : '0 kWh'}
             </p>
           </div>
         </div>
 
         {/* Metric 3: Carbon Offset */}
-        <div className="p-3.5 sm:p-4 rounded-xl bg-slate-900/70 border border-slate-800 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
+        <div className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-[#121E15] border border-[#E1E6DE] dark:border-[#1E3022] shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#526356] dark:text-[#8FA394] mb-1">
             <span className="text-[11px] font-medium">{t.carbonAvoided}</span>
-            <Leaf className="w-4 h-4 text-emerald-400 shrink-0" />
+            <Leaf className="w-4 h-4 text-[#2D6A4F] dark:text-[#52B788] shrink-0" />
           </div>
           <div>
-            <div className="text-xl sm:text-2xl font-black text-white font-['Outfit']">
-              {isDeferred ? ledger.carbonOffset_kg_co2 : '0'} <span className="text-xs font-normal text-slate-400">kg CO₂</span>
+            <div className="text-xl sm:text-2xl font-black text-[#111C15] dark:text-[#ECF2EC] font-['Outfit']">
+              {isDeferred ? ledger.carbonOffset_kg_co2 : '0'} <span className="text-xs font-normal text-[#526356] dark:text-[#8FA394]">kg CO₂</span>
             </div>
-            <p className="text-[10px] sm:text-[11px] text-emerald-300/80 mt-0.5">
-              Grid emissions avoided
+            <p className="text-[10px] sm:text-[11px] text-[#2D6A4F] dark:text-[#74C69D] mt-0.5">
+              {t.gridEmissionsAvoided}
             </p>
           </div>
         </div>
 
         {/* Metric 4: Cost Conserved */}
-        <div className="p-3.5 sm:p-4 rounded-xl bg-slate-900/70 border border-slate-800 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
+        <div className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-[#121E15] border border-[#E1E6DE] dark:border-[#1E3022] shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-[#526356] dark:text-[#8FA394] mb-1">
             <span className="text-[11px] font-medium">{t.rupeesSaved}</span>
-            <IndianRupee className="w-4 h-4 text-emerald-300 shrink-0" />
+            <IndianRupee className="w-4 h-4 text-[#2D6A4F] dark:text-[#52B788] shrink-0" />
           </div>
           <div>
-            <div className="text-xl sm:text-2xl font-black text-white font-['Outfit']">
+            <div className="text-xl sm:text-2xl font-black text-[#111C15] dark:text-[#ECF2EC] font-['Outfit']">
               ₹{isDeferred ? ledger.estimatedCostSaved_inr : '0'}
             </div>
-            <p className="text-[10px] sm:text-[11px] text-emerald-300/80 mt-0.5">
-              Tariff & diesel expense
+            <p className="text-[10px] sm:text-[11px] text-[#2D6A4F] dark:text-[#74C69D] mt-0.5">
+              {t.costExpenseSaved}
             </p>
           </div>
         </div>
@@ -99,8 +99,8 @@ export function EnvironmentalLedgerCard({ ledger }: EnvironmentalLedgerProps) {
       </div>
 
       {/* Transparency Note */}
-      <div className="flex items-start gap-2 p-3 rounded-lg bg-slate-900/60 border border-slate-800/60 text-xs text-slate-400">
-        <Info className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+      <div className="flex items-start gap-2 p-3 rounded-xl bg-[#EAEFE8] dark:bg-[#152319] border border-[#D5DFD3] dark:border-[#223828] text-xs text-[#526356] dark:text-[#8FA394]">
+        <Info className="w-4 h-4 text-[#2D6A4F] dark:text-[#52B788] shrink-0 mt-0.5" />
         <span>
           {ledger.transparencyNote}
         </span>

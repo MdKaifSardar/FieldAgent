@@ -1,39 +1,43 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --bg-page: #f8fafc;
-  --bg-surface: #ffffff;
-  --bg-card: rgba(255, 255, 255, 0.96);
-  --border-color: rgba(226, 232, 240, 0.9);
-  --border-highlight: rgba(16, 185, 129, 0.4);
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  --accent-emerald: #059669;
-  --accent-cyan: #0284c7;
-  --accent-amber: #d97706;
-  --accent-rose: #e11d48;
-  --glass-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.06), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+  --bg-page: #F7F8F3;
+  --bg-surface: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --border-color: #E1E5DC;
+  --border-highlight: #2D6A4F;
+  --text-main: #111C15;
+  --text-muted: #5A6B60;
+  --accent-foliage: #2D6A4F;
+  --accent-water: #0284C7;
+  --accent-sun: #D97706;
+  --accent-soil: #854D0E;
+  --accent-stress: #C2410C;
+  --card-shadow: 0 4px 12px -2px rgba(17, 28, 21, 0.05), 0 2px 4px -1px rgba(17, 28, 21, 0.03);
 }
 
 .dark {
-  --bg-page: #020617;
-  --bg-surface: #0f172a;
-  --bg-card: rgba(15, 23, 42, 0.88);
-  --border-color: rgba(51, 65, 85, 0.7);
-  --border-highlight: rgba(16, 185, 129, 0.3);
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --accent-emerald: #10b981;
-  --accent-cyan: #06b6d4;
-  --accent-amber: #f59e0b;
-  --accent-rose: #f43f5e;
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.42);
+  --bg-page: #0B130E;
+  --bg-surface: #121D16;
+  --bg-card: #121D16;
+  --border-color: #1E2F24;
+  --border-highlight: #40916C;
+  --text-main: #ECF2EC;
+  --text-muted: #8E9F93;
+  --accent-foliage: #40916C;
+  --accent-water: #38BDF8;
+  --accent-sun: #F59E0B;
+  --accent-soil: #A16207;
+  --accent-stress: #FB923C;
+  --card-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.5);
 }
 
 body {
   background-color: var(--bg-page);
   color: var(--text-main);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   min-height: 100vh;
   margin: 0;
   padding: 0;
@@ -41,14 +45,12 @@ body {
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* Professional Card Styling (Adaptive to Light/Dark) */
+/* Living Agronomic Card Styling */
 .glass-panel {
   background: var(--bg-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-color);
   border-radius: 16px;
-  box-shadow: var(--glass-shadow);
+  box-shadow: var(--card-shadow);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
@@ -60,7 +62,7 @@ body {
   position: absolute;
   top: -1px; left: -1px; right: -1px; bottom: -1px;
   border-radius: 17px;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.1), transparent);
+  background: linear-gradient(135deg, rgba(45, 106, 79, 0.2), rgba(2, 132, 199, 0.15), transparent);
   pointer-events: none;
   z-index: -1;
 }

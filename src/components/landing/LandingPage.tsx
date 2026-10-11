@@ -39,24 +39,20 @@ export function LandingPage({
       {/* 1. HERO SECTION */}
       <section className="relative max-w-5xl mx-auto px-4 text-center">
         
-        {/* Subtle background radiant glows */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 sm:w-[600px] h-96 sm:h-[600px] bg-emerald-500/10 dark:bg-emerald-500/15 rounded-full blur-3xl pointer-events-none -z-10" />
-        <div className="absolute top-1/3 left-1/3 w-64 h-64 bg-cyan-500/10 dark:bg-cyan-500/15 rounded-full blur-3xl pointer-events-none -z-10" />
-
         {/* Challenge AI Telemetryadge */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 dark:border-emerald-500/30 mb-6 shadow-sm">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-[#2D6A4F]/10 text-[#2D6A4F] dark:text-[#52B788] border border-[#2D6A4F]/25 mb-6 shadow-xs">
           <Sparkles className="w-3.5 h-3.5" />
-          <span>Autonomous Agronomic Decision Cockpit & Field Telemetry</span>
+          <span>{t.trackBadge}</span>
         </div>
 
         {/* Main Headline */}
-        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white font-['Outfit'] leading-[1.15] max-w-4xl mx-auto">
-          Precision Irrigation Decisions for Bharat's Resilient Farmlands
+        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#111C15] dark:text-[#ECF2EC] font-['Outfit'] leading-[1.15] max-w-4xl mx-auto">
+          {t.heroHeadline}
         </h1>
 
         {/* Subtitle */}
-        <p className="mt-5 sm:mt-6 text-base sm:text-lg lg:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
-          Transform open weather telemetry and root-zone soil balance into definitive irrigation actions. Zero hardware sensors required.
+        <p className="mt-5 sm:mt-6 text-base sm:text-lg lg:text-xl text-[#5A6B60] dark:text-[#8E9F93] max-w-2xl mx-auto leading-relaxed">
+          {t.heroSubtitle}
         </p>
 
         {/* Primary CTA Buttons */}
@@ -64,19 +60,19 @@ export function LandingPage({
           <button
             type="button"
             onClick={onOpenOnboarding}
-            className="w-full sm:w-auto min-h-[48px] px-7 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 transition-all transform hover:scale-[1.02] cursor-pointer flex items-center justify-center gap-2"
+            className="w-full sm:w-auto min-h-[48px] px-7 py-3 rounded-xl bg-[#2D6A4F] hover:bg-[#23533E] text-white font-bold text-sm shadow-md shadow-[#2D6A4F]/20 transition-all transform hover:scale-[1.02] cursor-pointer flex items-center justify-center gap-2"
           >
             <SlidersHorizontal className="w-4 h-4" />
-            <span>{hasCustomFarm ? 'Configure Field Parcel' : 'Set Up My Field Parcel'}</span>
+            <span>{hasCustomFarm ? t.ctaConfigureEdit : t.ctaConfigure}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
 
           <button
             type="button"
             onClick={onExploreDashboard}
-            className="w-full sm:w-auto min-h-[48px] px-6 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-bold text-sm transition-all cursor-pointer flex items-center justify-center gap-2"
+            className="w-full sm:w-auto min-h-[48px] px-6 py-3 rounded-xl bg-white hover:bg-stone-50 dark:bg-[#121D16] dark:hover:bg-[#1A2A20] text-[#111C15] dark:text-[#ECF2EC] border border-[#E1E5DC] dark:border-[#1E2F24] font-bold text-sm transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
           >
-            <span>{hasCustomFarm ? 'Open Field Dashboard' : 'View Decision Engine'}</span>
+            <span>{hasCustomFarm ? t.ctaDashboard : t.ctaEngine}</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -84,51 +80,51 @@ export function LandingPage({
         {/* Stat Highlights Bar */}
         <div className="mt-12 sm:mt-16 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto text-left">
           
-          <div className="glass-panel p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 font-['Outfit']">
-              16,500 L
+          <div className="glass-panel p-4 rounded-xl border border-[#E1E5DC] dark:border-[#1E2F24]">
+            <div className="text-2xl sm:text-3xl font-extrabold text-[#2D6A4F] dark:text-[#52B788] font-['Outfit']">
+              {t.statWaterTitle}
             </div>
-            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
-              Avg. Water Conserved
+            <div className="text-xs font-semibold text-[#111C15] dark:text-[#ECF2EC] mt-0.5">
+              {t.statWaterLabel}
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-              Per rain avoidance session
-            </div>
-          </div>
-
-          <div className="glass-panel p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-            <div className="text-2xl sm:text-3xl font-extrabold text-cyan-600 dark:text-cyan-400 font-['Outfit']">
-              FAO-56
-            </div>
-            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
-              Penman-Monteith
-            </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-              Solar evapotranspiration model
+            <div className="text-[11px] text-[#5A6B60] dark:text-[#8E9F93] mt-1">
+              {t.statWaterSub}
             </div>
           </div>
 
-          <div className="glass-panel p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-            <div className="text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400 font-['Outfit']">
-              Zero IoT
+          <div className="glass-panel p-4 rounded-xl border border-[#E1E5DC] dark:border-[#1E2F24]">
+            <div className="text-2xl sm:text-3xl font-extrabold text-[#0284C7] dark:text-[#38BDF8] font-['Outfit']">
+              {t.statFaoTitle}
             </div>
-            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
-              Hardware Independent
+            <div className="text-xs font-semibold text-[#111C15] dark:text-[#ECF2EC] mt-0.5">
+              {t.statFaoLabel}
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-              Runs on open satellite & grid data
+            <div className="text-[11px] text-[#5A6B60] dark:text-[#8E9F93] mt-1">
+              {t.statFaoSub}
             </div>
           </div>
 
-          <div className="glass-panel p-4 rounded-xl border border-slate-200 dark:border-slate-800">
-            <div className="text-2xl sm:text-3xl font-extrabold text-indigo-600 dark:text-indigo-400 font-['Outfit']">
-              Serverless
+          <div className="glass-panel p-4 rounded-xl border border-[#E1E5DC] dark:border-[#1E2F24]">
+            <div className="text-2xl sm:text-3xl font-extrabold text-[#D97706] dark:text-[#F59E0B] font-['Outfit']">
+              {t.statIotTitle}
             </div>
-            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
-              AWS Cloud Architecture
+            <div className="text-xs font-semibold text-[#111C15] dark:text-[#ECF2EC] mt-0.5">
+              {t.statIotLabel}
             </div>
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-              DynamoDB & Cognito OTP
+            <div className="text-[11px] text-[#5A6B60] dark:text-[#8E9F93] mt-1">
+              {t.statIotSub}
+            </div>
+          </div>
+
+          <div className="glass-panel p-4 rounded-xl border border-[#E1E5DC] dark:border-[#1E2F24]">
+            <div className="text-2xl sm:text-3xl font-extrabold text-[#2D6A4F] dark:text-[#52B788] font-['Outfit']">
+              {t.statSyncTitle}
+            </div>
+            <div className="text-xs font-semibold text-[#111C15] dark:text-[#ECF2EC] mt-0.5">
+              {t.statSyncLabel}
+            </div>
+            <div className="text-[11px] text-[#5A6B60] dark:text-[#8E9F93] mt-1">
+              {t.statSyncSub}
             </div>
           </div>
 

@@ -369,52 +369,52 @@ function FieldGuardApp() {
           {/* EMPTY STATE DASHBOARD: Displayed when no custom parcel is configured */}
           {!currentFarm && !activePresetId && !isRefreshingWeather && (
             <div className="max-w-3xl mx-auto py-8 sm:py-16 px-2 sm:px-4">
-              <div className="glass-panel p-6 sm:p-10 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-3xl text-center relative overflow-hidden">
-                <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="p-6 sm:p-10 border border-[#E1E6DE] dark:border-[#1E3022] bg-[#F9FAF7] dark:bg-[#0E1711] shadow-xl rounded-3xl text-center relative overflow-hidden">
+                <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-[#2D6A4F]/10 rounded-full blur-3xl pointer-events-none" />
                 
-                <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-tr from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-lg shadow-emerald-500/10">
+                <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-[#2D6A4F]/10 border border-[#2D6A4F]/25 flex items-center justify-center text-[#2D6A4F] dark:text-[#52B788] shadow-sm">
                   <Sprout className="w-8 h-8" />
                 </div>
 
-                <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white font-['Outfit'] mb-2.5">
+                <h2 className="text-2xl sm:text-3xl font-bold text-[#111C15] dark:text-[#ECF2EC] font-['Outfit'] mb-2.5">
                   No Farm Parcel Configured
                 </h2>
-                <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-lg mx-auto mb-8">
+                <p className="text-sm sm:text-base text-[#526356] dark:text-[#8FA394] max-w-lg mx-auto mb-8">
                   Your dashboard is currently empty. Configure your parcel to receive live Open-Meteo weather and precision irrigation decisions tailored to your exact soil texture and crop stage.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-8 text-left">
-                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 flex flex-col justify-between">
+                  <div className="p-4 rounded-xl bg-white dark:bg-[#121E15] border border-[#E1E6DE] dark:border-[#1E3022] flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center gap-2 text-cyan-600 dark:text-cyan-400 text-xs font-bold mb-1">
+                      <div className="flex items-center gap-2 text-[#1D4E89] dark:text-[#64B5F6] text-xs font-bold mb-1">
                         <MapPin className="w-4 h-4 shrink-0" />
                         <span>1. Geo-Location</span>
                       </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      <p className="text-[11px] text-[#526356] dark:text-[#8FA394]">
                         GPS or village pin code lookup for live meteorological forecasts.
                       </p>
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 flex flex-col justify-between">
+                  <div className="p-4 rounded-xl bg-white dark:bg-[#121E15] border border-[#E1E6DE] dark:border-[#1E3022] flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-bold mb-1">
+                      <div className="flex items-center gap-2 text-[#2D6A4F] dark:text-[#52B788] text-xs font-bold mb-1">
                         <Layers className="w-4 h-4 shrink-0" />
                         <span>2. Soil & Crop</span>
                       </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      <p className="text-[11px] text-[#526356] dark:text-[#8FA394]">
                         Soil texture AWC capacity and crop root zone depletion dynamics.
                       </p>
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 flex flex-col justify-between">
+                  <div className="p-4 rounded-xl bg-white dark:bg-[#121E15] border border-[#E1E6DE] dark:border-[#1E3022] flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 text-xs font-bold mb-1">
+                      <div className="flex items-center gap-2 text-[#D97706] dark:text-[#FBBF24] text-xs font-bold mb-1">
                         <Droplets className="w-4 h-4 shrink-0" />
                         <span>3. Water Reserve</span>
                       </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      <p className="text-[11px] text-[#526356] dark:text-[#8FA394]">
                         Sump or tank capacity calculation to eliminate pump dry-run risk.
                       </p>
                     </div>
@@ -424,7 +424,7 @@ function FieldGuardApp() {
                 <button
                   type="button"
                   onClick={() => setIsOnboardingOpen(true)}
-                  className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 transition-all transform hover:scale-[1.02] cursor-pointer inline-flex items-center gap-2"
+                  className="px-6 py-3.5 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-bold text-sm shadow-md transition-all transform hover:scale-[1.02] cursor-pointer inline-flex items-center gap-2"
                 >
                   <SlidersHorizontal className="w-4 h-4" />
                   <span>Configure My Field Parcel</span>
@@ -437,29 +437,29 @@ function FieldGuardApp() {
           {currentFarm && currentForecast && decision && (
             <>
               {/* Active Field Profile Strip */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 sm:p-4 rounded-xl bg-[#F4F7F2] dark:bg-[#0D1811] border border-[#E1E6DE] dark:border-[#1E3022] text-xs">
                 <div className="flex items-center gap-2">
-                  <Sprout className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <Sprout className="w-4 h-4 text-[#2D6A4F] dark:text-[#52B788] shrink-0" />
                   <div>
-                    <span className="text-slate-500 dark:text-slate-400">Active Parcel:</span>{' '}
-                    <strong className="text-slate-900 dark:text-white font-semibold">{currentFarm.farmName}</strong>
-                    <span className="text-slate-400 dark:text-slate-500 mx-1.5">•</span>
-                    <span className="text-cyan-600 dark:text-cyan-300 font-medium">{currentFarm.location.displayName || currentFarm.location.villageOrPincode}</span>
+                    <span className="text-[#526356] dark:text-[#8FA394]">Active Parcel:</span>{' '}
+                    <strong className="text-[#111C15] dark:text-[#ECF2EC] font-semibold">{currentFarm.farmName}</strong>
+                    <span className="text-[#8FA394] mx-1.5">•</span>
+                    <span className="text-[#1D4E89] dark:text-[#64B5F6] font-medium">{currentFarm.location.displayName || currentFarm.location.villageOrPincode}</span>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 text-[11px] sm:text-xs">
-                  <span className="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                    Soil: <strong className="text-emerald-600 dark:text-emerald-300 capitalize">{currentFarm.soil.texture}</strong> (AWC {currentFarm.soil.awc_mm_per_m} mm/m)
+                  <span className="px-2 py-0.5 rounded bg-white dark:bg-[#121E15] border border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394]">
+                    Soil: <strong className="text-[#2D6A4F] dark:text-[#52B788] capitalize">{currentFarm.soil.texture}</strong> (AWC {currentFarm.soil.awc_mm_per_m} mm/m)
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                    Method: <strong className="text-cyan-600 dark:text-cyan-300 uppercase">{currentFarm.plots[0]?.irrigationMethod || 'DRIP'}</strong>
+                  <span className="px-2 py-0.5 rounded bg-white dark:bg-[#121E15] border border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394]">
+                    Method: <strong className="text-[#1D4E89] dark:text-[#64B5F6] uppercase">{currentFarm.plots[0]?.irrigationMethod || 'DRIP'}</strong>
                   </span>
                   {hasCustomFarm && (
                     <button
                       type="button"
                       onClick={handleResetFarm}
-                      className="px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-950/40 hover:bg-rose-200 dark:hover:bg-rose-900/60 border border-rose-300 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 transition-colors cursor-pointer text-[10px]"
+                      className="px-2 py-0.5 rounded bg-[#E5484D]/10 hover:bg-[#E5484D]/20 text-[#C92A2A] dark:text-[#FFA8A8] border border-[#E5484D]/30 transition-colors cursor-pointer text-[10px]"
                       title="Clear parcel configuration"
                     >
                       Clear Parcel
@@ -484,10 +484,10 @@ function FieldGuardApp() {
 
               {/* 5. What-If Simulation Levers (Only visible when demo mode is active via ENV and simulating) */}
               {isDemoMode && isSimulating && (
-                <div className="glass-panel p-4 sm:p-5 border border-amber-500/30 bg-amber-500/10 fade-in">
+                <div className="p-4 sm:p-5 rounded-2xl border border-[#D97706]/30 bg-[#FEF3C7]/40 dark:bg-[#2A1805]/40 fade-in">
                   <div className="flex items-center gap-2 mb-3">
-                    <Sliders className="w-4 h-4 text-amber-500" />
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-200">
+                    <Sliders className="w-4 h-4 text-[#D97706]" />
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#92400E] dark:text-[#FCD34D]">
                       What-If Scenario Levers (Instant Real-Time Decision Shifts)
                     </h4>
                   </div>
@@ -495,8 +495,8 @@ function FieldGuardApp() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-600 dark:text-slate-300">Simulate Forecast Rain:</span>
-                        <strong className="text-cyan-600 dark:text-cyan-400 font-mono text-sm">{interactiveRainMm} mm</strong>
+                        <span className="text-[#526356] dark:text-[#8FA394]">Simulate Forecast Rain:</span>
+                        <strong className="text-[#1D4E89] dark:text-[#64B5F6] font-mono text-sm">{interactiveRainMm} mm</strong>
                       </div>
                       <input
                         type="range"
@@ -505,14 +505,14 @@ function FieldGuardApp() {
                         step="1"
                         value={interactiveRainMm}
                         onChange={(e) => handleRainSliderChange(parseFloat(e.target.value))}
-                        className="w-full accent-cyan-500 cursor-pointer min-h-[36px]"
+                        className="w-full accent-[#1D4E89] cursor-pointer min-h-[36px]"
                       />
                     </div>
 
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-600 dark:text-slate-300">Simulate Tank Available Reserve:</span>
-                        <strong className="text-amber-600 dark:text-amber-400 font-mono text-sm">{interactiveTankLiters.toLocaleString()} L</strong>
+                        <span className="text-[#526356] dark:text-[#8FA394]">Simulate Tank Available Reserve:</span>
+                        <strong className="text-[#D97706] dark:text-[#FBBF24] font-mono text-sm">{interactiveTankLiters.toLocaleString()} L</strong>
                       </div>
                       <input
                         type="range"
@@ -521,7 +521,7 @@ function FieldGuardApp() {
                         step="200"
                         value={interactiveTankLiters}
                         onChange={(e) => handleTankSliderChange(parseInt(e.target.value))}
-                        className="w-full accent-amber-500 cursor-pointer min-h-[36px]"
+                        className="w-full accent-[#D97706] cursor-pointer min-h-[36px]"
                       />
                     </div>
                   </div>

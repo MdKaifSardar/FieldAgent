@@ -26,49 +26,52 @@ export function DecisionCard({ decision }: DecisionCardProps) {
   const badgeConfig = isWait
     ? {
         title: t.waitAndReassess,
-        subtitle: 'Water Conserved — Rain Incoming',
-        bgColor: 'bg-emerald-500/10',
-        borderColor: 'border-emerald-500/40',
-        textColor: 'text-emerald-400',
-        icon: <CloudRain className="w-6 h-6 text-emerald-400" />,
-        shadowGlow: 'shadow-emerald-500/10',
+        subtitle: t.waitSubtitle,
+        bgColor: 'bg-[#F2F7F4] dark:bg-[#122118]',
+        borderColor: 'border-[#2D6A4F]/35 dark:border-[#2D6A4F]/50',
+        textColor: 'text-[#2D6A4F] dark:text-[#52B788]',
+        iconBg: 'bg-[#2D6A4F] text-white',
+        icon: <CloudRain className="w-5 h-5 text-white" />,
+        shadowGlow: 'shadow-md shadow-[#2D6A4F]/10',
       }
     : isDeficit
     ? {
         title: t.resourceDeficit,
-        subtitle: 'Available Storage Below Requirement',
-        bgColor: 'bg-rose-500/10',
-        borderColor: 'border-rose-500/40',
-        textColor: 'text-rose-400',
-        icon: <AlertOctagon className="w-6 h-6 text-rose-400" />,
-        shadowGlow: 'shadow-rose-500/10',
+        subtitle: t.deficitSubtitle,
+        bgColor: 'bg-[#FDF4EE] dark:bg-[#251814]',
+        borderColor: 'border-[#C2410C]/35 dark:border-[#C2410C]/50',
+        textColor: 'text-[#C2410C] dark:text-[#FB923C]',
+        iconBg: 'bg-[#C2410C] text-white',
+        icon: <AlertOctagon className="w-5 h-5 text-white" />,
+        shadowGlow: 'shadow-md shadow-[#C2410C]/10',
       }
     : {
         title: t.irrigateNow,
-        subtitle: 'Depletion Near RAW Threshold',
-        bgColor: 'bg-blue-500/10',
-        borderColor: 'border-blue-500/40',
-        textColor: 'text-blue-400',
-        icon: <CheckCircle2 className="w-6 h-6 text-blue-400" />,
-        shadowGlow: 'shadow-blue-500/10',
+        subtitle: t.irrigateSubtitle,
+        bgColor: 'bg-[#F0F7FB] dark:bg-[#0E1E28]',
+        borderColor: 'border-[#0284C7]/35 dark:border-[#0284C7]/50',
+        textColor: 'text-[#0284C7] dark:text-[#38BDF8]',
+        iconBg: 'bg-[#0284C7] text-white',
+        icon: <CheckCircle2 className="w-5 h-5 text-white" />,
+        shadowGlow: 'shadow-md shadow-[#0284C7]/10',
       };
 
   const primaryPlot = decision.plots[0];
 
   return (
-    <div className={`glass-panel p-5 sm:p-6 border ${badgeConfig.borderColor} ${badgeConfig.bgColor} shadow-xl ${badgeConfig.shadowGlow} transition-all`}>
+    <div className={`p-5 sm:p-6 rounded-2xl border ${badgeConfig.borderColor} ${badgeConfig.bgColor} ${badgeConfig.shadowGlow} transition-all`}>
       
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-4 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E1E5DC]/60 dark:border-white/10 pb-4 mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/60 shrink-0">
+          <div className={`p-2.5 rounded-xl ${badgeConfig.iconBg} shadow-sm shrink-0`}>
             {badgeConfig.icon}
           </div>
           <div>
             <span className={`text-[11px] font-bold uppercase tracking-widest ${badgeConfig.textColor}`}>
               {badgeConfig.subtitle}
             </span>
-            <h2 className="text-xl sm:text-2xl font-black text-white font-['Outfit'] tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-black text-[#111C15] dark:text-[#ECF2EC] font-['Outfit'] tracking-tight">
               {badgeConfig.title}
             </h2>
           </div>
@@ -76,21 +79,21 @@ export function DecisionCard({ decision }: DecisionCardProps) {
 
         {/* Metadata Badges */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-900/80 border border-slate-700/60 text-slate-300">
-            <Clock className="w-3.5 h-3.5 text-slate-400" />
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/90 dark:bg-[#16251C] border border-[#E1E5DC] dark:border-[#253D2E] text-[#5A6B60] dark:text-[#8E9F93] shadow-2xs">
+            <Clock className="w-3.5 h-3.5 text-[#5A6B60] dark:text-[#8E9F93]" />
             <span>{decision.actionWindow}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-900/80 border border-slate-700/60 text-slate-300">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Confidence: {decision.confidence}</span>
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/90 dark:bg-[#16251C] border border-[#E1E5DC] dark:border-[#253D2E] text-[#5A6B60] dark:text-[#8E9F93] shadow-2xs">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#2D6A4F] dark:text-[#52B788]" />
+            <span>{t.confidence}: {decision.confidence}</span>
           </div>
         </div>
       </div>
 
       {/* Primary Action Explanation */}
       <div className="space-y-4">
-        <p className="text-base sm:text-lg text-slate-100 leading-relaxed font-medium">
+        <p className="text-base sm:text-lg text-[#111C15] dark:text-[#ECF2EC] leading-relaxed font-medium">
           {localizedAction}
         </p>
 
@@ -103,18 +106,18 @@ export function DecisionCard({ decision }: DecisionCardProps) {
         </div>
 
         {/* Agronomic Technical Trace */}
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 pt-3 border-t border-slate-800/50">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#5A6B60] dark:text-[#8E9F93] pt-3 border-t border-[#E1E5DC]/60 dark:border-white/10">
           <div className="flex items-center gap-2">
-            <span>Reasoning: {decision.confidenceReason}</span>
+            <span>{t.reasoning}: {decision.confidenceReason}</span>
           </div>
           <div className="flex items-center gap-3">
             {primaryPlot && (
-              <span className="text-cyan-300 font-mono">
-                Method: {(primaryPlot.irrigationMethod || 'surface_flood').toUpperCase()} (Eff: {Math.round((primaryPlot.irrigationEfficiency || 0.75) * 100)}%)
+              <span className="text-[#0284C7] dark:text-[#38BDF8] font-mono">
+                {t.method}: {(primaryPlot.irrigationMethod || 'surface_flood').toUpperCase()} (Eff: {Math.round((primaryPlot.irrigationEfficiency || 0.75) * 100)}%)
               </span>
             )}
-            <span className="flex items-center gap-1 text-slate-500 font-mono text-[11px]">
-              <Database className="w-3 h-3 text-cyan-400" /> {decision.metadata.engineVersion}
+            <span className="flex items-center gap-1 text-[#5A6B60] dark:text-[#8E9F93] font-mono text-[11px]">
+              <Database className="w-3 h-3 text-[#0284C7] dark:text-[#38BDF8]" /> {decision.metadata.engineVersion}
             </span>
           </div>
         </div>
