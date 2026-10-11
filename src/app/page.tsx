@@ -59,10 +59,9 @@ function FieldGuardApp() {
   const [interactiveTankLiters, setInteractiveTankLiters] = useState<number>(3200);
   const [interactiveRainMm, setInteractiveRainMm] = useState<number>(22.0);
 
-  // Developer authorization gate (configured via .env.local or secret key/shortcut)
-  const [isDevAuthorized, setIsDevAuthorized] = useState<boolean>(false);
-  // Demo Sandbox toggle switch (dev turns ON for hackathon recording, OFF for clean production view)
-  const [isDemoModeActive, setIsDemoModeActive] = useState<boolean>(false);
+  // Master Demo Mode Gate: Strictly controlled by process.env.NEXT_PUBLIC_ENABLE_DEMO_SANDBOX
+  // Only the developer with access to .env / deployment configuration can toggle this.
+  const isDemoMode = process.env.NEXT_PUBLIC_ENABLE_DEMO_SANDBOX === 'true';
 
   // Function to run calculation on a real live farm profile
   const runLiveFarmPlanning = useCallback(async (farm: FarmProfile) => {
@@ -124,20 +123,7 @@ function FieldGuardApp() {
         try { setAuthSession(JSON.parse(savedAuth)); } catch (e) {}
       }
 
-      // Check developer authorization from env or secret query param
-      const envFlag = process.env.NEXT_PUBLIC_ENABLE_DEMO_SANDBOX === 'true';
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlHasDev = urlParams.get('dev') === 'true' || 
-                        urlParams.get('demo') === 'true' || 
-                        urlParams.get('key') === 'fieldguard2026';
-      const storedDevAuth = localStorage.getItem('fieldguard_dev_auth') === 'true';
-      const authorized = envFlag || urlHasDev || storedDevAuth;
-      setIsDevAuthorized(authorized);
 
-      // Check toggle state for demo testing mode
-      const savedDemoToggle = localStorage.getItem('fieldguard_demo_mode_active');
-      const shouldDemoBeActive = authorized && savedDemoToggle === 'true';
-      setIsDemoModeActive(shouldDemoBeActive);
 
       // Check if user has their own saved farm profile
       const savedFarmJson = localStorage.getItem('fieldguard_saved_farm');
@@ -171,22 +157,7 @@ function FieldGuardApp() {
     // Note: If no saved custom farm exists, currentFarm remains null (Empty Dashboard)
   }, []);
 
-  // Keyboard shortcut for developer mode toggle: Ctrl + Shift + D
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
-        setIsDevAuthorized((prev) => {
-          const next = !prev;
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('fieldguard_dev_auth', next ? 'true' : 'false');
-          }
-          return next;
-        });
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+
 
   const handleLogout = () => {
     setAuthSession(null);
@@ -274,17 +245,7 @@ function FieldGuardApp() {
     }
   };
 
-  // Developer Toggle Switch: Turn Hackathon Demo Mode ON / OFF
-  const handleToggleDemoMode = (active: boolean) => {
-    setIsDemoModeActive(active);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('fieldguard_demo_mode_active', active ? 'true' : 'false');
-    }
-    if (!active) {
-      handleExitDemo();
-      setIsSimulating(false);
-    }
-  };
+
 
   // Weather Refresh button handler
   const handleRefreshWeather = () => {
@@ -518,11 +479,11 @@ function FieldGuardApp() {
                 onRefreshWeather={handleRefreshWeather}
                 isRefreshing={isRefreshingWeather}
                 errorMessage={weatherErrorMessage}
-                showDevLevers={isDevAuthorized && isDemoModeActive}
+                showDevLevers={isDemoMode}
               />
 
-              {/* 5. What-If Simulation Levers (Only visible when demo mode is toggled active and simulating) */}
-              {isDevAuthorized && isDemoModeActive && isSimulating && (
+              {/* 5. What-If Simulation Levers (Only visible when demo mode is active via ENV and simulating) */}
+              {isDemoMode && isSimulating && (
                 <div className="glass-panel p-4 sm:p-5 border border-amber-500/30 bg-amber-500/10 fade-in">
                   <div className="flex items-center gap-2 mb-3">
                     <Sliders className="w-4 h-4 text-amber-500" />
@@ -582,8 +543,10 @@ function FieldGuardApp() {
                 plots={decision.plots}
               />
 
-              {/* 9. AWS Architecture Demonstration Drawer */}
-              <AwsProofDrawer decision={decision} storageStatus={storageStatus} />
+              {/* 9. AWS Architecture Demonstration Drawer (Only visible in Demo/Proto mode for video rubric proof) */}
+              {isDemoMode && (
+                <AwsProofDrawer decision={decision} storageStatus={storageStatus} />
+              )}
             </>
           )}
 
@@ -612,11 +575,9 @@ function FieldGuardApp() {
         onAuthSuccess={(session) => setAuthSession(session)}
       />
 
-      {/* 12. Isolated Developer Demo Sandbox Dock (Only if authorized by env key) */}
-      {isDevAuthorized && (
+      {/* 12. Isolated Developer Demo Sandbox Dock (Strictly controlled by NEXT_PUBLIC_ENABLE_DEMO_SANDBOX env var) */}
+      {isDemoMode && (
         <DemoSandboxDock
-          isDemoModeActive={isDemoModeActive}
-          onToggleDemoMode={handleToggleDemoMode}
           activePresetId={activePresetId}
           onSelectPreset={handleSelectDemoPreset}
           onExitDemo={handleExitDemo}
