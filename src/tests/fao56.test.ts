@@ -171,4 +171,92 @@ describe('Feasibility Planner & Multi-Crop Decision Logic', () => {
     expect(result.decision).toBe('RESOURCE_DEFICIT_ALERT');
     expect(result.waterShortfall_liters).toBeGreaterThan(0);
   });
+
+  it('correctly aggregates water demand and prioritizes stress across multiple crop field sections', () => {
+    const multiPlots: CropBlock[] = [
+      {
+        id: 'plot-tomato',
+        cropName: 'Tomato',
+        growthStage: 'mid_season',
+        areaValue: 1.0,
+        areaUnit: 'bigha',
+        area_sq_meters: 1338,
+        rootDepth_m: 0.6,
+        cropCoefficient_Kc: 1.05,
+        depletionFraction_p: 0.45,
+        currentDepletion_mm: 30.0,
+        irrigationMethod: 'drip',
+      },
+      {
+        id: 'plot-wheat',
+        cropName: 'Wheat',
+        growthStage: 'mid_season',
+        areaValue: 2.0,
+        areaUnit: 'bigha',
+        area_sq_meters: 2676,
+        rootDepth_m: 0.7,
+        cropCoefficient_Kc: 1.15,
+        depletionFraction_p: 0.55,
+        currentDepletion_mm: 55.0, // Stressed!
+        irrigationMethod: 'sprinkler',
+      },
+      {
+        id: 'plot-spinach',
+        cropName: 'Spinach',
+        growthStage: 'development',
+        areaValue: 0.5,
+        areaUnit: 'bigha',
+        area_sq_meters: 669,
+        rootDepth_m: 0.25,
+        cropCoefficient_Kc: 1.00,
+        depletionFraction_p: 0.35,
+        currentDepletion_mm: 2.0,
+        irrigationMethod: 'drip',
+      },
+    ];
+
+    const dryForecast: DailyWeatherForecast = {
+      date: '2026-10-10',
+      rainfall_mm: 0,
+      precipitation_probability_pct: 10,
+      reference_et0_mm: 4.5,
+      temp_max_c: 34,
+      temp_min_c: 24,
+      relative_humidity_pct: 50,
+      source: 'Open-Meteo',
+      isLive: false,
+      timestamp: new Date().toISOString(),
+    };
+
+    const bigReserve: WaterReserve = {
+      storageType: 'custom_sump',
+      totalCapacity_liters: 500000,
+      currentAvailable_liters: 450000,
+      pumpPower_hp: 5.0,
+    };
+
+    const plan = runFeasibilityPlanner({
+      plots: multiPlots,
+      awc_mm_per_m: 150,
+      reserve: bigReserve,
+      forecast: dryForecast,
+    });
+
+    // 1. Should have calculations for all 3 plots
+    expect(plan.plots).toHaveLength(3);
+
+    // 2. Wheat plot with 55 mm depletion on 0.7m root depth has crossed RAW limit
+    const wheatResult = plan.plots.find((p) => p.plotId === 'plot-wheat');
+    expect(wheatResult).toBeDefined();
+    expect(wheatResult?.urgencyLevel).toBe('critical');
+
+    // 3. Spinach has small deficit and safe buffer
+    const spinachResult = plan.plots.find((p) => p.plotId === 'plot-spinach');
+    expect(spinachResult).toBeDefined();
+    expect(spinachResult?.urgencyLevel).toBe('low');
+
+    // 4. Total farm demand is the sum of gross demands across all 3 plots
+    const sumGrossDemands = plan.plots.reduce((acc, p) => acc + p.grossWaterNeeded_liters, 0);
+    expect(plan.totalFarmDemand_liters).toBe(sumGrossDemands);
+  });
 });

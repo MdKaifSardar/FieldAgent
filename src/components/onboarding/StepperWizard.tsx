@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   FarmProfile, 
+  CropBlock,
   AreaUnit, 
   SoilTexture, 
   IrrigationMethod, 
@@ -35,7 +36,9 @@ import {
   Search,
   Loader2,
   Building2,
-  Hash
+  Hash,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { LocationMapPicker } from '../map/LocationMapPicker';
 
@@ -151,22 +154,96 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
     initialFarm?.soil.texture || 'loamy'
   );
 
-  // STEP 3: Crop & Land Area state
-  const [cropName, setCropName] = useState(
-    initialFarm?.plots[0]?.cropName || 'Tomato'
-  );
-  const [growthStage, setGrowthStage] = useState<'initial' | 'development' | 'mid_season' | 'late_season'>(
-    initialFarm?.plots[0]?.growthStage || 'mid_season'
-  );
-  const [areaValue, setAreaValue] = useState(
-    initialFarm?.plots[0]?.areaValue || 1.5
-  );
-  const [areaUnit, setAreaUnit] = useState<AreaUnit>(
-    initialFarm?.plots[0]?.areaUnit || 'bigha'
-  );
-  const [irrigationMethod, setIrrigationMethod] = useState<IrrigationMethod>(
-    initialFarm?.plots[0]?.irrigationMethod || 'drip'
-  );
+  // STEP 3: Multi-Plot / Multi-Crop Field Sections State
+  const [plots, setPlots] = useState<{
+    id: string;
+    cropName: string;
+    growthStage: 'initial' | 'development' | 'mid_season' | 'late_season';
+    areaValue: number;
+    areaUnit: AreaUnit;
+    irrigationMethod: IrrigationMethod;
+  }[]>([
+    {
+      id: 'plot-primary-01',
+      cropName: initialFarm?.plots[0]?.cropName || 'Tomato',
+      growthStage: initialFarm?.plots[0]?.growthStage || 'mid_season',
+      areaValue: initialFarm?.plots[0]?.areaValue || 1.5,
+      areaUnit: initialFarm?.plots[0]?.areaUnit || 'bigha',
+      irrigationMethod: initialFarm?.plots[0]?.irrigationMethod || 'drip',
+    },
+  ]);
+
+  // Sync state whenever modal opens or initialFarm changes
+  useEffect(() => {
+    if (isOpen && initialFarm) {
+      setQueryLocation(initialFarm.location.displayName || initialFarm.location.villageOrPincode || '');
+      setLat(initialFarm.location.latitude);
+      setLon(initialFarm.location.longitude);
+      setDistrict(initialFarm.location.district || '');
+      setStateName(initialFarm.location.state || '');
+      setSoilTexture(initialFarm.soil.texture);
+
+      if (initialFarm.plots && initialFarm.plots.length > 0) {
+        setPlots(
+          initialFarm.plots.map((p, idx) => ({
+            id: p.id || `plot-${idx + 1}`,
+            cropName: p.cropName,
+            growthStage: p.growthStage,
+            areaValue: p.areaValue,
+            areaUnit: p.areaUnit,
+            irrigationMethod: p.irrigationMethod,
+          }))
+        );
+      }
+
+      setStorageType(initialFarm.reserve.storageType);
+      setTankCapacity(initialFarm.reserve.totalCapacity_liters);
+      if (initialFarm.reserve.sumpDimensions) {
+        setSumpLength(initialFarm.reserve.sumpDimensions.length_m);
+        setSumpWidth(initialFarm.reserve.sumpDimensions.width_m);
+        setSumpDepth(initialFarm.reserve.sumpDimensions.waterDepth_m);
+      }
+      if (initialFarm.reserve.pumpPower_hp) {
+        setPumpHp(initialFarm.reserve.pumpPower_hp);
+      }
+    }
+  }, [isOpen, initialFarm]);
+
+  // Multi-plot management handlers
+  const handleAddPlot = () => {
+    const nextIdx = plots.length + 1;
+    const availableCrops = ['Wheat', 'Spinach', 'Potato', 'Mustard', 'Paddy', 'Onion', 'Chilli', 'Tomato'];
+    const nextCrop = availableCrops[(nextIdx - 1) % availableCrops.length];
+    setPlots((prev) => [
+      ...prev,
+      {
+        id: `plot-${Date.now()}-${nextIdx}`,
+        cropName: nextCrop,
+        growthStage: 'mid_season',
+        areaValue: 1.0,
+        areaUnit: prev[0]?.areaUnit || 'bigha',
+        irrigationMethod: 'drip',
+      },
+    ]);
+  };
+
+  const handleRemovePlot = (index: number) => {
+    if (plots.length <= 1) return;
+    setPlots((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdatePlot = (
+    index: number,
+    updates: Partial<{
+      cropName: string;
+      growthStage: 'initial' | 'development' | 'mid_season' | 'late_season';
+      areaValue: number;
+      areaUnit: AreaUnit;
+      irrigationMethod: IrrigationMethod;
+    }>
+  ) => {
+    setPlots((prev) => prev.map((p, i) => (i === index ? { ...p, ...updates } : p)));
+  };
 
   // STEP 4: Water Reserve state
   const [storageType, setStorageType] = useState<StorageTier>(
@@ -236,34 +313,56 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
     }
   };
 
-  // Final Form Submission
-  const handleComplete = () => {
-    const awc_mm_per_m = soilTexture === 'sandy' ? 90 : soilTexture === 'clay_black' ? 180 : 150;
-    const infiltration_rate_mm_hr = soilTexture === 'sandy' ? 25 : soilTexture === 'clay_black' ? 8 : 15;
-    const area_sq_meters = normalizeAreaToSqMeters(areaValue, areaUnit);
-
-    // Documented crop agronomic parameters
+  // Agronomic parameters lookup helper for any crop & growth stage
+  const getCropAgronomicParams = (
+    crop: string,
+    stage: 'initial' | 'development' | 'mid_season' | 'late_season'
+  ) => {
     let rootDepth_m = 0.6;
     let cropCoefficient_Kc = 1.05;
     let depletionFraction_p = 0.45;
 
-    if (cropName === 'Spinach') {
+    if (crop === 'Spinach') {
       rootDepth_m = 0.25;
       cropCoefficient_Kc = 1.00;
       depletionFraction_p = 0.35;
-    } else if (cropName === 'Wheat') {
+    } else if (crop === 'Wheat') {
       rootDepth_m = 0.70;
-      cropCoefficient_Kc = growthStage === 'mid_season' ? 1.15 : 0.70;
+      cropCoefficient_Kc = stage === 'mid_season' ? 1.15 : 0.70;
       depletionFraction_p = 0.55;
-    } else if (cropName === 'Paddy') {
+    } else if (crop === 'Paddy') {
       rootDepth_m = 0.40;
       cropCoefficient_Kc = 1.20;
       depletionFraction_p = 0.20;
-    } else if (cropName === 'Potato') {
+    } else if (crop === 'Potato') {
       rootDepth_m = 0.50;
       cropCoefficient_Kc = 1.10;
       depletionFraction_p = 0.35;
+    } else if (crop === 'Mustard') {
+      rootDepth_m = 0.60;
+      cropCoefficient_Kc = stage === 'mid_season' ? 1.05 : 0.65;
+      depletionFraction_p = 0.50;
+    } else if (crop === 'Onion') {
+      rootDepth_m = 0.35;
+      cropCoefficient_Kc = stage === 'mid_season' ? 1.05 : 0.70;
+      depletionFraction_p = 0.30;
+    } else if (crop === 'Chilli') {
+      rootDepth_m = 0.55;
+      cropCoefficient_Kc = stage === 'mid_season' ? 1.05 : 0.65;
+      depletionFraction_p = 0.40;
+    } else if (crop === 'Tomato') {
+      rootDepth_m = 0.60;
+      cropCoefficient_Kc = stage === 'mid_season' ? 1.05 : 0.75;
+      depletionFraction_p = 0.45;
     }
+
+    return { rootDepth_m, cropCoefficient_Kc, depletionFraction_p };
+  };
+
+  // Final Form Submission
+  const handleComplete = () => {
+    const awc_mm_per_m = soilTexture === 'sandy' ? 90 : soilTexture === 'clay_black' ? 180 : 150;
+    const infiltration_rate_mm_hr = soilTexture === 'sandy' ? 25 : soilTexture === 'clay_black' ? 8 : 15;
 
     // Determine available water reserve
     let totalCap = tankCapacity;
@@ -274,10 +373,34 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
       availableLiters = Math.round((totalCap * fillPercent) / 100);
     }
 
+    // Map each user configured plot section to a full CropBlock
+    const mappedPlots: CropBlock[] = plots.map((p, idx) => {
+      const { rootDepth_m, cropCoefficient_Kc, depletionFraction_p } = getCropAgronomicParams(
+        p.cropName,
+        p.growthStage
+      );
+      const area_sq_meters = normalizeAreaToSqMeters(p.areaValue, p.areaUnit);
+      return {
+        id: p.id || `plot-${idx + 1}`,
+        cropName: p.cropName,
+        growthStage: p.growthStage,
+        areaValue: p.areaValue,
+        areaUnit: p.areaUnit,
+        area_sq_meters,
+        rootDepth_m,
+        cropCoefficient_Kc,
+        depletionFraction_p,
+        currentDepletion_mm: 34.0, // Initial soil depletion baseline
+        irrigationMethod: p.irrigationMethod,
+        lastIrrigationDate: new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0],
+      };
+    });
+
+    const cropSummary = Array.from(new Set(plots.map((p) => p.cropName))).join(' & ');
     const farm: FarmProfile = {
       id: initialFarm?.id || `farm-${Date.now()}`,
       userId: 'farmer-user',
-      farmName: `${cropName} Parcel (${district})`,
+      farmName: `${cropSummary} Field (${district || 'Local Parcel'})`,
       location: {
         latitude: lat,
         longitude: lon,
@@ -302,22 +425,7 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
         pumpPower_hp: pumpHp,
         knownFlowRate_liters_per_hr: pumpHp * 1200, // Benchmark: ~1,200 L/hr per HP at 30m head
       },
-      plots: [
-        {
-          id: 'plot-primary-01',
-          cropName,
-          growthStage,
-          areaValue,
-          areaUnit,
-          area_sq_meters,
-          rootDepth_m,
-          cropCoefficient_Kc,
-          depletionFraction_p,
-          currentDepletion_mm: 34.0, // Initial soil depletion baseline
-          irrigationMethod,
-          lastIrrigationDate: new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0],
-        },
-      ],
+      plots: mappedPlots,
       createdAt: initialFarm?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -326,7 +434,10 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
     onClose();
   };
 
-  const calculatedAreaM2 = normalizeAreaToSqMeters(areaValue, areaUnit);
+  const totalCalculatedAreaM2 = plots.reduce(
+    (acc, p) => acc + normalizeAreaToSqMeters(p.areaValue, p.areaUnit),
+    0
+  );
 
   if (!isOpen) return null;
 
@@ -660,129 +771,219 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
           </div>
         )}
 
-        {/* STEP 3: CROP & LAND AREA */}
+        {/* STEP 3: MULTI-CROP & FIELD SECTIONS */}
         {step === 3 && (
           <div className="space-y-4">
-            {/* Crop Selector */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#526356] dark:text-[#8FA394] uppercase tracking-wider">
-                Select Crop
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {[
-                  { id: 'Spinach', label: t.cropSpinach },
-                  { id: 'Wheat', label: t.cropWheat },
-                  { id: 'Paddy', label: t.cropPaddy },
-                  { id: 'Potato', label: t.cropPotato },
-                  { id: 'Tomato', label: 'Tomato' },
-                  { id: 'Mustard', label: 'Mustard' },
-                  { id: 'Onion', label: 'Onion' },
-                  { id: 'Chilli', label: 'Chilli' },
-                ].map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => setCropName(c.id)}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-                      cropName === c.id
-                        ? 'bg-[#2D6A4F] text-white border-[#2D6A4F]'
-                        : 'bg-white dark:bg-[#121E15] border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394] hover:border-[#2D6A4F]/40'
-                    }`}
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-[#4D6653] dark:text-[#8FA894]">
+                {t.stepCropSubtitle}. You can configure multiple plots with distinct crops and irrigation methods.
+              </p>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#16A34A]/10 text-[#16A34A] dark:text-[#4ADE80] border border-[#16A34A]/25 shrink-0 ml-2">
+                {plots.length} {plots.length === 1 ? 'Section' : 'Sections'}
+              </span>
+            </div>
+
+            {/* List of Cultivated Plot Sections */}
+            <div className="space-y-3.5 max-h-[50vh] overflow-y-auto pr-1">
+              {plots.map((plot, index) => {
+                const plotAreaM2 = normalizeAreaToSqMeters(plot.areaValue, plot.areaUnit);
+                const sectionLetter = String.fromCharCode(65 + index);
+
+                return (
+                  <div
+                    key={plot.id}
+                    className="p-4 rounded-2xl bg-white dark:bg-[#141D17] border border-[#E1E8DE] dark:border-[#1F2D24] space-y-3.5 shadow-xs"
                   >
-                    {c.label}
-                  </button>
-                ))}
-              </div>
+                    {/* Section Card Header */}
+                    <div className="flex items-center justify-between pb-2.5 border-b border-[#E1E8DE] dark:border-[#1F2D24]">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-lg bg-[#16A34A] text-white flex items-center justify-center text-xs font-bold font-mono">
+                          {sectionLetter}
+                        </span>
+                        <div>
+                          <span className="text-sm font-bold text-[#121C15] dark:text-[#F0F4F1] font-['Outfit']">
+                            Section {sectionLetter}: {plot.cropName}
+                          </span>
+                          <span className="text-[10px] text-[#4D6653] dark:text-[#8FA894] ml-2 font-mono">
+                            ({plot.areaValue} {plot.areaUnit} • {plotAreaM2.toLocaleString()} m²)
+                          </span>
+                        </div>
+                      </div>
+
+                      {plots.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePlot(index)}
+                          className="text-xs text-[#C2410C] hover:text-[#9A3412] dark:text-[#FB923C] font-semibold px-2.5 py-1 rounded-lg bg-[#C2410C]/10 hover:bg-[#C2410C]/20 transition-colors cursor-pointer flex items-center gap-1"
+                          title="Remove this field section"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>{t.removePlot}</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Crop Selector Chips */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-[#4D6653] dark:text-[#8FA894] uppercase tracking-wider">
+                        Select Crop
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                        {[
+                          { id: 'Spinach', label: t.cropSpinach },
+                          { id: 'Wheat', label: t.cropWheat },
+                          { id: 'Paddy', label: t.cropPaddy },
+                          { id: 'Potato', label: t.cropPotato },
+                          { id: 'Tomato', label: 'Tomato' },
+                          { id: 'Mustard', label: 'Mustard' },
+                          { id: 'Onion', label: 'Onion' },
+                          { id: 'Chilli', label: 'Chilli' },
+                        ].map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => handleUpdatePlot(index, { cropName: c.id })}
+                            className={`py-1.5 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center ${
+                              plot.cropName === c.id
+                                ? 'bg-[#16A34A] text-white border-[#16A34A] shadow-xs'
+                                : 'bg-[#F0F4ED] dark:bg-[#1B2720] border-[#E1E8DE] dark:border-[#2A3E31] text-[#4D6653] dark:text-[#8FA894] hover:border-[#16A34A]/40'
+                            }`}
+                          >
+                            {c.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Growth Stage Dropdown */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-[#4D6653] dark:text-[#8FA894] uppercase tracking-wider">
+                        Crop Growth Stage
+                      </label>
+                      <select
+                        value={plot.growthStage}
+                        onChange={(e) =>
+                          handleUpdatePlot(index, {
+                            growthStage: e.target.value as any,
+                          })
+                        }
+                        className="w-full px-3 py-2 rounded-xl bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] text-xs text-[#121C15] dark:text-[#F0F4F1] focus:outline-none focus:border-[#16A34A]"
+                      >
+                        <option value="initial">Initial Stage (Germination / Seedling)</option>
+                        <option value="development">Vegetative Development</option>
+                        <option value="mid_season">Mid-Season (Flowering & Fruit Set — Peak Water)</option>
+                        <option value="late_season">Late Season (Ripening & Harvest)</option>
+                      </select>
+                    </div>
+
+                    {/* Land Area and Regional Unit Converter */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-[#4D6653] dark:text-[#8FA894] uppercase tracking-wider">
+                        Field Section Area
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0.1"
+                          value={plot.areaValue}
+                          onChange={(e) =>
+                            handleUpdatePlot(index, {
+                              areaValue: parseFloat(e.target.value) || 0.1,
+                            })
+                          }
+                          className="w-1/2 px-3 py-2 rounded-xl bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] text-xs text-[#121C15] dark:text-[#F0F4F1] focus:outline-none focus:border-[#16A34A] font-mono"
+                        />
+                        <select
+                          value={plot.areaUnit}
+                          onChange={(e) =>
+                            handleUpdatePlot(index, {
+                              areaUnit: e.target.value as AreaUnit,
+                            })
+                          }
+                          className="w-1/2 px-3 py-2 rounded-xl bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] text-xs text-[#121C15] dark:text-[#F0F4F1] focus:outline-none focus:border-[#16A34A]"
+                        >
+                          <option value="bigha">Bigha (~1,338 m² East)</option>
+                          <option value="acre">Acre (~4,047 m²)</option>
+                          <option value="guntha">Guntha (~101 m² West)</option>
+                          <option value="cent">Cent (~40.5 m² South)</option>
+                          <option value="hectare">Hectare (10,000 m²)</option>
+                          <option value="sq_meters">Square Metres (m²)</option>
+                        </select>
+                      </div>
+                      <div className="text-[10px] text-[#16A34A] dark:text-[#4ADE80] font-mono">
+                        Normalized Section Area: <strong>{plotAreaM2.toLocaleString()} m²</strong>
+                      </div>
+                    </div>
+
+                    {/* Irrigation Method Selection */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-[#4D6653] dark:text-[#8FA894] uppercase tracking-wider">
+                        {t.irrigationMethod}
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleUpdatePlot(index, { irrigationMethod: 'drip' })}
+                          className={`py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center ${
+                            plot.irrigationMethod === 'drip'
+                              ? 'bg-[#16A34A]/15 border-[#16A34A] text-[#16A34A] dark:text-[#4ADE80]'
+                              : 'bg-[#F0F4ED] dark:bg-[#1B2720] border-[#E1E8DE] dark:border-[#2A3E31] text-[#4D6653] dark:text-[#8FA894]'
+                          }`}
+                        >
+                          <div>{t.drip}</div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdatePlot(index, { irrigationMethod: 'sprinkler' })}
+                          className={`py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center ${
+                            plot.irrigationMethod === 'sprinkler'
+                              ? 'bg-[#0284C7]/15 border-[#0284C7] text-[#0284C7] dark:text-[#38BDF8]'
+                              : 'bg-[#F0F4ED] dark:bg-[#1B2720] border-[#E1E8DE] dark:border-[#2A3E31] text-[#4D6653] dark:text-[#8FA894]'
+                          }`}
+                        >
+                          <div>{t.sprinkler}</div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdatePlot(index, { irrigationMethod: 'surface_flood' })}
+                          className={`py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center ${
+                            plot.irrigationMethod === 'surface_flood'
+                              ? 'bg-[#D97706]/15 border-[#D97706] text-[#D97706] dark:text-[#FBBF24]'
+                              : 'bg-[#F0F4ED] dark:bg-[#1B2720] border-[#E1E8DE] dark:border-[#2A3E31] text-[#4D6653] dark:text-[#8FA894]'
+                          }`}
+                        >
+                          <div>{t.flood}</div>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Growth Stage */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#526356] dark:text-[#8FA394] uppercase tracking-wider">
-                Crop Growth Stage
-              </label>
-              <select
-                value={growthStage}
-                onChange={(e) => setGrowthStage(e.target.value as any)}
-                className="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-[#121E15] border border-[#D5DFD3] dark:border-[#223828] text-sm text-[#111C15] dark:text-[#ECF2EC] focus:outline-none focus:border-[#2D6A4F]"
+            {/* + Add Another Plot Section Button */}
+            {plots.length < 6 && (
+              <button
+                type="button"
+                onClick={handleAddPlot}
+                className="w-full min-h-[44px] py-2.5 px-4 rounded-xl border-2 border-dashed border-[#16A34A]/40 hover:border-[#16A34A] bg-[#16A34A]/5 hover:bg-[#16A34A]/10 text-[#16A34A] dark:text-[#4ADE80] text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
-                <option value="initial">Initial Stage (Germination / Seedling)</option>
-                <option value="development">Vegetative Development</option>
-                <option value="mid_season">Mid-Season (Flowering & Fruit Set — Peak Water)</option>
-                <option value="late_season">Late Season (Ripening & Harvest)</option>
-              </select>
-            </div>
+                <Plus className="w-4 h-4" />
+                <span>{t.addPlot}</span>
+              </button>
+            )}
 
-            {/* Land Area and Regional Unit Converter */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#526356] dark:text-[#8FA394] uppercase tracking-wider">
-                Field Size & Local Unit
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  value={areaValue}
-                  onChange={(e) => setAreaValue(parseFloat(e.target.value) || 0.1)}
-                  className="w-1/2 px-3 py-2 rounded-xl bg-white dark:bg-[#121E15] border border-[#D5DFD3] dark:border-[#223828] text-sm text-[#111C15] dark:text-[#ECF2EC] focus:outline-none focus:border-[#2D6A4F]"
-                />
-                <select
-                  value={areaUnit}
-                  onChange={(e) => setAreaUnit(e.target.value as AreaUnit)}
-                  className="w-1/2 px-3 py-2 rounded-xl bg-white dark:bg-[#121E15] border border-[#D5DFD3] dark:border-[#223828] text-sm text-[#111C15] dark:text-[#ECF2EC] focus:outline-none focus:border-[#2D6A4F]"
-                >
-                  <option value="bigha">Bigha (~1,338 m² East)</option>
-                  <option value="acre">Acre (~4,047 m²)</option>
-                  <option value="guntha">Guntha (~101 m² West)</option>
-                  <option value="cent">Cent (~40.5 m² South)</option>
-                  <option value="hectare">Hectare (10,000 m²)</option>
-                  <option value="sq_meters">Square Metres (m²)</option>
-                </select>
+            {/* Aggregated Total Land Area Summary */}
+            <div className="p-3.5 rounded-xl bg-white dark:bg-[#141D17] border border-[#E1E8DE] dark:border-[#1F2D24] flex items-center justify-between text-xs shadow-xs">
+              <div>
+                <span className="text-[#4D6653] dark:text-[#8FA894] font-medium">{t.totalFarmArea}:</span>{' '}
+                <strong className="text-[#121C15] dark:text-[#F0F4F1] font-mono text-sm">
+                  {totalCalculatedAreaM2.toLocaleString()} m²
+                </strong>
               </div>
-              <div className="text-[11px] text-[#2D6A4F] dark:text-[#52B788] font-mono">
-                Normalized Area: <strong>{calculatedAreaM2.toLocaleString()} m²</strong>
-              </div>
-            </div>
-
-            {/* Irrigation Method Selection */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#526356] dark:text-[#8FA394] uppercase tracking-wider">
-                {t.irrigationMethod}
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIrrigationMethod('drip')}
-                  className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center ${
-                    irrigationMethod === 'drip'
-                      ? 'bg-[#2D6A4F]/15 border-[#2D6A4F] text-[#1B4332] dark:text-[#74C69D]'
-                      : 'bg-white dark:bg-[#121E15] border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394]'
-                  }`}
-                >
-                  <div>{t.drip}</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIrrigationMethod('sprinkler')}
-                  className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center ${
-                    irrigationMethod === 'sprinkler'
-                      ? 'bg-[#1D4E89]/15 border-[#1D4E89] text-[#0C2D57] dark:text-[#90CAF9]'
-                      : 'bg-white dark:bg-[#121E15] border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394]'
-                  }`}
-                >
-                  <div>{t.sprinkler}</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIrrigationMethod('surface_flood')}
-                  className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center ${
-                    irrigationMethod === 'surface_flood'
-                      ? 'bg-[#D97706]/15 border-[#D97706] text-[#92400E] dark:text-[#FCD34D]'
-                      : 'bg-white dark:bg-[#121E15] border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394]'
-                  }`}
-                >
-                  <div>{t.flood}</div>
-                </button>
+              <div className="text-[11px] font-semibold text-[#16A34A] dark:text-[#4ADE80]">
+                {plots.length} {plots.length === 1 ? 'Crop Block' : 'Crop Blocks'}
               </div>
             </div>
           </div>

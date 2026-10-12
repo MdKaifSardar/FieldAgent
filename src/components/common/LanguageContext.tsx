@@ -115,6 +115,10 @@ export interface Translations {
   drip: string;
   sprinkler: string;
   flood: string;
+  addPlot: string;
+  removePlot: string;
+  fieldSections: string;
+  totalFarmArea: string;
 }
 
 const DICTIONARY: Record<SupportedLanguage, Translations> = {
@@ -230,6 +234,10 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     drip: 'Drip (90% Eff.)',
     sprinkler: 'Sprinkler (75% Eff.)',
     flood: 'Surface / Flood (60% Eff.)',
+    addPlot: '+ Add Another Field Section / Crop',
+    removePlot: 'Remove Section',
+    fieldSections: 'Cultivated Field Sections',
+    totalFarmArea: 'Total Cultivated Land Area',
   },
   hi: {
     appName: 'फील्डगार्ड (FieldGuard)',
@@ -343,6 +351,10 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     drip: 'ड्रिप / टपक (90% दक्षता)',
     sprinkler: 'फव्वारा (75% दक्षता)',
     flood: 'पारंपरिक नाली / बाढ़ (60% दक्षता)',
+    addPlot: '+ दूसरा खेत / फसल जोड़ें',
+    removePlot: 'खेत हटाएं',
+    fieldSections: 'खेती के विभिन्न अनुभाग व फसलें',
+    totalFarmArea: 'कुल जोती गई जमीन का क्षेत्रफल',
   },
   bn: {
     appName: 'ফিল্ডগার্ড (FieldGuard)',
@@ -456,6 +468,10 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     drip: 'ড্রিপ / বিন্দু সেচ (৯০% দক্ষতা)',
     sprinkler: 'স্প্রিংকলার / ফোয়ারা (৭৫% দক্ষতা)',
     flood: 'প্লাবন / নালা সেচ (৬০% দক্ষতা)',
+    addPlot: '+ আরেকটি জমির অংশ / ফসল যোগ করুন',
+    removePlot: 'অংশ মুছুন',
+    fieldSections: 'চাষকৃত জমির বিভিন্ন অংশ ও ফসল',
+    totalFarmArea: 'মোট চাষযোগ্য জমির আয়তন',
   },
 };
 
