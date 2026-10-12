@@ -307,32 +307,32 @@ export function LandingPage({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-              <div className="font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-1.5">
-                <Server className="w-4 h-4 text-orange-500" />
+            <div className="p-4 rounded-xl bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31]">
+              <div className="font-bold text-[#121C15] dark:text-[#F0F4F1] mb-1 flex items-center gap-1.5">
+                <Server className="w-4 h-4 text-[#D97706]" />
                 <span>AWS DynamoDB</span>
               </div>
-              <p className="text-slate-600 dark:text-slate-400">
+              <p className="text-[#4D6653] dark:text-[#8FA894]">
                 Single-digit millisecond latency storage for parcel geometries (FieldGuard-Farms) and decision logs.
               </p>
             </div>
 
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-              <div className="font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-cyan-500" />
+            <div className="p-4 rounded-xl bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31]">
+              <div className="font-bold text-[#121C15] dark:text-[#F0F4F1] mb-1 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-[#0284C7]" />
                 <span>Amazon Cognito</span>
               </div>
-              <p className="text-slate-600 dark:text-slate-400">
+              <p className="text-[#4D6653] dark:text-[#8FA894]">
                 Passwordless 6-digit OTP verification for farmers and agricultural advisors without credentials risk.
               </p>
             </div>
 
-            <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-              <div className="font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-1.5">
-                <Cpu className="w-4 h-4 text-emerald-500" />
+            <div className="p-4 rounded-xl bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31]">
+              <div className="font-bold text-[#121C15] dark:text-[#F0F4F1] mb-1 flex items-center gap-1.5">
+                <Cpu className="w-4 h-4 text-[#16A34A]" />
                 <span>Serverless Microservices</span>
               </div>
-              <p className="text-slate-600 dark:text-slate-400">
+              <p className="text-[#4D6653] dark:text-[#8FA894]">
                 Stateless FAO-56 execution engine ready for AWS Lambda deployment with zero idle cost.
               </p>
             </div>
@@ -342,18 +342,18 @@ export function LandingPage({
 
       {/* 5. FINAL CALL TO ACTION */}
       <section className="max-w-4xl mx-auto px-4 text-center">
-        <div className="glass-panel p-8 sm:p-12 rounded-3xl border border-emerald-500/30 dark:border-emerald-500/30 relative overflow-hidden bg-gradient-to-b from-emerald-50/40 to-cyan-50/20 dark:from-emerald-950/20 dark:to-slate-950/40">
-          <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white font-['Outfit'] mb-3">
+        <div className="glass-panel p-8 sm:p-12 rounded-3xl border border-[#16A34A]/30 relative overflow-hidden bg-gradient-to-b from-white/80 to-[#F0F4ED]/60 dark:from-[#141D17] dark:to-[#0D1310]">
+          <h3 className="text-2xl sm:text-3xl font-extrabold text-[#121C15] dark:text-[#F0F4F1] font-['Outfit'] mb-3">
             Equip Your Field for Seasonal Heat & Water Resilience
           </h3>
-          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-lg mx-auto mb-8">
+          <p className="text-sm sm:text-base text-[#4D6653] dark:text-[#8FA894] max-w-lg mx-auto mb-8">
             Configure your location, soil texture, crop stage, and tank capacity in under 2 minutes.
           </p>
 
           <button
             type="button"
             onClick={onOpenOnboarding}
-            className="min-h-[48px] px-8 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-bold text-sm shadow-xl shadow-emerald-600/30 transition-all transform hover:scale-[1.02] cursor-pointer inline-flex items-center gap-2"
+            className="min-h-[48px] px-8 py-3.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-sm shadow-lg shadow-[#16A34A]/25 transition-all transform hover:scale-[1.02] cursor-pointer inline-flex items-center gap-2"
           >
             <SlidersHorizontal className="w-4 h-4" />
             <span>Start Free Field Setup</span>

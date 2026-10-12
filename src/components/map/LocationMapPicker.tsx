@@ -203,13 +203,13 @@ export function LocationMapPicker({
   };
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-inner group">
+    <div className="relative w-full rounded-2xl overflow-hidden border border-[#E1E8DE] dark:border-[#1F2D24] shadow-inner group">
       
       {/* Map DOM Canvas */}
       <div 
         ref={mapContainerRef} 
         style={{ height, width: '100%' }}
-        className="z-0 bg-slate-900"
+        className="z-0 bg-[#E8EFE5] dark:bg-[#141D17]"
       />
 
       {/* Floating Top Bar Controls */}

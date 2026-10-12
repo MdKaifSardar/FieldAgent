@@ -82,19 +82,19 @@ export function DemoSandboxDock({
               onClick={() => onSelectPreset('preset_rain_avoidance')}
               className={`w-full p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer flex items-start gap-2.5 ${
                 activePresetId === 'preset_rain_avoidance'
-                  ? 'bg-emerald-950/50 border-emerald-500 text-emerald-200 shadow-sm shadow-emerald-500/20'
-                  : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                  ? 'bg-[#16A34A]/20 border-[#16A34A] text-[#86EFAC] shadow-sm shadow-[#16A34A]/20'
+                  : 'bg-[#1B2720]/80 border-[#2A3E31] text-[#E4EBE0] hover:border-[#16A34A]/50'
               }`}
             >
-              <CloudRain className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              <CloudRain className="w-4 h-4 text-[#4ADE80] shrink-0 mt-0.5" />
               <div className="flex-1">
                 <div className="font-bold flex items-center justify-between">
                   <span>Scenario A: Rain Avoidance</span>
                   {activePresetId === 'preset_rain_avoidance' && (
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <Check className="w-3.5 h-3.5 text-[#4ADE80]" />
                   )}
                 </div>
-                <div className="text-[10px] text-slate-400">
+                <div className="text-[10px] text-[#8FA894]">
                   22 mm rain forecast • "Wait & Reassess" • 16,500 L deferred (₹165 saved)
                 </div>
               </div>
@@ -106,8 +106,8 @@ export function DemoSandboxDock({
               onClick={() => onSelectPreset('preset_resource_deficit')}
               className={`w-full p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer flex items-start gap-2.5 ${
                 activePresetId === 'preset_resource_deficit'
-                  ? 'bg-rose-950/50 border-rose-500 text-rose-200 shadow-sm shadow-rose-500/20'
-                  : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'
+                  ? 'bg-[#C2410C]/20 border-[#C2410C] text-[#FDBA74] shadow-sm shadow-[#C2410C]/20'
+                  : 'bg-[#1B2720]/80 border-[#2A3E31] text-[#E4EBE0] hover:border-[#C2410C]/50'
               }`}
             >
               <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />

@@ -1,23 +1,23 @@
-'use client';
-
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Droplets, 
   SlidersHorizontal, 
   Globe, 
   User, 
   LogIn, 
-  LogOut,
-  Sun,
-  Moon,
-  LayoutDashboard,
-  Home,
-  Sprout
+  LogOut, 
+  Sun, 
+  Moon, 
+  LayoutDashboard, 
+  Home, 
+  Sprout,
+  Menu
 } from 'lucide-react';
 import { useLanguage } from './common/LanguageContext';
 import { useTheme } from './common/ThemeContext';
 import { SupportedLanguage } from '../adapters/speechAdapter';
 import { AuthSession } from '../adapters/cognitoAdapter';
+import { MobileSideDrawer } from './common/MobileSideDrawer';
 
 interface HeaderProps {
   onOpenOnboarding: () => void;
@@ -36,157 +36,195 @@ export function Header({
   authSession,
   onLogout,
   hasCustomFarm = false,
+  onResetFarm,
   activeView,
   onViewChange,
 }: HeaderProps) {
   const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   return (
-    <header className="w-full border-b border-[#E1E5DC] dark:border-[#1E2F24] bg-white/95 dark:bg-[#0B130E]/95 backdrop-blur-md sticky top-0 z-30 transition-colors">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3">
-        <div className="flex items-center justify-between gap-2.5 sm:gap-4">
-          
-          {/* Logo & Navigation Tabs */}
-          <div className="flex items-center gap-3 sm:gap-5">
-            <button
-              type="button"
-              onClick={() => onViewChange('landing')}
-              className="flex items-center gap-2.5 text-left cursor-pointer group"
-            >
-              <div className="h-9 w-9 rounded-xl bg-[#2D6A4F] text-white flex items-center justify-center shadow-sm shrink-0">
-                <Sprout className="h-5 w-5" />
-              </div>
-              <div className="hidden xs:block">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-lg sm:text-xl font-bold tracking-tight text-[#111C15] dark:text-[#ECF2EC] font-['Outfit'] group-hover:text-[#2D6A4F] dark:group-hover:text-[#52B788] transition-colors">
-                    {t.appName}
-                  </span>
-                  <span className="hidden md:inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-[#2D6A4F]/10 text-[#2D6A4F] dark:text-[#52B788] border border-[#2D6A4F]/25">
-                    AI Telemetry
-                  </span>
-                </div>
-                <p className="text-[10px] sm:text-[11px] text-[#5A6B60] dark:text-[#8E9F93] truncate max-w-[150px] sm:max-w-none">
-                  {t.tagline}
-                </p>
-              </div>
-            </button>
-
-            {/* Navigation View Switcher (Landing vs Field Dashboard) */}
-            <nav className="flex items-center bg-stone-100 dark:bg-[#121D16] p-0.5 rounded-lg border border-[#E1E5DC] dark:border-[#1E2F24] text-xs">
+    <>
+      <header className="w-full border-b border-[#E1E8DE] dark:border-[#1F2D24] bg-white/95 dark:bg-[#0D1310]/95 backdrop-blur-md sticky top-0 z-30 transition-colors">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3">
+          <div className="flex items-center justify-between gap-2.5 sm:gap-4">
+            
+            {/* Logo & Navigation Tabs */}
+            <div className="flex items-center gap-3 sm:gap-5">
               <button
                 type="button"
                 onClick={() => onViewChange('landing')}
-                className={`min-h-[32px] px-2.5 sm:px-3 py-1 rounded-md font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  activeView === 'landing'
-                    ? 'bg-white dark:bg-[#1E2F24] text-[#2D6A4F] dark:text-[#52B788] shadow-xs'
-                    : 'text-[#5A6B60] dark:text-[#8E9F93] hover:text-[#111C15] dark:hover:text-[#ECF2EC]'
+                className="flex items-center gap-2.5 text-left cursor-pointer group"
+              >
+                <div className="h-9 w-9 rounded-xl bg-[#16A34A] text-white flex items-center justify-center shadow-xs shrink-0">
+                  <Sprout className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-lg sm:text-xl font-bold tracking-tight text-[#121C15] dark:text-[#F0F4F1] font-['Outfit'] group-hover:text-[#16A34A] dark:group-hover:text-[#4ADE80] transition-colors">
+                      {t.appName}
+                    </span>
+                    <span className="hidden md:inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-[#16A34A]/10 text-[#16A34A] dark:text-[#4ADE80] border border-[#16A34A]/25">
+                      AI Telemetry
+                    </span>
+                  </div>
+                  <p className="hidden sm:block text-[10px] sm:text-[11px] text-[#526356] dark:text-[#9BAEA0] truncate max-w-[200px] sm:max-w-none">
+                    {t.tagline}
+                  </p>
+                </div>
+              </button>
+
+              {/* Navigation View Switcher (Landing vs Field Dashboard) */}
+              <nav className="hidden sm:flex items-center bg-[#F0F4ED] dark:bg-[#1B2720] p-0.5 rounded-xl border border-[#E1E8DE] dark:border-[#2A3E31] text-xs">
+                <button
+                  type="button"
+                  onClick={() => onViewChange('landing')}
+                  className={`min-h-[34px] px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    activeView === 'landing'
+                      ? 'bg-white dark:bg-[#141D17] text-[#16A34A] dark:text-[#4ADE80] shadow-xs'
+                      : 'text-[#526356] dark:text-[#9BAEA0] hover:text-[#121C15] dark:hover:text-[#F0F4F1]'
+                  }`}
+                >
+                  <Home className="w-3.5 h-3.5" />
+                  <span>{t.overview}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onViewChange('dashboard')}
+                  className={`min-h-[34px] px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    activeView === 'dashboard'
+                      ? 'bg-white dark:bg-[#141D17] text-[#16A34A] dark:text-[#4ADE80] shadow-xs'
+                      : 'text-[#526356] dark:text-[#9BAEA0] hover:text-[#121C15] dark:hover:text-[#F0F4F1]'
+                  }`}
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  <span>{t.fieldAdvisor}</span>
+                </button>
+              </nav>
+            </div>
+
+            {/* Desktop Action Controls */}
+            <div className="hidden md:flex items-center gap-2 shrink-0">
+              
+              {/* Theme Toggle Button */}
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="min-h-[36px] w-9 h-9 rounded-xl bg-[#F0F4ED] hover:bg-[#E4EBE0] dark:bg-[#1B2720] dark:hover:bg-[#23322A] border border-[#E1E8DE] dark:border-[#2A3E31] text-[#121C15] dark:text-[#F0F4F1] flex items-center justify-center transition-colors cursor-pointer"
+                title={theme === 'dark' ? 'Switch to Sunlit Paper Theme' : 'Switch to Mineral Night Theme'}
+                aria-label="Toggle Theme"
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-4 h-4 text-amber-400" />
+                ) : (
+                  <Moon className="w-4 h-4 text-[#526356]" />
+                )}
+              </button>
+
+              {/* Language Switcher */}
+              <div className="flex items-center bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] rounded-xl p-0.5">
+                <Globe className="w-3.5 h-3.5 text-[#526356] dark:text-[#9BAEA0] ml-1.5 mr-0.5" />
+                {(['en', 'hi', 'bn'] as SupportedLanguage[]).map((l) => (
+                  <button
+                    key={l}
+                    type="button"
+                    onClick={() => setLanguage(l)}
+                    className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                      language === l
+                        ? 'bg-[#16A34A] text-white shadow-xs'
+                        : 'text-[#526356] dark:text-[#9BAEA0] hover:text-[#121C15] dark:hover:text-white'
+                    }`}
+                  >
+                    {l === 'en' ? 'EN' : l === 'hi' ? 'हिंदी' : 'বাংলা'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Farm Profile Configurator Button */}
+              <button
+                type="button"
+                onClick={onOpenOnboarding}
+                className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0 ${
+                  hasCustomFarm
+                    ? 'bg-[#F0F4ED] hover:bg-[#E4EBE0] dark:bg-[#1B2720] dark:hover:bg-[#23322A] border border-[#E1E8DE] dark:border-[#2A3E31] text-[#121C15] dark:text-[#F0F4F1]'
+                    : 'bg-[#16A34A] hover:bg-[#15803D] text-white shadow-sm font-bold'
                 }`}
               >
-                <Home className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{t.overview}</span>
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>{hasCustomFarm ? t.editFarm : t.setUpFarm}</span>
+              </button>
+
+              {/* Auth Badge / Button */}
+              <div>
+                {authSession ? (
+                  <div className="flex items-center gap-1.5 p-1 px-2.5 rounded-xl bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] text-xs">
+                    <User className="w-3.5 h-3.5 text-[#16A34A] dark:text-[#4ADE80]" />
+                    <span className="text-[#121C15] dark:text-[#F0F4F1] font-medium truncate max-w-[120px]">
+                      {authSession.displayName}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={onLogout}
+                      className="ml-1 p-0.5 text-[#526356] hover:text-rose-500 cursor-pointer"
+                      title={t.signOut}
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onOpenAuth}
+                    className="min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-bold bg-[#F0F4ED] hover:bg-[#E4EBE0] dark:bg-[#1B2720] dark:hover:bg-[#23322A] border border-[#E1E8DE] dark:border-[#2A3E31] text-[#121C15] dark:text-[#F0F4F1] transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <LogIn className="w-3.5 h-3.5 text-[#16A34A]" />
+                    <span>{t.signIn}</span>
+                  </button>
+                )}
+              </div>
+
+            </div>
+
+            {/* Mobile Header Actions: Quick Farm button + Hamburger Menu */}
+            <div className="flex md:hidden items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={onOpenOnboarding}
+                className="min-h-[40px] px-3 py-1.5 rounded-xl text-xs font-bold bg-[#16A34A] text-white flex items-center gap-1.5 shadow-xs cursor-pointer"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>{hasCustomFarm ? 'Parcel' : '+ Farm'}</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => onViewChange('dashboard')}
-                className={`min-h-[32px] px-2.5 sm:px-3 py-1 rounded-md font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  activeView === 'dashboard'
-                    ? 'bg-white dark:bg-[#1E2F24] text-[#2D6A4F] dark:text-[#52B788] shadow-xs'
-                    : 'text-[#5A6B60] dark:text-[#8E9F93] hover:text-[#111C15] dark:hover:text-[#ECF2EC]'
-                }`}
+                onClick={() => setIsMobileDrawerOpen(true)}
+                className="min-h-[44px] min-w-[44px] p-2 rounded-xl bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] text-[#121C15] dark:text-[#F0F4F1] flex items-center justify-center cursor-pointer shadow-xs"
+                aria-label="Open Navigation Menu"
               >
-                <LayoutDashboard className="w-3.5 h-3.5" />
-                <span>{t.fieldAdvisor}</span>
+                <Menu className="w-5 h-5 text-[#16A34A]" />
               </button>
-            </nav>
-          </div>
-
-          {/* Right Action Controls: Theme + Language + Configure + Auth */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            
-            {/* Theme Toggle Button */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="min-h-[36px] w-9 h-9 rounded-lg bg-stone-100 hover:bg-stone-200 dark:bg-[#121D16] dark:hover:bg-[#1E2F24] border border-[#E1E5DC] dark:border-[#1E2F24] text-stone-700 dark:text-stone-300 flex items-center justify-center transition-colors cursor-pointer"
-              title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
-              aria-label="Toggle Theme"
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-4 h-4 text-amber-400" />
-              ) : (
-                <Moon className="w-4 h-4 text-stone-700" />
-              )}
-            </button>
-
-            {/* Language Switcher */}
-            <div className="hidden sm:flex items-center bg-stone-100 dark:bg-[#121D16] border border-[#E1E5DC] dark:border-[#1E2F24] rounded-lg p-0.5">
-              <Globe className="w-3.5 h-3.5 text-stone-400 ml-1 mr-0.5" />
-              {(['en', 'hi', 'bn'] as SupportedLanguage[]).map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  onClick={() => setLanguage(l)}
-                  className={`px-2 py-1 rounded text-xs font-bold transition-colors cursor-pointer ${
-                    language === l
-                      ? 'bg-[#2D6A4F] text-white shadow-xs'
-                      : 'text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white'
-                  }`}
-                >
-                  {l === 'en' ? 'EN' : l === 'hi' ? 'हिंदी' : 'বাংলা'}
-                </button>
-              ))}
-            </div>
-
-            {/* Farm Profile Configurator Button */}
-            <button
-              type="button"
-              onClick={onOpenOnboarding}
-              className={`min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0 ${
-                hasCustomFarm
-                  ? 'bg-stone-100 hover:bg-stone-200 dark:bg-[#1A291E] dark:hover:bg-[#243A2B] border border-[#E1E5DC] dark:border-[#2A4333] text-stone-800 dark:text-[#ECF2EC]'
-                  : 'bg-[#2D6A4F] hover:bg-[#23533E] text-white shadow-sm font-bold'
-              }`}
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{hasCustomFarm ? t.editFarm : t.setUpFarm}</span>
-              <span className="sm:hidden">{hasCustomFarm ? 'Edit' : '+ Farm'}</span>
-            </button>
-
-            {/* Auth Badge / Button */}
-            <div>
-              {authSession ? (
-                <div className="flex items-center gap-1.5 p-1 px-2.5 rounded-lg bg-emerald-50 dark:bg-[#1A291E] border border-emerald-300 dark:border-[#2A4333] text-xs">
-                  <User className="w-3.5 h-3.5 text-[#2D6A4F] dark:text-[#52B788]" />
-                  <span className="text-stone-900 dark:text-white font-medium truncate max-w-[80px] sm:max-w-[130px]">
-                    {authSession.displayName}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={onLogout}
-                    className="ml-1 p-0.5 text-stone-400 hover:text-rose-500 cursor-pointer"
-                    title={t.signOut}
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={onOpenAuth}
-                  className="min-h-[36px] px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold bg-stone-100 hover:bg-stone-200 dark:bg-[#121D16] dark:hover:bg-[#1E2F24] border border-[#E1E5DC] dark:border-[#1E2F24] text-stone-800 dark:text-stone-200 transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <LogIn className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">{t.signIn}</span>
-                </button>
-              )}
             </div>
 
           </div>
-
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Slide-over Mobile Side Menu Drawer */}
+      <MobileSideDrawer
+        isOpen={isMobileDrawerOpen}
+        onClose={() => setIsMobileDrawerOpen(false)}
+        onOpenOnboarding={onOpenOnboarding}
+        onOpenAuth={onOpenAuth}
+        authSession={authSession}
+        onLogout={onLogout}
+        hasCustomFarm={hasCustomFarm}
+        onResetFarm={onResetFarm}
+        activeView={activeView}
+        onViewChange={onViewChange}
+      />
+    </>
   );
 }

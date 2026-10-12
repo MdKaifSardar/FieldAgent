@@ -12,9 +12,10 @@ interface AudioAdvisoryButtonProps {
     bengali?: string;
   };
   cropName: string;
+  variant?: 'leaf' | 'terracotta' | 'water';
 }
 
-export function AudioAdvisoryButton({ advisoryText, cropName }: AudioAdvisoryButtonProps) {
+export function AudioAdvisoryButton({ advisoryText, cropName, variant = 'leaf' }: AudioAdvisoryButtonProps) {
   const { language, t } = useLanguage();
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [hasVoicePack, setHasVoicePack] = useState(true);
@@ -59,16 +60,26 @@ export function AudioAdvisoryButton({ advisoryText, cropName }: AudioAdvisoryBut
     setHasVoicePack(hasNativeVoice);
   };
 
+  const buttonStyle = isSpeaking
+    ? 'bg-rose-600 hover:bg-rose-500 text-white animate-pulse'
+    : variant === 'terracotta'
+    ? 'bg-[#C2410C] hover:bg-[#9A3412] text-white shadow-xs'
+    : variant === 'water'
+    ? 'bg-[#0284C7] hover:bg-[#0369A1] text-white shadow-xs'
+    : 'bg-[#16A34A] hover:bg-[#15803D] text-white shadow-xs';
+
+  const badgeStyle = variant === 'terracotta'
+    ? 'bg-black/20 text-orange-100'
+    : variant === 'water'
+    ? 'bg-black/20 text-sky-100'
+    : 'bg-black/20 text-emerald-100';
+
   return (
     <div className="flex flex-col gap-1.5 w-full">
       <button
         type="button"
         onClick={handleToggleSpeak}
-        className={`w-full min-h-[48px] px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-lg active:scale-98 ${
-          isSpeaking
-            ? 'bg-rose-600 hover:bg-rose-500 text-white animate-pulse'
-            : 'bg-emerald-600 hover:bg-emerald-500 text-white'
-        }`}
+        className={`w-full min-h-[48px] px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 transition-all cursor-pointer ${buttonStyle}`}
       >
         {isSpeaking ? (
           <>
@@ -84,7 +95,7 @@ export function AudioAdvisoryButton({ advisoryText, cropName }: AudioAdvisoryBut
           <>
             <Volume2 className="w-5 h-5 shrink-0" />
             <span>{t.listenAdvisory}</span>
-            <span className="text-xs bg-emerald-700/60 px-2 py-0.5 rounded-full font-medium">
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeStyle}`}>
               {language === 'hi' ? 'हिंदी' : language === 'bn' ? 'বাংলা' : 'English'}
             </span>
           </>

@@ -369,52 +369,52 @@ function FieldGuardApp() {
           {/* EMPTY STATE DASHBOARD: Displayed when no custom parcel is configured */}
           {!currentFarm && !activePresetId && !isRefreshingWeather && (
             <div className="max-w-3xl mx-auto py-8 sm:py-16 px-2 sm:px-4">
-              <div className="p-6 sm:p-10 border border-[#E1E6DE] dark:border-[#1E3022] bg-[#F9FAF7] dark:bg-[#0E1711] shadow-xl rounded-3xl text-center relative overflow-hidden">
-                <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-[#2D6A4F]/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="p-6 sm:p-10 border border-[#E1E8DE] dark:border-[#1F2D24] bg-white dark:bg-[#141D17] shadow-xl rounded-3xl text-center relative overflow-hidden">
+                <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-[#16A34A]/10 rounded-full blur-3xl pointer-events-none" />
                 
-                <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-[#2D6A4F]/10 border border-[#2D6A4F]/25 flex items-center justify-center text-[#2D6A4F] dark:text-[#52B788] shadow-sm">
+                <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-[#16A34A]/10 border border-[#16A34A]/25 flex items-center justify-center text-[#16A34A] dark:text-[#22C55E] shadow-sm">
                   <Sprout className="w-8 h-8" />
                 </div>
 
-                <h2 className="text-2xl sm:text-3xl font-bold text-[#111C15] dark:text-[#ECF2EC] font-['Outfit'] mb-2.5">
+                <h2 className="text-2xl sm:text-3xl font-bold text-[#121C15] dark:text-[#F0F4F1] font-['Outfit'] mb-2.5">
                   No Farm Parcel Configured
                 </h2>
-                <p className="text-sm sm:text-base text-[#526356] dark:text-[#8FA394] max-w-lg mx-auto mb-8">
+                <p className="text-sm sm:text-base text-[#4D6653] dark:text-[#8FA894] max-w-lg mx-auto mb-8">
                   Your dashboard is currently empty. Configure your parcel to receive live Open-Meteo weather and precision irrigation decisions tailored to your exact soil texture and crop stage.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-8 text-left">
-                  <div className="p-4 rounded-xl bg-white dark:bg-[#121E15] border border-[#E1E6DE] dark:border-[#1E3022] flex flex-col justify-between">
+                  <div className="p-4 rounded-xl bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center gap-2 text-[#1D4E89] dark:text-[#64B5F6] text-xs font-bold mb-1">
+                      <div className="flex items-center gap-2 text-[#0284C7] dark:text-[#38BDF8] text-xs font-bold mb-1">
                         <MapPin className="w-4 h-4 shrink-0" />
                         <span>1. Geo-Location</span>
                       </div>
-                      <p className="text-[11px] text-[#526356] dark:text-[#8FA394]">
+                      <p className="text-[11px] text-[#4D6653] dark:text-[#8FA894]">
                         GPS or village pin code lookup for live meteorological forecasts.
                       </p>
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-white dark:bg-[#121E15] border border-[#E1E6DE] dark:border-[#1E3022] flex flex-col justify-between">
+                  <div className="p-4 rounded-xl bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center gap-2 text-[#2D6A4F] dark:text-[#52B788] text-xs font-bold mb-1">
+                      <div className="flex items-center gap-2 text-[#16A34A] dark:text-[#22C55E] text-xs font-bold mb-1">
                         <Layers className="w-4 h-4 shrink-0" />
                         <span>2. Soil & Crop</span>
                       </div>
-                      <p className="text-[11px] text-[#526356] dark:text-[#8FA394]">
+                      <p className="text-[11px] text-[#4D6653] dark:text-[#8FA894]">
                         Soil texture AWC capacity and crop root zone depletion dynamics.
                       </p>
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-white dark:bg-[#121E15] border border-[#E1E6DE] dark:border-[#1E3022] flex flex-col justify-between">
+                  <div className="p-4 rounded-xl bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-2 text-[#D97706] dark:text-[#FBBF24] text-xs font-bold mb-1">
                         <Droplets className="w-4 h-4 shrink-0" />
                         <span>3. Water Reserve</span>
                       </div>
-                      <p className="text-[11px] text-[#526356] dark:text-[#8FA394]">
+                      <p className="text-[11px] text-[#4D6653] dark:text-[#8FA894]">
                         Sump or tank capacity calculation to eliminate pump dry-run risk.
                       </p>
                     </div>
@@ -424,7 +424,7 @@ function FieldGuardApp() {
                 <button
                   type="button"
                   onClick={() => setIsOnboardingOpen(true)}
-                  className="px-6 py-3.5 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-bold text-sm shadow-md transition-all transform hover:scale-[1.02] cursor-pointer inline-flex items-center gap-2"
+                  className="px-6 py-3.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-sm shadow-md transition-all transform hover:scale-[1.02] cursor-pointer inline-flex items-center gap-2"
                 >
                   <SlidersHorizontal className="w-4 h-4" />
                   <span>Configure My Field Parcel</span>
@@ -435,31 +435,33 @@ function FieldGuardApp() {
 
           {/* ACTIVE DASHBOARD: Displayed when a farm profile or demo scenario is active */}
           {currentFarm && currentForecast && decision && (
-            <>
+            <div className="space-y-5 sm:space-y-6">
               {/* Active Field Profile Strip */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 sm:p-4 rounded-xl bg-[#F4F7F2] dark:bg-[#0D1811] border border-[#E1E6DE] dark:border-[#1E3022] text-xs">
-                <div className="flex items-center gap-2">
-                  <Sprout className="w-4 h-4 text-[#2D6A4F] dark:text-[#52B788] shrink-0" />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#141D17] border border-[#E1E8DE] dark:border-[#1F2D24] shadow-xs text-xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-[#16A34A]/10 text-[#16A34A] flex items-center justify-center shrink-0">
+                    <Sprout className="w-4 h-4" />
+                  </div>
                   <div>
-                    <span className="text-[#526356] dark:text-[#8FA394]">Active Parcel:</span>{' '}
-                    <strong className="text-[#111C15] dark:text-[#ECF2EC] font-semibold">{currentFarm.farmName}</strong>
-                    <span className="text-[#8FA394] mx-1.5">•</span>
-                    <span className="text-[#1D4E89] dark:text-[#64B5F6] font-medium">{currentFarm.location.displayName || currentFarm.location.villageOrPincode}</span>
+                    <span className="text-[#4D6653] dark:text-[#8FA894] font-medium">Active Parcel:</span>{' '}
+                    <strong className="text-[#121C15] dark:text-[#F0F4F1] font-semibold">{currentFarm.farmName}</strong>
+                    <span className="text-[#8FA894] mx-1.5">•</span>
+                    <span className="text-[#0284C7] dark:text-[#38BDF8] font-medium">{currentFarm.location.displayName || currentFarm.location.villageOrPincode}</span>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 text-[11px] sm:text-xs">
-                  <span className="px-2 py-0.5 rounded bg-white dark:bg-[#121E15] border border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394]">
-                    Soil: <strong className="text-[#2D6A4F] dark:text-[#52B788] capitalize">{currentFarm.soil.texture}</strong> (AWC {currentFarm.soil.awc_mm_per_m} mm/m)
+                  <span className="px-2.5 py-1 rounded-lg bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] text-[#4D6653] dark:text-[#8FA894]">
+                    Soil: <strong className="text-[#16A34A] dark:text-[#22C55E] capitalize">{currentFarm.soil.texture}</strong> (AWC {currentFarm.soil.awc_mm_per_m} mm/m)
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-white dark:bg-[#121E15] border border-[#E1E6DE] dark:border-[#1E3022] text-[#526356] dark:text-[#8FA394]">
-                    Method: <strong className="text-[#1D4E89] dark:text-[#64B5F6] uppercase">{currentFarm.plots[0]?.irrigationMethod || 'DRIP'}</strong>
+                  <span className="px-2.5 py-1 rounded-lg bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] text-[#4D6653] dark:text-[#8FA894]">
+                    Method: <strong className="text-[#0284C7] dark:text-[#38BDF8] uppercase">{currentFarm.plots[0]?.irrigationMethod || 'DRIP'}</strong>
                   </span>
                   {hasCustomFarm && (
                     <button
                       type="button"
                       onClick={handleResetFarm}
-                      className="px-2 py-0.5 rounded bg-[#E5484D]/10 hover:bg-[#E5484D]/20 text-[#C92A2A] dark:text-[#FFA8A8] border border-[#E5484D]/30 transition-colors cursor-pointer text-[10px]"
+                      className="px-2.5 py-1 rounded-lg bg-[#C2410C]/10 hover:bg-[#C2410C]/20 text-[#C2410C] dark:text-[#FB923C] border border-[#C2410C]/30 transition-colors cursor-pointer text-[10px] font-semibold"
                       title="Clear parcel configuration"
                     >
                       Clear Parcel
@@ -468,93 +470,107 @@ function FieldGuardApp() {
                 </div>
               </div>
 
-              {/* 4. Live Climate Station (Connected to real Open-Meteo) */}
-              <LiveClimateStation
-                forecast={currentForecast}
-                locationName={currentFarm.location.displayName || currentFarm.location.villageOrPincode}
-                latitude={currentFarm.location.latitude}
-                longitude={currentFarm.location.longitude}
-                isSimulating={isSimulating}
-                onToggleSimulation={setIsSimulating}
-                onRefreshWeather={handleRefreshWeather}
-                isRefreshing={isRefreshingWeather}
-                errorMessage={weatherErrorMessage}
-                showDevLevers={isDemoMode}
-              />
+              {/* COCKPIT TIER 1: Primary Action & Live Climate (Desktop 7:5 Grid / Mobile Stack) */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
+                {/* Left 7 cols: Hero Decision Card + What-If simulation levers */}
+                <div className="lg:col-span-7 space-y-4 sm:space-y-5">
+                  <DecisionCard decision={decision} />
 
-              {/* 5. What-If Simulation Levers (Only visible when demo mode is active via ENV and simulating) */}
-              {isDemoMode && isSimulating && (
-                <div className="p-4 sm:p-5 rounded-2xl border border-[#D97706]/30 bg-[#FEF3C7]/40 dark:bg-[#2A1805]/40 fade-in">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sliders className="w-4 h-4 text-[#D97706]" />
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#92400E] dark:text-[#FCD34D]">
-                      What-If Scenario Levers (Instant Real-Time Decision Shifts)
-                    </h4>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-[#526356] dark:text-[#8FA394]">Simulate Forecast Rain:</span>
-                        <strong className="text-[#1D4E89] dark:text-[#64B5F6] font-mono text-sm">{interactiveRainMm} mm</strong>
+                  {/* What-If Simulation Levers (Only visible when demo mode is active via ENV and simulating) */}
+                  {isDemoMode && isSimulating && (
+                    <div className="p-4 sm:p-5 rounded-2xl border border-[#D97706]/35 bg-[#FEF3C7]/40 dark:bg-[#1F1708] fade-in shadow-xs">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Sliders className="w-4 h-4 text-[#D97706]" />
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-[#92400E] dark:text-[#FCD34D]">
+                          What-If Scenario Levers (Instant Real-Time Decision Shifts)
+                        </h4>
                       </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="40"
-                        step="1"
-                        value={interactiveRainMm}
-                        onChange={(e) => handleRainSliderChange(parseFloat(e.target.value))}
-                        className="w-full accent-[#1D4E89] cursor-pointer min-h-[36px]"
-                      />
-                    </div>
 
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-[#526356] dark:text-[#8FA394]">Simulate Tank Available Reserve:</span>
-                        <strong className="text-[#D97706] dark:text-[#FBBF24] font-mono text-sm">{interactiveTankLiters.toLocaleString()} L</strong>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-[#4D6653] dark:text-[#8FA894]">Simulate Forecast Rain:</span>
+                            <strong className="text-[#0284C7] dark:text-[#38BDF8] font-mono text-sm">{interactiveRainMm} mm</strong>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="40"
+                            step="1"
+                            value={interactiveRainMm}
+                            onChange={(e) => handleRainSliderChange(parseFloat(e.target.value))}
+                            className="w-full accent-[#0284C7] cursor-pointer min-h-[36px]"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-[#4D6653] dark:text-[#8FA894]">Simulate Tank Available Reserve:</span>
+                            <strong className="text-[#D97706] dark:text-[#FBBF24] font-mono text-sm">{interactiveTankLiters.toLocaleString()} L</strong>
+                          </div>
+                          <input
+                            type="range"
+                            min="200"
+                            max="5000"
+                            step="200"
+                            value={interactiveTankLiters}
+                            onChange={(e) => handleTankSliderChange(parseInt(e.target.value))}
+                            className="w-full accent-[#D97706] cursor-pointer min-h-[36px]"
+                          />
+                        </div>
                       </div>
-                      <input
-                        type="range"
-                        min="200"
-                        max="5000"
-                        step="200"
-                        value={interactiveTankLiters}
-                        onChange={(e) => handleTankSliderChange(parseInt(e.target.value))}
-                        className="w-full accent-[#D97706] cursor-pointer min-h-[36px]"
-                      />
                     </div>
-                  </div>
+                  )}
                 </div>
-              )}
 
-              {/* 6. Primary Recommendation Card with Audio Read-Aloud */}
-              <DecisionCard decision={decision} />
+                {/* Right 5 cols: Live Climate Station */}
+                <div className="lg:col-span-5">
+                  <LiveClimateStation
+                    forecast={currentForecast}
+                    locationName={currentFarm.location.displayName || currentFarm.location.villageOrPincode}
+                    latitude={currentFarm.location.latitude}
+                    longitude={currentFarm.location.longitude}
+                    isSimulating={isSimulating}
+                    onToggleSimulation={setIsSimulating}
+                    onRefreshWeather={handleRefreshWeather}
+                    isRefreshing={isRefreshingWeather}
+                    errorMessage={weatherErrorMessage}
+                    showDevLevers={isDemoMode}
+                  />
+                </div>
+              </div>
 
-              {/* 7. Environmental Impact Ledger */}
-              <EnvironmentalLedgerCard ledger={decision.environmentalLedger} />
+              {/* COCKPIT TIER 2: Water Budget Matrix & Environmental Ledger (Desktop 7:5 Grid / Mobile Stack) */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
+                {/* Left 7 cols: Multi-Crop Water Budget & Plot Stress Matrix */}
+                <div className="lg:col-span-7">
+                  <WaterBudgetCard
+                    totalDemand_liters={decision.totalFarmDemand_liters}
+                    netDemand_liters={decision.netFarmDemand_liters}
+                    availableReserve_liters={decision.availableWater_liters}
+                    waterShortfall_liters={decision.waterShortfall_liters}
+                    plots={decision.plots}
+                  />
+                </div>
 
-              {/* 8. Shared Water Budget & Plot Stress Matrix */}
-              <WaterBudgetCard
-                totalDemand_liters={decision.totalFarmDemand_liters}
-                netDemand_liters={decision.netFarmDemand_liters}
-                availableReserve_liters={decision.availableWater_liters}
-                waterShortfall_liters={decision.waterShortfall_liters}
-                plots={decision.plots}
-              />
+                {/* Right 5 cols: Environmental Impact Ledger */}
+                <div className="lg:col-span-5">
+                  <EnvironmentalLedgerCard ledger={decision.environmentalLedger} />
+                </div>
+              </div>
 
-              {/* 9. AWS Architecture Demonstration Drawer (Only visible in Demo/Proto mode for video rubric proof) */}
+              {/* AWS Architecture Demonstration Drawer (Only visible in Demo/Proto mode for video rubric proof) */}
               {isDemoMode && (
                 <AwsProofDrawer decision={decision} storageStatus={storageStatus} />
               )}
-            </>
+            </div>
           )}
 
         </main>
       )}
 
       {/* Footer */}
-      <footer className="w-full border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-950/50 py-5 text-center text-xs text-slate-500 dark:text-slate-400">
+      <footer className="w-full border-t border-[#E1E8DE] dark:border-[#1F2D24] bg-white/70 dark:bg-[#0D1310]/70 py-5 text-center text-xs text-[#4D6653] dark:text-[#8FA894]">
         <p className="px-4">
           FieldGuard — Autonomous Agronomic Decision Cockpit & Field Telemetry • Built with Next.js & AWS Serverless
         </p>

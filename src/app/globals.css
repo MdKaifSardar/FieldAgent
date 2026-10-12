@@ -3,35 +3,43 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --bg-page: #F7F8F3;
+  --bg-page: #F7F9F5;
   --bg-surface: #FFFFFF;
   --bg-card: #FFFFFF;
-  --border-color: #E1E5DC;
-  --border-highlight: #2D6A4F;
-  --text-main: #111C15;
-  --text-muted: #5A6B60;
-  --accent-foliage: #2D6A4F;
+  --bg-tile: #F0F4ED;
+  --bg-tile-hover: #E4EBE0;
+  --border-color: #E1E8DE;
+  --border-strong: #CBD6C7;
+  --border-highlight: #16A34A;
+  --text-main: #121C15;
+  --text-muted: #526356;
+  --accent-leaf: #16A34A;
+  --accent-leaf-bright: #22C55E;
   --accent-water: #0284C7;
   --accent-sun: #D97706;
   --accent-soil: #854D0E;
-  --accent-stress: #C2410C;
-  --card-shadow: 0 4px 12px -2px rgba(17, 28, 21, 0.05), 0 2px 4px -1px rgba(17, 28, 21, 0.03);
+  --accent-terracotta: #C2410C;
+  --card-shadow: 0 4px 16px -2px rgba(18, 28, 21, 0.05), 0 2px 6px -1px rgba(18, 28, 21, 0.03);
 }
 
 .dark {
-  --bg-page: #0B130E;
-  --bg-surface: #121D16;
-  --bg-card: #121D16;
-  --border-color: #1E2F24;
-  --border-highlight: #40916C;
-  --text-main: #ECF2EC;
-  --text-muted: #8E9F93;
-  --accent-foliage: #40916C;
+  --bg-page: #0D1310;
+  --bg-surface: #141D17;
+  --bg-card: #141D17;
+  --bg-tile: #1B2720;
+  --bg-tile-hover: #23322A;
+  --border-color: #1F2D24;
+  --border-strong: #2A3E31;
+  --border-highlight: #22C55E;
+  --text-main: #F0F4F1;
+  --text-muted: #9BAEA0;
+  --accent-leaf: #16A34A;
+  --accent-leaf-bright: #22C55E;
   --accent-water: #38BDF8;
   --accent-sun: #F59E0B;
   --accent-soil: #A16207;
-  --accent-stress: #FB923C;
-  --card-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.5);
+  --accent-terracotta: #EA580C;
+  --card-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.6);
 }
 
 body {
