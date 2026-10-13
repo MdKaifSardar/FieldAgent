@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { 
   Droplets, 
   SlidersHorizontal, 
@@ -11,7 +12,9 @@ import {
   LayoutDashboard, 
   Home, 
   Sprout,
-  Menu
+  Menu,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 import { useLanguage } from './common/LanguageContext';
 import { useTheme } from './common/ThemeContext';
@@ -43,6 +46,21 @@ export function Header({
   const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
+  const langDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close language dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (langDropdownRef.current && !langDropdownRef.current.contains(event.target as Node)) {
+        setIsLangDropdownOpen(false);
+      }
+    }
+    if (isLangDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isLangDropdownOpen]);
 
   return (
     <>
@@ -75,34 +93,36 @@ export function Header({
                 </div>
               </button>
 
-              {/* Navigation View Switcher (Landing vs Field Dashboard) */}
-              <nav className="hidden sm:flex items-center bg-[#F0F4ED] dark:bg-[#1B2720] p-0.5 rounded-xl border border-[#E1E8DE] dark:border-[#2A3E31] text-xs">
-                <button
-                  type="button"
-                  onClick={() => onViewChange('landing')}
-                  className={`min-h-[34px] px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    activeView === 'landing'
-                      ? 'bg-white dark:bg-[#141D17] text-[#16A34A] dark:text-[#4ADE80] shadow-xs'
-                      : 'text-[#526356] dark:text-[#9BAEA0] hover:text-[#121C15] dark:hover:text-[#F0F4F1]'
-                  }`}
-                >
-                  <Home className="w-3.5 h-3.5" />
-                  <span>{t.overview}</span>
-                </button>
+              {/* Navigation View Switcher (Landing vs Field Dashboard) - Only accessible when authenticated */}
+              {authSession && (
+                <nav className="hidden sm:flex items-center bg-[#F0F4ED] dark:bg-[#1B2720] p-0.5 rounded-xl border border-[#E1E8DE] dark:border-[#2A3E31] text-xs">
+                  <button
+                    type="button"
+                    onClick={() => onViewChange('landing')}
+                    className={`min-h-[34px] px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      activeView === 'landing'
+                        ? 'bg-white dark:bg-[#141D17] text-[#16A34A] dark:text-[#4ADE80] shadow-xs'
+                        : 'text-[#526356] dark:text-[#9BAEA0] hover:text-[#121C15] dark:hover:text-[#F0F4F1]'
+                    }`}
+                  >
+                    <Home className="w-3.5 h-3.5" />
+                    <span>{t.overview}</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => onViewChange('dashboard')}
-                  className={`min-h-[34px] px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    activeView === 'dashboard'
-                      ? 'bg-white dark:bg-[#141D17] text-[#16A34A] dark:text-[#4ADE80] shadow-xs'
-                      : 'text-[#526356] dark:text-[#9BAEA0] hover:text-[#121C15] dark:hover:text-[#F0F4F1]'
-                  }`}
-                >
-                  <LayoutDashboard className="w-3.5 h-3.5" />
-                  <span>{t.fieldAdvisor}</span>
-                </button>
-              </nav>
+                  <button
+                    type="button"
+                    onClick={() => onViewChange('dashboard')}
+                    className={`min-h-[34px] px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      activeView === 'dashboard'
+                        ? 'bg-white dark:bg-[#141D17] text-[#16A34A] dark:text-[#4ADE80] shadow-xs'
+                        : 'text-[#526356] dark:text-[#9BAEA0] hover:text-[#121C15] dark:hover:text-[#F0F4F1]'
+                    }`}
+                  >
+                    <LayoutDashboard className="w-3.5 h-3.5" />
+                    <span>{t.fieldAdvisor}</span>
+                  </button>
+                </nav>
+              )}
             </div>
 
             {/* Desktop Action Controls */}
@@ -123,40 +143,70 @@ export function Header({
                 )}
               </button>
 
-              {/* Language Switcher */}
-              <div className="flex items-center bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] rounded-xl p-0.5">
-                <Globe className="w-3.5 h-3.5 text-[#526356] dark:text-[#9BAEA0] ml-1.5 mr-0.5" />
-                {(['en', 'hi', 'bn'] as SupportedLanguage[]).map((l) => (
-                  <button
-                    key={l}
-                    type="button"
-                    onClick={() => setLanguage(l)}
-                    className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-                      language === l
-                        ? 'bg-[#16A34A] text-white shadow-xs'
-                        : 'text-[#526356] dark:text-[#9BAEA0] hover:text-[#121C15] dark:hover:text-white'
-                    }`}
-                  >
-                    {l === 'en' ? 'EN' : l === 'hi' ? 'हिंदी' : 'বাংলা'}
-                  </button>
-                ))}
+              {/* Language Dropdown Selector */}
+              <div className="relative" ref={langDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+                  className="min-h-[36px] px-3 py-1.5 rounded-xl bg-[#F0F4ED] hover:bg-[#E4EBE0] dark:bg-[#1B2720] dark:hover:bg-[#23322A] border border-[#E1E8DE] dark:border-[#2A3E31] text-[#121C15] dark:text-[#F0F4F1] flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs"
+                  aria-label="Select Language"
+                  aria-expanded={isLangDropdownOpen}
+                  aria-haspopup="true"
+                >
+                  <Globe className="w-3.5 h-3.5 text-[#16A34A] dark:text-[#4ADE80]" />
+                  <span>
+                    {language === 'en' ? 'English' : language === 'hi' ? 'हिन्दी' : 'বাংলা'}
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-[#526356] dark:text-[#9BAEA0] transition-transform duration-200 ${isLangDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isLangDropdownOpen && (
+                  <div className="absolute right-0 mt-1.5 w-36 rounded-xl bg-white dark:bg-[#141D17] border border-[#E1E8DE] dark:border-[#2A3E31] shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-150">
+                    {[
+                      { code: 'en' as SupportedLanguage, label: 'English' },
+                      { code: 'hi' as SupportedLanguage, label: 'हिन्दी' },
+                      { code: 'bn' as SupportedLanguage, label: 'বাংলা' },
+                    ].map((item) => (
+                      <button
+                        key={item.code}
+                        type="button"
+                        onClick={() => {
+                          setLanguage(item.code);
+                          setIsLangDropdownOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${
+                          language === item.code
+                            ? 'bg-[#16A34A]/10 text-[#16A34A] dark:text-[#4ADE80]'
+                            : 'text-[#121C15] dark:text-[#F0F4F1] hover:bg-[#F0F4ED] dark:hover:bg-[#1B2720]'
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                        {language === item.code && (
+                          <Check className="w-3.5 h-3.5 text-[#16A34A] dark:text-[#4ADE80]" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Farm Profile Configurator Button */}
-              <button
-                type="button"
-                onClick={onOpenOnboarding}
-                className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0 ${
-                  hasCustomFarm
-                    ? 'bg-[#F0F4ED] hover:bg-[#E4EBE0] dark:bg-[#1B2720] dark:hover:bg-[#23322A] border border-[#E1E8DE] dark:border-[#2A3E31] text-[#121C15] dark:text-[#F0F4F1]'
-                    : 'bg-[#16A34A] hover:bg-[#15803D] text-white shadow-sm font-bold'
-                }`}
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span>{hasCustomFarm ? t.editFarm : t.setUpFarm}</span>
-              </button>
+              {/* Farm Profile Configurator Button - ONLY accessible after sign-in */}
+              {authSession && (
+                <button
+                  type="button"
+                  onClick={onOpenOnboarding}
+                  className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0 ${
+                    hasCustomFarm
+                      ? 'bg-[#F0F4ED] hover:bg-[#E4EBE0] dark:bg-[#1B2720] dark:hover:bg-[#23322A] border border-[#E1E8DE] dark:border-[#2A3E31] text-[#121C15] dark:text-[#F0F4F1]'
+                      : 'bg-[#16A34A] hover:bg-[#15803D] text-white shadow-sm font-bold'
+                  }`}
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <span>{hasCustomFarm ? t.editFarm : t.setUpFarm}</span>
+                </button>
+              )}
 
-              {/* Auth Badge / Button */}
+              {/* Auth Badge / Sign In Button */}
               <div>
                 {authSession ? (
                   <div className="flex items-center gap-1.5 p-1 px-2.5 rounded-xl bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] text-xs">
@@ -174,29 +224,38 @@ export function Header({
                     </button>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={onOpenAuth}
-                    className="min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-bold bg-[#F0F4ED] hover:bg-[#E4EBE0] dark:bg-[#1B2720] dark:hover:bg-[#23322A] border border-[#E1E8DE] dark:border-[#2A3E31] text-[#121C15] dark:text-[#F0F4F1] transition-all flex items-center gap-1.5 cursor-pointer"
+                  <Link
+                    href="/login"
+                    className="min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#16A34A] hover:bg-[#15803D] text-white shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
                   >
-                    <LogIn className="w-3.5 h-3.5 text-[#16A34A]" />
+                    <LogIn className="w-3.5 h-3.5" />
                     <span>{t.signIn}</span>
-                  </button>
+                  </Link>
                 )}
               </div>
 
             </div>
 
-            {/* Mobile Header Actions: Quick Farm button + Hamburger Menu */}
+            {/* Mobile Header Actions */}
             <div className="flex md:hidden items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={onOpenOnboarding}
-                className="min-h-[40px] px-3 py-1.5 rounded-xl text-xs font-bold bg-[#16A34A] text-white flex items-center gap-1.5 shadow-xs cursor-pointer"
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span>{hasCustomFarm ? 'Parcel' : '+ Farm'}</span>
-              </button>
+              {authSession ? (
+                <button
+                  type="button"
+                  onClick={onOpenOnboarding}
+                  className="min-h-[40px] px-3 py-1.5 rounded-xl text-xs font-bold bg-[#16A34A] text-white flex items-center gap-1.5 shadow-xs cursor-pointer"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <span>{hasCustomFarm ? 'Parcel' : '+ Farm'}</span>
+                </button>
+              ) : (
+                <Link
+                  href="/login"
+                  className="min-h-[40px] px-3 py-1.5 rounded-xl text-xs font-bold bg-[#16A34A] text-white flex items-center gap-1.5 shadow-xs cursor-pointer"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>{t.signIn}</span>
+                </Link>
+              )}
 
               <button
                 type="button"

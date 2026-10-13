@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { 
   X, 
   Sprout, 
@@ -97,7 +98,7 @@ export function MobileSideDrawer({
             <span className="text-[11px] font-bold text-[#526356] dark:text-[#9BAEA0] uppercase tracking-wider block">
               Navigation
             </span>
-            <div className="grid grid-cols-2 gap-2">
+            <div className={`grid ${authSession ? 'grid-cols-2' : 'grid-cols-1'} gap-2`}>
               <button
                 type="button"
                 onClick={() => {
@@ -114,54 +115,58 @@ export function MobileSideDrawer({
                 <span>{t.overview}</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  onViewChange('dashboard');
-                  onClose();
-                }}
-                className={`min-h-[48px] px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border ${
-                  activeView === 'dashboard'
-                    ? 'bg-[#16A34A] text-white border-[#16A34A] shadow-xs'
-                    : 'bg-[#F0F4ED] dark:bg-[#1B2720] border-[#E1E8DE] dark:border-[#2A3E31] text-[#526356] dark:text-[#9BAEA0]'
-                }`}
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                <span>{t.fieldAdvisor}</span>
-              </button>
+              {authSession && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onViewChange('dashboard');
+                    onClose();
+                  }}
+                  className={`min-h-[48px] px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border ${
+                    activeView === 'dashboard'
+                      ? 'bg-[#16A34A] text-white border-[#16A34A] shadow-xs'
+                      : 'bg-[#F0F4ED] dark:bg-[#1B2720] border-[#E1E8DE] dark:border-[#2A3E31] text-[#526356] dark:text-[#9BAEA0]'
+                  }`}
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>{t.fieldAdvisor}</span>
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Farm Parcel Management */}
-          <div className="space-y-2">
-            <span className="text-[11px] font-bold text-[#526356] dark:text-[#9BAEA0] uppercase tracking-wider block">
-              Field Parcel
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                onOpenOnboarding();
-                onClose();
-              }}
-              className="w-full min-h-[48px] px-4 py-3 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-              <span>{hasCustomFarm ? t.editFarm : t.setUpFarm}</span>
-            </button>
-
-            {hasCustomFarm && onResetFarm && (
+          {/* Farm Parcel Management - ONLY accessible after sign-in */}
+          {authSession && (
+            <div className="space-y-2">
+              <span className="text-[11px] font-bold text-[#526356] dark:text-[#9BAEA0] uppercase tracking-wider block">
+                Field Parcel
+              </span>
               <button
                 type="button"
                 onClick={() => {
-                  onResetFarm();
+                  onOpenOnboarding();
                   onClose();
                 }}
-                className="w-full min-h-[40px] px-3 py-2 rounded-xl bg-[#E5484D]/10 hover:bg-[#E5484D]/20 text-[#C92A2A] dark:text-[#FFA8A8] border border-[#E5484D]/25 text-xs font-semibold transition-colors cursor-pointer"
+                className="w-full min-h-[48px] px-4 py-3 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
               >
-                Reset Field Parcel
+                <SlidersHorizontal className="w-4 h-4" />
+                <span>{hasCustomFarm ? t.editFarm : t.setUpFarm}</span>
               </button>
-            )}
-          </div>
+
+              {hasCustomFarm && onResetFarm && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onResetFarm();
+                    onClose();
+                  }}
+                  className="w-full min-h-[40px] px-3 py-2 rounded-xl bg-[#E5484D]/10 hover:bg-[#E5484D]/20 text-[#C92A2A] dark:text-[#FFA8A8] border border-[#E5484D]/25 text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  Reset Field Parcel
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Multilingual Selector (Full Touch Targets) */}
           <div className="space-y-2">
@@ -256,17 +261,14 @@ export function MobileSideDrawer({
                 </button>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  onOpenAuth();
-                  onClose();
-                }}
-                className="w-full min-h-[48px] px-4 py-2.5 rounded-xl bg-[#F0F4ED] dark:bg-[#1B2720] hover:bg-[#E4EBE0] dark:hover:bg-[#23322A] border border-[#E1E8DE] dark:border-[#2A3E31] text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              <Link
+                href="/login"
+                onClick={onClose}
+                className="w-full min-h-[48px] px-4 py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs"
               >
-                <LogIn className="w-4 h-4 text-[#16A34A]" />
+                <LogIn className="w-4 h-4" />
                 <span>{t.signIn} (AWS Cognito OTP)</span>
-              </button>
+              </Link>
             )}
           </div>
 

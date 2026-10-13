@@ -62,71 +62,71 @@ export function DecisionCard({ decision }: DecisionCardProps) {
   const primaryPlot = decision.plots[0];
 
   return (
-    <div className={`p-5 sm:p-6 rounded-2xl border ${badgeConfig.borderColor} ${badgeConfig.bgColor} ${badgeConfig.shadowGlow} transition-all`}>
+    <div className={`h-full flex flex-col justify-between p-4 sm:p-5 rounded-2xl border ${badgeConfig.borderColor} ${badgeConfig.bgColor} ${badgeConfig.shadowGlow} transition-all`}>
       
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E1E8DE] dark:border-[#2A3E31] pb-4 mb-4">
-        <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-xl ${badgeConfig.iconBg} shadow-sm shrink-0`}>
-            {badgeConfig.icon}
+      <div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E1E8DE] dark:border-[#2A3E31] pb-3.5 mb-3.5">
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl ${badgeConfig.iconBg} shadow-sm shrink-0`}>
+              {badgeConfig.icon}
+            </div>
+            <div>
+              <span className={`text-[11px] font-bold uppercase tracking-widest ${badgeConfig.textColor}`}>
+                {badgeConfig.subtitle}
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black text-[#121C15] dark:text-[#F0F4F1] font-['Outfit'] tracking-tight">
+                {badgeConfig.title}
+              </h2>
+            </div>
           </div>
-          <div>
-            <span className={`text-[11px] font-bold uppercase tracking-widest ${badgeConfig.textColor}`}>
-              {badgeConfig.subtitle}
-            </span>
-            <h2 className="text-xl sm:text-2xl font-black text-[#121C15] dark:text-[#F0F4F1] font-['Outfit'] tracking-tight">
-              {badgeConfig.title}
-            </h2>
+
+          {/* Metadata Badges */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] text-[#526356] dark:text-[#9BAEA0] shadow-2xs">
+              <Clock className="w-3.5 h-3.5 text-[#526356] dark:text-[#9BAEA0]" />
+              <span>{decision.actionWindow}</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] text-[#526356] dark:text-[#9BAEA0] shadow-2xs">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#16A34A] dark:text-[#4ADE80]" />
+              <span>{t.confidence}: {decision.confidence}</span>
+            </div>
           </div>
         </div>
 
-        {/* Metadata Badges */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] text-[#526356] dark:text-[#9BAEA0] shadow-2xs">
-            <Clock className="w-3.5 h-3.5 text-[#526356] dark:text-[#9BAEA0]" />
-            <span>{decision.actionWindow}</span>
-          </div>
-
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] text-[#526356] dark:text-[#9BAEA0] shadow-2xs">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#16A34A] dark:text-[#4ADE80]" />
-            <span>{t.confidence}: {decision.confidence}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Primary Action Explanation */}
-      <div className="space-y-4">
-        <p className="text-base sm:text-lg text-[#121C15] dark:text-[#F0F4F1] leading-relaxed font-medium">
+        {/* Primary Action Explanation */}
+        <p className="text-base sm:text-lg text-[#121C15] dark:text-[#F0F4F1] leading-relaxed font-medium mb-3.5">
           {localizedAction}
         </p>
 
         {/* Big Audio Read-Aloud Touch Button */}
-        <div className="pt-1">
+        <div className="pt-0.5 mb-3.5">
           <AudioAdvisoryButton 
             advisoryText={decision.advisoryText} 
             cropName={primaryPlot?.cropName || 'Crop'} 
             variant={badgeConfig.variant}
           />
         </div>
-
-        {/* Agronomic Technical Trace */}
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#526356] dark:text-[#9BAEA0] pt-3 border-t border-[#E1E8DE] dark:border-[#2A3E31]">
-          <div className="flex items-center gap-2">
-            <span>{t.reasoning}: {decision.confidenceReason}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            {primaryPlot && (
-              <span className="text-[#0284C7] dark:text-[#38BDF8] font-mono">
-                {t.method}: {(primaryPlot.irrigationMethod || 'surface_flood').toUpperCase()} (Eff: {Math.round((primaryPlot.irrigationEfficiency || 0.75) * 100)}%)
-              </span>
-            )}
-            <span className="flex items-center gap-1 text-[#5A6B60] dark:text-[#8E9F93] font-mono text-[11px]">
-              <Database className="w-3 h-3 text-[#0284C7] dark:text-[#38BDF8]" /> {decision.metadata.engineVersion}
-            </span>
-          </div>
-        </div>
-
       </div>
+
+      {/* Agronomic Technical Trace */}
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#526356] dark:text-[#9BAEA0] pt-3 border-t border-[#E1E8DE] dark:border-[#2A3E31] mt-auto">
+        <div className="flex items-center gap-2">
+          <span>{t.reasoning}: {decision.confidenceReason}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          {primaryPlot && (
+            <span className="text-[#0284C7] dark:text-[#38BDF8] font-mono">
+              {t.method}: {(primaryPlot.irrigationMethod || 'surface_flood').toUpperCase()} (Eff: {Math.round((primaryPlot.irrigationEfficiency || 0.75) * 100)}%)
+            </span>
+          )}
+          <span className="flex items-center gap-1 text-[#5A6B60] dark:text-[#8E9F93] font-mono text-[11px]">
+            <Database className="w-3 h-3 text-[#0284C7] dark:text-[#38BDF8]" /> {decision.metadata.engineVersion}
+          </span>
+        </div>
+      </div>
+
     </div>
   );
 }

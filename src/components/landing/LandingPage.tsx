@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { useLanguage } from '../common/LanguageContext';
+import { AuthSession } from '../../adapters/cognitoAdapter';
 import { 
   Droplets, 
   CloudRain, 
@@ -17,19 +19,22 @@ import {
   Server,
   Layers,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  LogIn
 } from 'lucide-react';
 
 interface LandingPageProps {
   onOpenOnboarding: () => void;
   onExploreDashboard: () => void;
   hasCustomFarm: boolean;
+  authSession?: AuthSession | null;
 }
 
 export function LandingPage({
   onOpenOnboarding,
   onExploreDashboard,
   hasCustomFarm,
+  authSession = null,
 }: LandingPageProps) {
   const { t } = useLanguage();
 
@@ -57,24 +62,48 @@ export function LandingPage({
 
         {/* Primary CTA Buttons */}
         <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4 max-w-md mx-auto">
-          <button
-            type="button"
-            onClick={onOpenOnboarding}
-            className="w-full sm:w-auto min-h-[48px] px-7 py-3 rounded-xl bg-[#2D6A4F] hover:bg-[#23533E] text-white font-bold text-sm shadow-md shadow-[#2D6A4F]/20 transition-all transform hover:scale-[1.02] cursor-pointer flex items-center justify-center gap-2"
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-            <span>{hasCustomFarm ? t.ctaConfigureEdit : t.ctaConfigure}</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          {authSession ? (
+            <>
+              <button
+                type="button"
+                onClick={hasCustomFarm ? onExploreDashboard : onOpenOnboarding}
+                className="w-full sm:w-auto min-h-[48px] px-7 py-3 rounded-xl bg-[#2D6A4F] hover:bg-[#23533E] text-white font-bold text-sm shadow-md shadow-[#2D6A4F]/20 transition-all transform hover:scale-[1.02] cursor-pointer flex items-center justify-center gap-2"
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                <span>{hasCustomFarm ? t.ctaDashboard : t.ctaConfigure}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
 
-          <button
-            type="button"
-            onClick={onExploreDashboard}
-            className="w-full sm:w-auto min-h-[48px] px-6 py-3 rounded-xl bg-white hover:bg-stone-50 dark:bg-[#121D16] dark:hover:bg-[#1A2A20] text-[#111C15] dark:text-[#ECF2EC] border border-[#E1E5DC] dark:border-[#1E2F24] font-bold text-sm transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
-          >
-            <span>{hasCustomFarm ? t.ctaDashboard : t.ctaEngine}</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
+              <button
+                type="button"
+                onClick={onOpenOnboarding}
+                className="w-full sm:w-auto min-h-[48px] px-6 py-3 rounded-xl bg-white hover:bg-stone-50 dark:bg-[#121D16] dark:hover:bg-[#1A2A20] text-[#111C15] dark:text-[#ECF2EC] border border-[#E1E5DC] dark:border-[#1E2F24] font-bold text-sm transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
+              >
+                <span>{hasCustomFarm ? t.ctaConfigureEdit : t.ctaEngine}</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/register"
+                className="w-full sm:w-auto min-h-[48px] px-7 py-3 rounded-xl bg-[#2D6A4F] hover:bg-[#23533E] text-white font-bold text-sm shadow-md shadow-[#2D6A4F]/20 transition-all transform hover:scale-[1.02] cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Start Voice Registration</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+
+              <Link
+                href="/login"
+                className="w-full sm:w-auto min-h-[48px] px-6 py-3 rounded-xl bg-white hover:bg-stone-50 dark:bg-[#121D16] dark:hover:bg-[#1A2A20] text-[#111C15] dark:text-[#ECF2EC] border border-[#E1E5DC] dark:border-[#1E2F24] font-bold text-sm transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Sign In with OTP</span>
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Stat Highlights Bar */}
@@ -350,15 +379,26 @@ export function LandingPage({
             Configure your location, soil texture, crop stage, and tank capacity in under 2 minutes.
           </p>
 
-          <button
-            type="button"
-            onClick={onOpenOnboarding}
-            className="min-h-[48px] px-8 py-3.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-sm shadow-lg shadow-[#16A34A]/25 transition-all transform hover:scale-[1.02] cursor-pointer inline-flex items-center gap-2"
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-            <span>Start Free Field Setup</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          {authSession ? (
+            <button
+              type="button"
+              onClick={onOpenOnboarding}
+              className="min-h-[48px] px-8 py-3.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-sm shadow-lg shadow-[#16A34A]/25 transition-all transform hover:scale-[1.02] cursor-pointer inline-flex items-center gap-2"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              <span>{hasCustomFarm ? 'Configure Field Parcel' : 'Start Free Field Setup'}</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <Link
+              href="/register"
+              className="min-h-[48px] px-8 py-3.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-sm shadow-lg shadow-[#16A34A]/25 transition-all transform hover:scale-[1.02] cursor-pointer inline-flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Start Voice Registration & Setup</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          )}
         </div>
       </section>
 

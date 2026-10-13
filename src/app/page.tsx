@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Header } from '../components/Header';
 import { DecisionCard } from '../components/DecisionCard';
 import { EnvironmentalLedgerCard } from '../components/EnvironmentalLedgerCard';
@@ -8,7 +9,6 @@ import { WaterBudgetCard } from '../components/WaterBudgetCard';
 import { AwsProofDrawer } from '../components/AwsProofDrawer';
 import { StepperWizard } from '../components/onboarding/StepperWizard';
 import { LiveClimateStation } from '../components/climate/LiveClimateStation';
-import { AuthModal } from '../components/auth/AuthModal';
 import { DemoSandboxDock } from '../components/demo/DemoSandboxDock';
 import { LandingPage } from '../components/landing/LandingPage';
 import { LanguageProvider, useLanguage } from '../components/common/LanguageContext';
@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 
 function FieldGuardApp() {
+  const router = useRouter();
   const { t } = useLanguage();
   
   // Navigation View State: 'landing' vs 'dashboard'
@@ -46,8 +47,7 @@ function FieldGuardApp() {
   const [storageStatus, setStorageStatus] = useState<string>('aws_dynamodb');
   
   // Modals
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
-  const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
+  const [isParcelWizardOpen, setIsParcelWizardOpen] = useState<boolean>(false);
   const [authSession, setAuthSession] = useState<AuthSession | null>(null);
   
   // Loading & Diagnostics
@@ -114,72 +114,87 @@ function FieldGuardApp() {
     }
   }, [currentForecast]);
 
-  // ON MOUNT: Load persistent custom farm from localStorage, NEVER override with Demo Preset!
+  // ON MOUNT: Enforce strict auth gate. Dashboard is only accessible with an active auth session!
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Check auth session
       const savedAuth = localStorage.getItem('fieldguard_auth');
       if (savedAuth) {
-        try { setAuthSession(JSON.parse(savedAuth)); } catch (e) {}
-      }
-
-
-
-      // Check if user has their own saved farm profile
-      const savedFarmJson = localStorage.getItem('fieldguard_saved_farm');
-      if (savedFarmJson) {
         try {
-          const parsed = JSON.parse(savedFarmJson) as FarmProfile;
-          // Filter out stale demo presets accidentally saved during earlier prototype tests
-          if (parsed && parsed.id && !parsed.id.startsWith('farm-bardhaman') && parsed.userId !== 'farmer-ramesh') {
-            setCurrentFarm(parsed);
-            setHasCustomFarm(true);
-            setActivePresetId(null); // Real farmer mode!
-            setActiveView('dashboard');
-            runLiveFarmPlanning(parsed);
-            return;
-          } else {
-            // Clean up stale demo preset so farmer gets an empty dashboard
-            localStorage.removeItem('fieldguard_saved_farm');
+          const parsedAuth = JSON.parse(savedAuth) as AuthSession;
+          setAuthSession(parsedAuth);
+
+          // ONLY load saved farm profile if user is authenticated!
+          const savedFarmJson = localStorage.getItem('fieldguard_saved_farm');
+          if (savedFarmJson) {
+            const parsed = JSON.parse(savedFarmJson) as FarmProfile;
+            // Filter out stale demo presets accidentally saved during earlier prototype tests
+            if (parsed && parsed.id && !parsed.id.startsWith('farm-bardhaman') && parsed.userId !== 'farmer-ramesh') {
+              setCurrentFarm(parsed);
+              setHasCustomFarm(true);
+              setActivePresetId(null);
+              setActiveView('dashboard');
+              runLiveFarmPlanning(parsed);
+              return;
+            } else {
+              localStorage.removeItem('fieldguard_saved_farm');
+            }
           }
+          // Authenticated farmer with no parcel configured yet
+          setActiveView('dashboard');
+          return;
         } catch (e) {
-          console.error('Failed to parse saved farm:', e);
+          console.error('Failed to parse saved auth:', e);
         }
       }
 
-      // First time visitor check
-      const hasVisited = localStorage.getItem('fieldguard_visited');
-      if (!hasVisited) {
-        localStorage.setItem('fieldguard_visited', 'true');
-        // Let user view the landing page first, rather than popping modal instantly
-      }
+      // Unauthenticated visitor: STRICTLY single landing page
+      setActiveView('landing');
+      setCurrentFarm(null);
+      setHasCustomFarm(false);
+      setDecision(null);
     }
-    // Note: If no saved custom farm exists, currentFarm remains null (Empty Dashboard)
-  }, []);
+  }, [runLiveFarmPlanning]);
 
-
+  // Auth-gated View Switcher Handler: Unauthenticated clicks direct to /login
+  const handleViewChange = (view: 'landing' | 'dashboard') => {
+    if (view === 'dashboard' && !authSession) {
+      router.push('/login');
+      return;
+    }
+    setActiveView(view);
+  };
 
   const handleLogout = () => {
     setAuthSession(null);
+    setCurrentFarm(null);
+    setHasCustomFarm(false);
+    setActivePresetId(null);
+    setDecision(null);
+    setActiveView('landing');
     if (typeof window !== 'undefined') {
       localStorage.removeItem('fieldguard_auth');
     }
   };
 
-  // Called when the user configures their farm via the 4-step wizard
+  // Called when the user configures their farm parcel via the wizard
   const handleCustomFarmSubmit = (newFarm: FarmProfile) => {
-    setCurrentFarm(newFarm);
+    const farmWithUser: FarmProfile = {
+      ...newFarm,
+      userId: authSession?.userId || newFarm.userId,
+    };
+    setCurrentFarm(farmWithUser);
     setHasCustomFarm(true);
-    setActivePresetId(null); // Clear any demo preset
-    setActiveView('dashboard'); // Switch to field advisor view
+    setActivePresetId(null);
+    setActiveView('dashboard');
+    setIsParcelWizardOpen(false);
 
-    // 1. Persist to localStorage so refreshes NEVER erase it
+    // 1. Persist to localStorage
     if (typeof window !== 'undefined') {
-      localStorage.setItem('fieldguard_saved_farm', JSON.stringify(newFarm));
+      localStorage.setItem('fieldguard_saved_farm', JSON.stringify(farmWithUser));
     }
 
-    // 2. Persist to Amazon DynamoDB
-    saveFarmProfileToDynamo(newFarm)
+    // 2. Persist to Amazon DynamoDB strictly under authenticated userId
+    saveFarmProfileToDynamo(farmWithUser)
       .then((res) => {
         setStorageStatus(res.storage);
       })
@@ -188,7 +203,7 @@ function FieldGuardApp() {
       });
 
     // 3. Run planning with fresh weather for new coordinates
-    runLiveFarmPlanning(newFarm);
+    runLiveFarmPlanning(farmWithUser);
   };
 
   // Developer Sandbox: Load a benchmark scenario
@@ -312,14 +327,14 @@ function FieldGuardApp() {
       
       {/* 1. Clean Production Header */}
       <Header
-        onOpenOnboarding={() => setIsOnboardingOpen(true)}
-        onOpenAuth={() => setIsAuthOpen(true)}
+        onOpenOnboarding={() => hasCustomFarm ? setIsParcelWizardOpen(true) : router.push('/register')}
+        onOpenAuth={() => router.push('/login')}
         authSession={authSession}
         onLogout={handleLogout}
         hasCustomFarm={hasCustomFarm}
         onResetFarm={handleResetFarm}
         activeView={activeView}
-        onViewChange={setActiveView}
+        onViewChange={handleViewChange}
       />
 
       {/* 2. Top Banner if currently testing a demo preset */}
@@ -348,9 +363,22 @@ function FieldGuardApp() {
       {activeView === 'landing' ? (
         <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8">
           <LandingPage
-            onOpenOnboarding={() => setIsOnboardingOpen(true)}
-            onExploreDashboard={() => setActiveView('dashboard')}
+            onOpenOnboarding={() => {
+              if (authSession) {
+                setIsParcelWizardOpen(true);
+              } else {
+                router.push('/register');
+              }
+            }}
+            onExploreDashboard={() => {
+              if (authSession) {
+                setActiveView('dashboard');
+              } else {
+                router.push('/login');
+              }
+            }}
             hasCustomFarm={hasCustomFarm}
+            authSession={authSession}
           />
         </main>
       ) : (
@@ -423,7 +451,7 @@ function FieldGuardApp() {
 
                 <button
                   type="button"
-                  onClick={() => setIsOnboardingOpen(true)}
+                  onClick={() => setIsParcelWizardOpen(true)}
                   className="px-6 py-3.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-sm shadow-md transition-all transform hover:scale-[1.02] cursor-pointer inline-flex items-center gap-2"
                 >
                   <SlidersHorizontal className="w-4 h-4" />
@@ -471,10 +499,12 @@ function FieldGuardApp() {
               </div>
 
               {/* COCKPIT TIER 1: Primary Action & Live Climate (Desktop 7:5 Grid / Mobile Stack) */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch">
                 {/* Left 7 cols: Hero Decision Card + What-If simulation levers */}
-                <div className="lg:col-span-7 space-y-4 sm:space-y-5">
-                  <DecisionCard decision={decision} />
+                <div className="lg:col-span-7 flex flex-col space-y-4 sm:space-y-5">
+                  <div className="flex-1">
+                    <DecisionCard decision={decision} />
+                  </div>
 
                   {/* What-If Simulation Levers (Only visible when demo mode is active via ENV and simulating) */}
                   {isDemoMode && isSimulating && (
@@ -524,7 +554,7 @@ function FieldGuardApp() {
                 </div>
 
                 {/* Right 5 cols: Live Climate Station */}
-                <div className="lg:col-span-5">
+                <div className="lg:col-span-5 flex flex-col">
                   <LiveClimateStation
                     forecast={currentForecast}
                     locationName={currentFarm.location.displayName || currentFarm.location.villageOrPincode}
@@ -541,9 +571,9 @@ function FieldGuardApp() {
               </div>
 
               {/* COCKPIT TIER 2: Water Budget Matrix & Environmental Ledger (Desktop 7:5 Grid / Mobile Stack) */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch">
                 {/* Left 7 cols: Multi-Crop Water Budget & Plot Stress Matrix */}
-                <div className="lg:col-span-7">
+                <div className="lg:col-span-7 flex flex-col">
                   <WaterBudgetCard
                     totalDemand_liters={decision.totalFarmDemand_liters}
                     netDemand_liters={decision.netFarmDemand_liters}
@@ -554,7 +584,7 @@ function FieldGuardApp() {
                 </div>
 
                 {/* Right 5 cols: Environmental Impact Ledger */}
-                <div className="lg:col-span-5">
+                <div className="lg:col-span-5 flex flex-col">
                   <EnvironmentalLedgerCard ledger={decision.environmentalLedger} />
                 </div>
               </div>
@@ -576,19 +606,12 @@ function FieldGuardApp() {
         </p>
       </footer>
 
-      {/* 10. Mobile-First 4-Step Onboarding Wizard */}
+      {/* 10. Farm Parcel Configuration Wizard */}
       <StepperWizard
-        isOpen={isOnboardingOpen}
-        onClose={() => setIsOnboardingOpen(false)}
+        isOpen={isParcelWizardOpen}
+        onClose={() => setIsParcelWizardOpen(false)}
         onSubmit={handleCustomFarmSubmit}
         initialFarm={currentFarm}
-      />
-
-      {/* 11. Amazon Cognito OTP Auth Modal */}
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        onAuthSuccess={(session) => setAuthSession(session)}
       />
 
       {/* 12. Isolated Developer Demo Sandbox Dock (Strictly controlled by NEXT_PUBLIC_ENABLE_DEMO_SANDBOX env var) */}

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { 
   sendEmailOtpCode, 
   verifyEmailOtpCode, 
+  sendPhoneOtpCode,
   verifyPhoneOtpCode,
   AuthSession 
 } from '../../adapters/cognitoAdapter';
@@ -13,9 +14,10 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAuthSuccess: (session: AuthSession) => void;
+  onSwitchToRegister?: () => void;
 }
 
-export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, onAuthSuccess, onSwitchToRegister }: AuthModalProps) {
   if (!isOpen) return null;
 
   const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
@@ -43,7 +45,7 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
         const res = await sendEmailOtpCode(email.trim());
         if (res.success) {
           setStep('verify');
-          setSuccessNotice(`AWS Cognito verification code sent to ${email}`);
+          setSuccessNotice(`AWS Cognito verification code sent to ${res.destinationMasked || email}`);
         } else {
           setErrorMsg(res.error || 'Failed to send OTP code');
         }
@@ -54,8 +56,13 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
           setIsLoading(false);
           return;
         }
-        setStep('verify');
-        setSuccessNotice(`SMS OTP sent to ${phone} (Demo Code: 123456)`);
+        const res = await sendPhoneOtpCode(phone.trim());
+        if (res.success) {
+          setStep('verify');
+          setSuccessNotice(`SMS OTP sent to ${res.destinationMasked} (Evaluation Code: 123456)`);
+        } else {
+          setErrorMsg(res.error || 'Failed to send OTP code');
+        }
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Authentication error');
@@ -237,6 +244,22 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
                 <span>Send 6-Digit OTP Code</span>
               )}
             </button>
+
+            {onSwitchToRegister && (
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onSwitchToRegister();
+                  }}
+                  className="text-xs text-[#2D6A4F] dark:text-[#52B788] hover:underline font-semibold cursor-pointer inline-flex items-center gap-1"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>New Farmer? Start Voice-Guided Registration</span>
+                </button>
+              </div>
+            )}
           </form>
         )}
 

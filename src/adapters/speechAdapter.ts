@@ -89,6 +89,11 @@ export class SpeechAdapter {
       return { hasNativeVoice: false };
     }
 
+    // Unstick paused speech synthesis queue in Chromium
+    if (this.synth.paused) {
+      try { this.synth.resume(); } catch (e) {}
+    }
+
     // Stop any ongoing speech
     this.stop();
 
@@ -121,14 +126,25 @@ export class SpeechAdapter {
     };
 
     this.currentUtterance = utterance;
-    this.synth.speak(utterance);
+
+    try {
+      this.synth.speak(utterance);
+      // Double resume for aggressive Chromium bug workaround
+      if (this.synth.paused) {
+        this.synth.resume();
+      }
+    } catch (speakErr) {
+      console.warn('Speech synthesis speak error:', speakErr);
+    }
 
     return { hasNativeVoice: isExactMatch };
   }
 
   public stop() {
     if (this.synth) {
-      this.synth.cancel();
+      try {
+        this.synth.cancel();
+      } catch (e) {}
       this.currentUtterance = null;
     }
   }
