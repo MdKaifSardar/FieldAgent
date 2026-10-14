@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '../components/Header';
 import { DecisionCard } from '../components/DecisionCard';
@@ -43,6 +43,8 @@ function FieldGuardApp() {
   const [hasCustomFarm, setHasCustomFarm] = useState<boolean>(false);
   const [currentFarm, setCurrentFarm] = useState<FarmProfile | null>(null);
   const [currentForecast, setCurrentForecast] = useState<DailyWeatherForecast | null>(null);
+  const currentForecastRef = useRef<DailyWeatherForecast | null>(null);
+  const lastLoggedDecisionKeyRef = useRef<string | null>(null);
   const [decision, setDecision] = useState<DecisionResponse | null>(null);
   const [storageStatus, setStorageStatus] = useState<string>('aws_dynamodb');
   
@@ -74,6 +76,7 @@ function FieldGuardApp() {
         farm.location.longitude
       );
       setCurrentForecast(wRes.forecast);
+      currentForecastRef.current = wRes.forecast;
       setInteractiveRainMm(wRes.forecast.rainfall_mm);
       setInteractiveTankLiters(farm.reserve.currentAvailable_liters);
       if (wRes.errorMessage) {
@@ -92,19 +95,23 @@ function FieldGuardApp() {
       setDecision(planRes);
       setStorageStatus('aws_dynamodb');
 
-      // 3. Log decision to Amazon DynamoDB in background
-      logDecisionToDynamo(farm.id, planRes).catch((e) => {
-        console.warn('Background DynamoDB logging notice:', e);
-      });
+      // 3. Log decision to Amazon DynamoDB in background (deduplicated by farm & decision)
+      const logKey = `${farm.id}:${planRes.decision}:${Math.round(planRes.totalFarmDemand_liters)}`;
+      if (lastLoggedDecisionKeyRef.current !== logKey) {
+        lastLoggedDecisionKeyRef.current = logKey;
+        logDecisionToDynamo(farm.id, planRes).catch((e) => {
+          console.warn('Background DynamoDB logging notice:', e);
+        });
+      }
     } catch (err: any) {
       console.warn('Live calculation error:', err);
       // Fallback calculation using existing forecast if available
-      if (currentForecast) {
+      if (currentForecastRef.current) {
         const planRes = runFeasibilityPlanner({
           plots: farm.plots,
           awc_mm_per_m: farm.soil.awc_mm_per_m,
           reserve: farm.reserve,
-          forecast: currentForecast,
+          forecast: currentForecastRef.current,
           isDemoPreset: false,
         });
         setDecision(planRes);
@@ -112,7 +119,7 @@ function FieldGuardApp() {
     } finally {
       setIsRefreshingWeather(false);
     }
-  }, [currentForecast]);
+  }, []);
 
   // ON MOUNT: Enforce strict auth gate. Dashboard is only accessible with an active auth session!
   useEffect(() => {
