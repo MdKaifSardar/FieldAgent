@@ -125,6 +125,20 @@ Existing agricultural apps act as passive weather graphs or theoretical crop cal
 * **Custom Storage Tank & Pond Calculator**: Computes exact storage capacity from physical dimensions ($L \times W \times D$) in meters or feet with instant volume conversion.
 * **Local Indian Land Units**: Seamless conversion between Hectares, Acres, and Bigha (West Bengal standard $1{,}337.8\text{ m}^2$, Northern/Eastern standards).
 
+### E. Hierarchical Multi-Parcel Portfolio & Enterprise Side Drawer
+* **1 User $\longrightarrow$ Many Autonomous Parcels**: Fully decoupled multi-field management where each parcel maintains:
+  - **Dedicated GPS Coordinates**: Isolated Open-Meteo weather and rainfall forecasts.
+  - **Independent Water Reserves**: Separate tube-wells (with pump power & daily hours), Sintex tanks, or custom rain ponds.
+  - **Autonomous Advisory & Ledger**: Separate FAO-56 soil moisture balance, deficit warnings, and Environmental Ledgers.
+* **Enterprise Side Drawer (`EnterpriseSideDrawer.tsx`)**:
+  - Farmer/Manager profile card with aggregate statistics (Total managed fields, Total Bigha/Acres).
+  - Visual parcel portfolio list with dedicated water supply pills and crop tags.
+  - 1-tap switching between fields with instant cockpit rehydration.
+  - Integrated parcel editing, deletion, and "+ Register New Field" actions.
+* **Clean Minimal Navbar (`Header.tsx`)**:
+  - Pushed all field configuration clutter into the enterprise side drawer.
+  - Navbar retains only brand identity, authenticated dashboard link, language selector, theme toggle, and profile drawer trigger.
+
 ---
 
 ## 6. System Architecture & AWS Infrastructure
