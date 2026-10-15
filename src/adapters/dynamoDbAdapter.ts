@@ -3,6 +3,8 @@ import {
   DynamoDBDocumentClient, 
   PutCommand, 
   GetCommand, 
+  ScanCommand,
+  DeleteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { FarmProfile } from '../types/farm';
 import { DecisionResponse } from '../types/decision';
@@ -126,6 +128,94 @@ export async function getFarmProfileFromDynamo(farmId: string): Promise<FarmProf
   }
 
   return inMemoryFarms.get(farmId) || null;
+}
+
+/**
+ * Retrieves all farm parcels owned by a user from Amazon DynamoDB.
+ */
+export async function getFarmsByUserId(userId: string): Promise<FarmProfile[]> {
+  // 1. Browser context: call Next.js server API
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch(`/api/farm?userId=${encodeURIComponent(userId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        return (data.farms || []) as FarmProfile[];
+      }
+    } catch (err) {
+      console.warn('Network call to fetch user farms failed, falling back to local store:', err);
+    }
+    return Array.from(inMemoryFarms.values()).filter(f => f.userId === userId);
+  }
+
+  // 2. Server context: Direct AWS SDK call
+  const client = getDocClient();
+  const tableName = process.env.DYNAMODB_FARMS_TABLE || 'FieldGuard-Farms';
+
+  if (client) {
+    try {
+      const response = await client.send(
+        new ScanCommand({
+          TableName: tableName,
+          FilterExpression: 'userId = :uid',
+          ExpressionAttributeValues: {
+            ':uid': userId,
+          },
+        })
+      );
+      if (response.Items) {
+        return response.Items as FarmProfile[];
+      }
+    } catch (error) {
+      console.error('DynamoDB ScanCommand by userId failed, falling back to local memory:', error);
+    }
+  }
+
+  return Array.from(inMemoryFarms.values()).filter(f => f.userId === userId);
+}
+
+/**
+ * Deletes a farm parcel from Amazon DynamoDB.
+ */
+export async function deleteFarmFromDynamo(farmId: string): Promise<boolean> {
+  // 1. Browser context: call Next.js server API
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch(`/api/farm?farmId=${encodeURIComponent(farmId)}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        inMemoryFarms.delete(farmId);
+        return true;
+      }
+    } catch (err) {
+      console.warn('Network call to delete farm failed:', err);
+    }
+    inMemoryFarms.delete(farmId);
+    return true;
+  }
+
+  // 2. Server context: Direct AWS SDK call
+  const client = getDocClient();
+  const tableName = process.env.DYNAMODB_FARMS_TABLE || 'FieldGuard-Farms';
+
+  if (client) {
+    try {
+      await client.send(
+        new DeleteCommand({
+          TableName: tableName,
+          Key: { id: farmId },
+        })
+      );
+      inMemoryFarms.delete(farmId);
+      return true;
+    } catch (error) {
+      console.error('DynamoDB DeleteCommand failed:', error);
+    }
+  }
+
+  inMemoryFarms.delete(farmId);
+  return true;
 }
 
 /**

@@ -16,11 +16,17 @@ import { ThemeProvider } from '../components/common/ThemeContext';
 import { executePreset, DEMO_PRESETS, PRESET_1_RAIN_AVOIDANCE } from '../core/demoPresets';
 import { runFeasibilityPlanner } from '../core/feasibilityPlanner';
 import { fetchLiveWeatherForecast } from '../adapters/openMeteoAdapter';
-import { saveFarmProfileToDynamo, logDecisionToDynamo } from '../adapters/dynamoDbAdapter';
+import { 
+  saveFarmProfileToDynamo, 
+  logDecisionToDynamo,
+  getFarmsByUserId,
+  deleteFarmFromDynamo
+} from '../adapters/dynamoDbAdapter';
 import { AuthSession } from '../adapters/cognitoAdapter';
 import { DecisionResponse } from '../types/decision';
 import { FarmProfile } from '../types/farm';
 import { DailyWeatherForecast } from '../types/weather';
+import { EnterpriseSideDrawer } from '../components/common/EnterpriseSideDrawer';
 import { 
   Sliders, 
   RefreshCw, 
@@ -28,7 +34,12 @@ import {
   MapPin, 
   Layers, 
   Droplets, 
-  SlidersHorizontal 
+  SlidersHorizontal,
+  Plus,
+  Zap,
+  Waves,
+  Cylinder,
+  Edit3
 } from 'lucide-react';
 
 function FieldGuardApp() {
@@ -37,6 +48,12 @@ function FieldGuardApp() {
   
   // Navigation View State: 'landing' vs 'dashboard'
   const [activeView, setActiveView] = useState<'landing' | 'dashboard'>('landing');
+
+  // Multi-Parcel Portfolio State
+  const [parcels, setParcels] = useState<FarmProfile[]>([]);
+  const [activeParcelId, setActiveParcelId] = useState<string | null>(null);
+  const [isSideDrawerOpen, setIsSideDrawerOpen] = useState<boolean>(false);
+  const [editingParcel, setEditingParcel] = useState<FarmProfile | null>(null);
 
   // Real User Farm state vs Demo Sandbox Preset ID (null = viewing user's own real farm or empty dashboard)
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
@@ -130,24 +147,64 @@ function FieldGuardApp() {
           const parsedAuth = JSON.parse(savedAuth) as AuthSession;
           setAuthSession(parsedAuth);
 
-          // ONLY load saved farm profile if user is authenticated!
-          const savedFarmJson = localStorage.getItem('fieldguard_saved_farm');
-          if (savedFarmJson) {
-            const parsed = JSON.parse(savedFarmJson) as FarmProfile;
-            // Filter out stale demo presets accidentally saved during earlier prototype tests
-            if (parsed && parsed.id && !parsed.id.startsWith('farm-bardhaman') && parsed.userId !== 'farmer-ramesh') {
-              setCurrentFarm(parsed);
-              setHasCustomFarm(true);
-              setActivePresetId(null);
-              setActiveView('dashboard');
-              runLiveFarmPlanning(parsed);
-              return;
-            } else {
-              localStorage.removeItem('fieldguard_saved_farm');
+          // 1. Check local parcels array first
+          let loadedParcels: FarmProfile[] = [];
+          const savedParcelsJson = localStorage.getItem('fieldguard_user_parcels');
+          if (savedParcelsJson) {
+            try {
+              loadedParcels = JSON.parse(savedParcelsJson) as FarmProfile[];
+            } catch (e) {}
+          }
+
+          // Backward compatibility check for single saved farm
+          if (!loadedParcels.length) {
+            const singleFarmJson = localStorage.getItem('fieldguard_saved_farm');
+            if (singleFarmJson) {
+              try {
+                const singleFarm = JSON.parse(singleFarmJson) as FarmProfile;
+                if (singleFarm && singleFarm.id && !singleFarm.id.startsWith('farm-bardhaman') && singleFarm.userId !== 'farmer-ramesh') {
+                  loadedParcels = [singleFarm];
+                }
+              } catch (e) {}
             }
           }
-          // Authenticated farmer with no parcel configured yet
-          setActiveView('dashboard');
+
+          if (loadedParcels.length > 0) {
+            setParcels(loadedParcels);
+            setHasCustomFarm(true);
+            setActiveView('dashboard');
+
+            // Pick active parcel from saved active ID or first parcel
+            const savedActiveId = localStorage.getItem('fieldguard_active_parcel_id');
+            const targetParcel = loadedParcels.find(p => p.id === savedActiveId) || loadedParcels[0];
+            setActiveParcelId(targetParcel.id);
+            setCurrentFarm(targetParcel);
+            runLiveFarmPlanning(targetParcel);
+          } else {
+            setActiveView('dashboard');
+          }
+
+          // 2. Background sync from DynamoDB by userId
+          if (parsedAuth.userId) {
+            getFarmsByUserId(parsedAuth.userId).then((remoteFarms) => {
+              if (remoteFarms && remoteFarms.length > 0) {
+                setParcels(remoteFarms);
+                setHasCustomFarm(true);
+                localStorage.setItem('fieldguard_user_parcels', JSON.stringify(remoteFarms));
+
+                // If no current parcel was selected, select the first remote farm
+                if (!currentFarm) {
+                  const target = remoteFarms[0];
+                  setActiveParcelId(target.id);
+                  setCurrentFarm(target);
+                  runLiveFarmPlanning(target);
+                }
+              }
+            }).catch((err) => {
+              console.warn('Background sync of user parcels notice:', err);
+            });
+          }
+
           return;
         } catch (e) {
           console.error('Failed to parse saved auth:', e);
@@ -183,20 +240,37 @@ function FieldGuardApp() {
     }
   };
 
-  // Called when the user configures their farm parcel via the wizard
-  const handleCustomFarmSubmit = (newFarm: FarmProfile) => {
+  // Called when the user configures or edits a farm parcel via the wizard
+  const handleCustomFarmSubmit = (submittedFarm: FarmProfile) => {
     const farmWithUser: FarmProfile = {
-      ...newFarm,
-      userId: authSession?.userId || newFarm.userId,
+      ...submittedFarm,
+      userId: authSession?.userId || submittedFarm.userId,
     };
+
+    let updatedParcels: FarmProfile[];
+    const existingIndex = parcels.findIndex(p => p.id === farmWithUser.id);
+    if (existingIndex >= 0) {
+      // Edit existing parcel
+      updatedParcels = [...parcels];
+      updatedParcels[existingIndex] = farmWithUser;
+    } else {
+      // Add new parcel
+      updatedParcels = [farmWithUser, ...parcels];
+    }
+
+    setParcels(updatedParcels);
+    setActiveParcelId(farmWithUser.id);
     setCurrentFarm(farmWithUser);
     setHasCustomFarm(true);
     setActivePresetId(null);
     setActiveView('dashboard');
     setIsParcelWizardOpen(false);
+    setEditingParcel(null);
 
     // 1. Persist to localStorage
     if (typeof window !== 'undefined') {
+      localStorage.setItem('fieldguard_user_parcels', JSON.stringify(updatedParcels));
+      localStorage.setItem('fieldguard_active_parcel_id', farmWithUser.id);
       localStorage.setItem('fieldguard_saved_farm', JSON.stringify(farmWithUser));
     }
 
@@ -209,8 +283,61 @@ function FieldGuardApp() {
         console.error('DynamoDB save error:', err);
       });
 
-    // 3. Run planning with fresh weather for new coordinates
+    // 3. Run planning with fresh weather for this parcel
     runLiveFarmPlanning(farmWithUser);
+  };
+
+  const handleSelectParcel = (parcelId: string) => {
+    const found = parcels.find(p => p.id === parcelId);
+    if (found) {
+      setActiveParcelId(parcelId);
+      setCurrentFarm(found);
+      setActivePresetId(null);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('fieldguard_active_parcel_id', parcelId);
+      }
+      runLiveFarmPlanning(found);
+    }
+  };
+
+  const handleAddNewParcel = () => {
+    setEditingParcel(null);
+    setIsParcelWizardOpen(true);
+  };
+
+  const handleEditParcel = (parcel: FarmProfile) => {
+    setEditingParcel(parcel);
+    setIsParcelWizardOpen(true);
+  };
+
+  const handleDeleteParcel = (parcelId: string) => {
+    const remaining = parcels.filter(p => p.id !== parcelId);
+    setParcels(remaining);
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('fieldguard_user_parcels', JSON.stringify(remaining));
+    }
+
+    deleteFarmFromDynamo(parcelId).catch((err) => {
+      console.warn('Failed to delete farm from DynamoDB:', err);
+    });
+
+    if (activeParcelId === parcelId) {
+      if (remaining.length > 0) {
+        const next = remaining[0];
+        setActiveParcelId(next.id);
+        setCurrentFarm(next);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('fieldguard_active_parcel_id', next.id);
+        }
+        runLiveFarmPlanning(next);
+      } else {
+        setActiveParcelId(null);
+        setCurrentFarm(null);
+        setHasCustomFarm(false);
+        setDecision(null);
+      }
+    }
   };
 
   // Developer Sandbox: Load a benchmark scenario
@@ -332,16 +459,14 @@ function FieldGuardApp() {
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--text-main)] selection:bg-emerald-500 selection:text-white transition-colors duration-200">
       
-      {/* 1. Clean Production Header */}
+      {/* 1. Clean Enterprise Header */}
       <Header
-        onOpenOnboarding={() => hasCustomFarm ? setIsParcelWizardOpen(true) : router.push('/register')}
-        onOpenAuth={() => router.push('/login')}
         authSession={authSession}
         onLogout={handleLogout}
-        hasCustomFarm={hasCustomFarm}
-        onResetFarm={handleResetFarm}
         activeView={activeView}
         onViewChange={handleViewChange}
+        onOpenSideDrawer={() => setIsSideDrawerOpen(true)}
+        parcelsCount={parcels.length}
       />
 
       {/* 2. Top Banner if currently testing a demo preset */}
@@ -478,28 +603,52 @@ function FieldGuardApp() {
                     <Sprout className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-[#4D6653] dark:text-[#8FA894] font-medium">Active Parcel:</span>{' '}
-                    <strong className="text-[#121C15] dark:text-[#F0F4F1] font-semibold">{currentFarm.farmName}</strong>
-                    <span className="text-[#8FA894] mx-1.5">•</span>
-                    <span className="text-[#0284C7] dark:text-[#38BDF8] font-medium">{currentFarm.location.displayName || currentFarm.location.villageOrPincode}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#4D6653] dark:text-[#8FA894] font-medium">Active Field:</span>{' '}
+                      <strong className="text-[#121C15] dark:text-[#F0F4F1] font-bold text-sm">{currentFarm.farmName}</strong>
+                      <button
+                        type="button"
+                        onClick={() => setIsSideDrawerOpen(true)}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-700 dark:text-emerald-400 font-bold text-[11px] transition-colors cursor-pointer"
+                        title="Switch between your managed fields"
+                      >
+                        <Layers className="w-3 h-3" />
+                        <span>Switch ({parcels.length})</span>
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[11px] text-[#0284C7] dark:text-[#38BDF8] font-medium mt-0.5">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span>{currentFarm.location.displayName || currentFarm.location.villageOrPincode}</span>
+                    </div>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 text-[11px] sm:text-xs">
-                  <span className="px-2.5 py-1 rounded-lg bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] text-[#4D6653] dark:text-[#8FA894]">
-                    Soil: <strong className="text-[#16A34A] dark:text-[#22C55E] capitalize">{currentFarm.soil.texture}</strong> (AWC {currentFarm.soil.awc_mm_per_m} mm/m)
+                  {/* Dedicated Water Supply Pill */}
+                  <span className="px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 text-sky-800 dark:text-sky-300 font-semibold flex items-center gap-1">
+                    <Droplets className="w-3 h-3 text-sky-600 dark:text-sky-400" />
+                    <span>
+                      {currentFarm.reserve.storageType === 'borewell_hours'
+                        ? `${currentFarm.reserve.pumpPower_hp || 5} HP Tube-well`
+                        : currentFarm.reserve.storageType === 'custom_sump'
+                        ? 'Rain Pond'
+                        : 'Sintex Tank'}
+                    </span>
                   </span>
+
                   <span className="px-2.5 py-1 rounded-lg bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] text-[#4D6653] dark:text-[#8FA894]">
-                    Method: <strong className="text-[#0284C7] dark:text-[#38BDF8] uppercase">{currentFarm.plots[0]?.irrigationMethod || 'DRIP'}</strong>
+                    Soil: <strong className="text-[#16A34A] dark:text-[#22C55E] capitalize">{currentFarm.soil.texture}</strong>
                   </span>
+
                   {hasCustomFarm && (
                     <button
                       type="button"
-                      onClick={handleResetFarm}
-                      className="px-2.5 py-1 rounded-lg bg-[#C2410C]/10 hover:bg-[#C2410C]/20 text-[#C2410C] dark:text-[#FB923C] border border-[#C2410C]/30 transition-colors cursor-pointer text-[10px] font-semibold"
-                      title="Clear parcel configuration"
+                      onClick={() => handleEditParcel(currentFarm)}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition-colors cursor-pointer text-[11px] font-semibold flex items-center gap-1"
+                      title="Edit this field configuration"
                     >
-                      Clear Parcel
+                      <Edit3 className="w-3 h-3" />
+                      <span>Edit Field</span>
                     </button>
                   )}
                 </div>
@@ -613,12 +762,28 @@ function FieldGuardApp() {
         </p>
       </footer>
 
+      {/* 9. Enterprise Multi-Parcel Command Center Drawer */}
+      <EnterpriseSideDrawer
+        isOpen={isSideDrawerOpen}
+        onClose={() => setIsSideDrawerOpen(false)}
+        parcels={parcels}
+        activeParcelId={activeParcelId}
+        onSelectParcel={handleSelectParcel}
+        onAddNewParcel={handleAddNewParcel}
+        onEditParcel={handleEditParcel}
+        onDeleteParcel={handleDeleteParcel}
+        authSession={authSession}
+      />
+
       {/* 10. Farm Parcel Configuration Wizard */}
       <StepperWizard
         isOpen={isParcelWizardOpen}
-        onClose={() => setIsParcelWizardOpen(false)}
+        onClose={() => {
+          setIsParcelWizardOpen(false);
+          setEditingParcel(null);
+        }}
         onSubmit={handleCustomFarmSubmit}
-        initialFarm={currentFarm}
+        initialFarm={editingParcel}
       />
 
       {/* 12. Isolated Developer Demo Sandbox Dock (Strictly controlled by NEXT_PUBLIC_ENABLE_DEMO_SANDBOX env var) */}
