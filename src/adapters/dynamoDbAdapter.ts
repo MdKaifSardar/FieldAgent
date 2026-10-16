@@ -75,7 +75,11 @@ export async function saveFarmProfileToDynamo(farm: FarmProfile): Promise<{ succ
       await client.send(
         new PutCommand({
           TableName: tableName,
-          Item: farm,
+          Item: {
+            ...farm,
+            id: farm.id,
+            farmId: farm.id, // Supports both 'id' and 'farmId' table partition schemas
+          },
         })
       );
       return { success: true, storage: 'aws_dynamodb' };
@@ -113,13 +117,28 @@ export async function getFarmProfileFromDynamo(farmId: string): Promise<FarmProf
 
   if (client) {
     try {
-      const response = await client.send(
-        new GetCommand({
-          TableName: tableName,
-          Key: { id: farmId }, // Primary Key matches table schema (id)
-        })
-      );
-      if (response.Item) {
+      let response;
+      try {
+        response = await client.send(
+          new GetCommand({
+            TableName: tableName,
+            Key: { id: farmId },
+          })
+        );
+      } catch (keyErr: any) {
+        if (keyErr?.name === 'ValidationException') {
+          response = await client.send(
+            new GetCommand({
+              TableName: tableName,
+              Key: { farmId },
+            })
+          );
+        } else {
+          throw keyErr;
+        }
+      }
+
+      if (response && response.Item) {
         return response.Item as FarmProfile;
       }
     } catch (error) {
@@ -201,12 +220,25 @@ export async function deleteFarmFromDynamo(farmId: string): Promise<boolean> {
 
   if (client) {
     try {
-      await client.send(
-        new DeleteCommand({
-          TableName: tableName,
-          Key: { id: farmId },
-        })
-      );
+      try {
+        await client.send(
+          new DeleteCommand({
+            TableName: tableName,
+            Key: { id: farmId },
+          })
+        );
+      } catch (keyErr: any) {
+        if (keyErr?.name === 'ValidationException') {
+          await client.send(
+            new DeleteCommand({
+              TableName: tableName,
+              Key: { farmId },
+            })
+          );
+        } else {
+          throw keyErr;
+        }
+      }
       inMemoryFarms.delete(farmId);
       return true;
     } catch (error) {
