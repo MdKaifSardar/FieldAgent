@@ -90,7 +90,7 @@ export function FieldsDirectoryView({
           className="px-4 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>{language === 'hi' ? '+ नया खेत जोड़ें' : '+ Register New Field'}</span>
+          <span>{language === 'hi' ? 'नया खेत जोड़ें' : 'Register New Field'}</span>
         </button>
       </div>
 

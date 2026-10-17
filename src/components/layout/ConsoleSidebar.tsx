@@ -219,7 +219,7 @@ export function ConsoleSidebar({
               title="Register New Field Parcel"
             >
               <Plus className="w-4 h-4 shrink-0" />
-              {!isCollapsed && <span>+ Add Field</span>}
+              {!isCollapsed && <span>Add Field</span>}
             </button>
           </div>
         </div>
@@ -329,7 +329,7 @@ export function ConsoleSidebar({
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-xs bg-emerald-600 text-white shadow-md"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>+ Add Field Parcel</span>
+                  <span>Add Field Parcel</span>
                 </button>
               </div>
             </div>

@@ -79,7 +79,11 @@ export function ProfileOverviewView({
               <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-500 dark:text-slate-400">
                 {authSession?.emailOrPhone && (
                   <span className="flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-slate-400" />
+                    {authSession.emailOrPhone.includes('@') ? (
+                      <Mail className="w-3.5 h-3.5 text-slate-400" />
+                    ) : (
+                      <Phone className="w-3.5 h-3.5 text-slate-400" />
+                    )}
                     {authSession.emailOrPhone}
                   </span>
                 )}
@@ -95,10 +99,10 @@ export function ProfileOverviewView({
             <button
               type="button"
               onClick={onOpenNewParcelWizard}
-              className="px-4 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-all flex items-center gap-2"
+              className="px-4 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-all flex items-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>{language === 'hi' ? '+ नया खेत जोड़ें' : '+ Register New Field'}</span>
+              <span>{language === 'hi' ? 'नया खेत जोड़ें' : 'Register New Field'}</span>
             </button>
           </div>
         </div>
@@ -230,7 +234,7 @@ export function ProfileOverviewView({
                 <Zap className="w-5 h-5" />
               </div>
               <span className="text-xs font-bold text-amber-600 dark:text-amber-400 group-hover:translate-x-1 transition-transform flex items-center gap-1">
-                {activeParcel ? 'Launch Cockpit' : '+ Create Field'} <ArrowRight className="w-4 h-4" />
+                {activeParcel ? 'Launch Cockpit' : 'Configure Field'} <ArrowRight className="w-4 h-4" />
               </span>
             </div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white font-['Outfit'] mb-1">
