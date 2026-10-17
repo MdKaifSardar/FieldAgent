@@ -44,7 +44,7 @@ export function WaterBudgetCard({
                 ? 'bg-[#C2410C]/10 dark:bg-[#C2410C]/20 text-[#C2410C] dark:text-[#FB923C] border-[#C2410C]/30' 
                 : 'bg-[#0284C7]/10 dark:bg-[#0284C7]/20 text-[#0284C7] dark:text-[#38BDF8] border-[#0284C7]/30'
             }`}>
-              {isDeficit ? `${t.shortfall}: -${waterShortfall_liters.toLocaleString()} L` : t.reserveSufficient}
+              {isDeficit ? `${t.shortfall}: ${waterShortfall_liters.toLocaleString()} L` : t.reserveSufficient}
             </span>
           </div>
 
