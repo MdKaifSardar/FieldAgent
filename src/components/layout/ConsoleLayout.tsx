@@ -35,7 +35,7 @@ export function ConsoleLayout({
 
   return (
     <div className="min-h-screen bg-[#F6F8F5] dark:bg-[#0D1410] text-[#121C15] dark:text-[#F0F4F1] flex transition-colors duration-200">
-      {/* 1. Left Persistent Sidebar (Desktop & Tablet) + Mobile Drawer + Bottom Nav */}
+      {/* 1. Left Persistent Sidebar (Desktop & Tablet) + Rich Mobile Drawer */}
       <ConsoleSidebar
         currentView={currentView}
         onNavigate={onNavigate}
@@ -45,10 +45,12 @@ export function ConsoleLayout({
         onOpenAwsProof={onOpenAwsProof}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        authSession={authSession}
+        onSignOut={onSignOut}
       />
 
       {/* 2. Main Content Canvas */}
-      <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-6">
+      <div className="flex-1 flex flex-col min-w-0 pb-6">
         {/* Universal Top Console Bar */}
         <ConsoleHeader
           currentView={currentView}
