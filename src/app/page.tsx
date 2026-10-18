@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '../components/Header';
-import { AwsProofDrawer } from '../components/AwsProofDrawer';
 import { StepperWizard } from '../components/onboarding/StepperWizard';
 import { DemoSandboxDock } from '../components/demo/DemoSandboxDock';
 import { LandingPage } from '../components/landing/LandingPage';
@@ -54,7 +53,6 @@ function FieldGuardApp() {
   
   // Modals & Panels
   const [isParcelWizardOpen, setIsParcelWizardOpen] = useState<boolean>(false);
-  const [isAwsProofModalOpen, setIsAwsProofModalOpen] = useState<boolean>(false);
   const [authSession, setAuthSession] = useState<AuthSession | null>(null);
   
   // Loading & Diagnostics
@@ -469,7 +467,6 @@ function FieldGuardApp() {
         activeParcel={currentFarm}
         onSelectParcel={handleSelectParcel}
         onOpenNewParcelWizard={handleAddNewParcel}
-        onOpenAwsProof={() => setIsAwsProofModalOpen(true)}
         authSession={authSession}
         onSignOut={handleLogout}
       >
@@ -547,33 +544,6 @@ function FieldGuardApp() {
           />
         )}
       </ConsoleLayout>
-
-      {/* AWS Cloud Architecture Modal */}
-      {isAwsProofModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white dark:bg-[#141D17] rounded-3xl max-w-2xl w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white font-['Outfit']">
-                AWS Architecture Verification & Cloud Logs
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsAwsProofModalOpen(false)}
-                className="p-1 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            {decision ? (
-              <AwsProofDrawer decision={decision} storageStatus={storageStatus} />
-            ) : (
-              <div className="text-xs text-slate-400 p-4">
-                No decision computed yet. Open an active field cockpit to inspect AWS Lambda execution telemetry.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Parcel Configuration Wizard Modal */}
       <StepperWizard

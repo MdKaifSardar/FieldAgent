@@ -49,14 +49,14 @@ export function DemoSandboxDock({
               </div>
               <div>
                 <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                  <span>Demo Video Sandbox</span>
+                  <span>Agronomic Simulation Dock</span>
                   <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 font-mono flex items-center gap-0.5">
                     <ShieldCheck className="w-2.5 h-2.5" />
-                    ENV DEMO
+                    SIMULATION
                   </span>
                 </div>
                 <p className="text-[10px] text-slate-400">
-                  Deterministic scenarios for hackathon recording
+                  Pre-configured climate & water stress scenarios
                 </p>
               </div>
             </div>

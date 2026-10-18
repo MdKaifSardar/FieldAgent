@@ -14,9 +14,7 @@ import {
   CloudSun, 
   ScrollText, 
   Plus, 
-  ShieldCheck, 
   ChevronLeft, 
-  ChevronRight,
   Layers,
   X,
   Sun,
@@ -24,7 +22,8 @@ import {
   LogOut,
   Mail,
   Phone,
-  CheckCircle2
+  CheckCircle2,
+  Globe
 } from 'lucide-react';
 
 interface ConsoleSidebarProps {
@@ -33,7 +32,6 @@ interface ConsoleSidebarProps {
   parcels: FarmProfile[];
   activeParcel: FarmProfile | null;
   onOpenNewParcelWizard: () => void;
-  onOpenAwsProof: () => void;
   isMobileOpen: boolean;
   onCloseMobile: () => void;
   authSession?: AuthSession | null;
@@ -46,7 +44,6 @@ export function ConsoleSidebar({
   parcels,
   activeParcel,
   onOpenNewParcelWizard,
-  onOpenAwsProof,
   isMobileOpen,
   onCloseMobile,
   authSession,
@@ -92,7 +89,7 @@ export function ConsoleSidebar({
               <button
                 type="button"
                 onClick={() => setIsCollapsed(true)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 ml-1"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 ml-1 cursor-pointer"
                 title="Collapse Sidebar"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -102,7 +99,7 @@ export function ConsoleSidebar({
             <button
               type="button"
               onClick={() => setIsCollapsed(false)}
-              className="w-10 h-10 mx-auto rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-xs hover:opacity-90 transition-opacity"
+              className="w-10 h-10 mx-auto rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-xs hover:opacity-90 transition-opacity cursor-pointer"
               title="Expand Sidebar"
             >
               <Sprout className="w-5 h-5" />
@@ -210,7 +207,7 @@ export function ConsoleSidebar({
             </nav>
           </div>
 
-          {/* Section 2: Irrigation Suite */}
+          {/* Section 2: Irrigation Management Suite */}
           <div>
             {!isCollapsed && (
               <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
@@ -294,32 +291,9 @@ export function ConsoleSidebar({
             )}
           </div>
         </div>
-
-        {/* Sidebar Footer */}
-        <div className="p-3 border-t border-[#E1E8DE] dark:border-[#1F2D24] flex justify-center">
-          {isCollapsed ? (
-            <button
-              type="button"
-              onClick={onOpenAwsProof}
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              title="AWS Cloud Architecture Audit"
-            >
-              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={onOpenAwsProof}
-              className="w-full flex items-center gap-2 p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold transition-colors"
-            >
-              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span className="truncate">AWS Architecture</span>
-            </button>
-          )}
-        </div>
       </aside>
 
-      {/* 2. RICH MOBILE DRAWER (KEEPS MOBILE TOP NAVBAR 100% UNCONGESTED) */}
+      {/* 2. RICH MOBILE DRAWER */}
       {isMobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
           <div 
@@ -341,7 +315,7 @@ export function ConsoleSidebar({
                 <button
                   type="button"
                   onClick={onCloseMobile}
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white"
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -380,7 +354,7 @@ export function ConsoleSidebar({
             <div className="flex-1 py-3 px-3 space-y-4 overflow-y-auto text-xs">
               <div>
                 <p className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Navigation
+                  Workspace
                 </p>
                 <nav className="space-y-1">
                   <button
@@ -389,7 +363,7 @@ export function ConsoleSidebar({
                       onNavigate('profile');
                       onCloseMobile();
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold transition-all ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold transition-all cursor-pointer ${
                       currentView === 'profile'
                         ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-500/30'
                         : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'
@@ -405,7 +379,7 @@ export function ConsoleSidebar({
                       onNavigate('fields');
                       onCloseMobile();
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-semibold transition-all ${
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-semibold transition-all cursor-pointer ${
                       currentView === 'fields'
                         ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-500/30'
                         : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'
@@ -426,7 +400,7 @@ export function ConsoleSidebar({
                       onNavigate('cockpit');
                       onCloseMobile();
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-semibold transition-all ${
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-semibold transition-all cursor-pointer ${
                       currentView === 'cockpit'
                         ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-500/30'
                         : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'
@@ -458,7 +432,7 @@ export function ConsoleSidebar({
                       onCloseMobile();
                       document.getElementById('water-budget-section')?.scrollIntoView({ behavior: 'smooth' });
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 cursor-pointer"
                   >
                     <Droplets className="w-4 h-4 text-cyan-500" />
                     <span>{tWater}</span>
@@ -471,7 +445,7 @@ export function ConsoleSidebar({
                       onCloseMobile();
                       document.getElementById('climate-station-section')?.scrollIntoView({ behavior: 'smooth' });
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 cursor-pointer"
                   >
                     <CloudSun className="w-4 h-4 text-sky-500" />
                     <span>{tClimate}</span>
@@ -484,7 +458,7 @@ export function ConsoleSidebar({
                       onCloseMobile();
                       document.getElementById('environmental-ledger-section')?.scrollIntoView({ behavior: 'smooth' });
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 cursor-pointer"
                   >
                     <ScrollText className="w-4 h-4 text-amber-500" />
                     <span>{tLedger}</span>
@@ -508,53 +482,42 @@ export function ConsoleSidebar({
               </div>
             </div>
 
-            {/* Drawer Footer: Settings, Language, Theme & Sign Out */}
+            {/* Drawer Footer: Settings, Language Dropdown, Theme & Sign Out */}
             <div className="p-3.5 border-t border-[#E1E8DE] dark:border-[#1F2D24] bg-slate-50/50 dark:bg-slate-800/30 space-y-3">
-              {/* Language Selector */}
+              {/* Language Dropdown Selector */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 px-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 block px-1">
                   Language / भाषा
-                </p>
-                <div className="grid grid-cols-3 gap-1 bg-slate-200/60 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold">
-                  {(['en', 'hi', 'bn'] as SupportedLanguage[]).map((lang) => (
-                    <button
-                      key={lang}
-                      type="button"
-                      onClick={() => setLanguage(lang)}
-                      className={`py-1.5 rounded-lg text-center transition-all ${
-                        language === lang
-                          ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 font-bold shadow-2xs'
-                          : 'text-slate-600 dark:text-slate-400'
-                      }`}
-                    >
-                      {lang === 'en' ? 'English' : lang === 'hi' ? 'हिंदी' : 'বাংলা'}
-                    </button>
-                  ))}
+                </label>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
+                  <Globe className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <select
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value as SupportedLanguage)}
+                    aria-label="Select Language"
+                    className="w-full bg-transparent border-none text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-hidden cursor-pointer"
+                  >
+                    <option value="en">English</option>
+                    <option value="hi">हिन्दी (Hindi)</option>
+                    <option value="bn">বাংলা (Bengali)</option>
+                  </select>
                 </div>
               </div>
 
-              {/* Theme & AWS Rows */}
-              <div className="flex items-center justify-between gap-2 pt-1">
+              {/* Theme Toggle */}
+              <div>
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200"
+                  className="w-full flex items-center justify-between py-2 px-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer"
                 >
-                  {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-slate-500" />}
-                  <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    onOpenAwsProof();
-                    onCloseMobile();
-                  }}
-                  className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold text-emerald-700 dark:text-emerald-300"
-                  title="AWS Cloud Logs"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>AWS</span>
+                  <span className="flex items-center gap-2">
+                    {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-500" />}
+                    <span>Theme Mode</span>
+                  </span>
+                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                    {theme === 'dark' ? 'Dark' : 'Light'}
+                  </span>
                 </button>
               </div>
 
@@ -566,9 +529,9 @@ export function ConsoleSidebar({
                     onSignOut();
                     onCloseMobile();
                   }}
-                  className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs font-semibold transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs font-semibold transition-colors cursor-pointer"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
+                  <LogOut className="w-4 h-4" />
                   <span>Sign Out</span>
                 </button>
               )}

@@ -13,7 +13,6 @@ interface ConsoleLayoutProps {
   activeParcel: FarmProfile | null;
   onSelectParcel: (parcelId: string) => void;
   onOpenNewParcelWizard: () => void;
-  onOpenAwsProof: () => void;
   authSession: AuthSession | null;
   onSignOut: () => void;
   children: React.ReactNode;
@@ -26,7 +25,6 @@ export function ConsoleLayout({
   activeParcel,
   onSelectParcel,
   onOpenNewParcelWizard,
-  onOpenAwsProof,
   authSession,
   onSignOut,
   children,
@@ -42,7 +40,6 @@ export function ConsoleLayout({
         parcels={parcels}
         activeParcel={activeParcel}
         onOpenNewParcelWizard={onOpenNewParcelWizard}
-        onOpenAwsProof={onOpenAwsProof}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
         authSession={authSession}
@@ -60,7 +57,6 @@ export function ConsoleLayout({
           onSelectParcel={onSelectParcel}
           authSession={authSession}
           onSignOut={onSignOut}
-          onOpenAwsProof={onOpenAwsProof}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
         />
 
