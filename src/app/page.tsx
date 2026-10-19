@@ -24,7 +24,7 @@ import { DailyWeatherForecast } from '../types/weather';
 import { ConsoleLayout } from '../components/layout/ConsoleLayout';
 import { ProfileOverviewView } from '../components/dashboard/ProfileOverviewView';
 import { FieldsDirectoryView } from '../components/dashboard/FieldsDirectoryView';
-import { FieldCockpitView } from '../components/dashboard/FieldCockpitView';
+import { FieldAdvisoryView } from '../components/dashboard/FieldAdvisoryView';
 import { X } from 'lucide-react';
 
 function FieldGuardApp() {
@@ -33,8 +33,8 @@ function FieldGuardApp() {
   // High-level navigation: 'landing' (unauth / marketing) vs 'dashboard' (authenticated enterprise console)
   const [activeView, setActiveView] = useState<'landing' | 'dashboard'>('landing');
 
-  // Enterprise Console Subview: 'profile' (default landing) | 'fields' (directory) | 'cockpit' (active parcel advisory)
-  const [dashboardView, setDashboardView] = useState<'profile' | 'fields' | 'cockpit'>('profile');
+  // Enterprise Console Subview: 'profile' (default landing) | 'fields' (directory) | 'advisory' (active parcel advisory)
+  const [dashboardView, setDashboardView] = useState<'profile' | 'fields' | 'advisory'>('profile');
 
   // Multi-Parcel Portfolio State
   const [parcels, setParcels] = useState<FarmProfile[]>([]);
@@ -245,8 +245,8 @@ function FieldGuardApp() {
     setHasCustomFarm(true);
     setActivePresetId(null);
     setActiveView('dashboard');
-    // Open the Cockpit for the newly created or edited field
-    setDashboardView('cockpit');
+    // Open the Advisory for the newly created or edited field
+    setDashboardView('advisory');
     setIsParcelWizardOpen(false);
     setEditingParcel(null);
 
@@ -327,7 +327,7 @@ function FieldGuardApp() {
   const handleSelectDemoPreset = (presetId: string) => {
     setActivePresetId(presetId);
     setActiveView('dashboard');
-    setDashboardView('cockpit');
+    setDashboardView('advisory');
     const preset = DEMO_PRESETS[presetId];
     if (preset) {
       setCurrentFarm(preset.farm);
@@ -500,10 +500,10 @@ function FieldGuardApp() {
             activeParcel={currentFarm}
             onSelectParcel={(id) => {
               handleSelectParcel(id);
-              setDashboardView('cockpit');
+              setDashboardView('advisory');
             }}
             onNavigateToFields={() => setDashboardView('fields')}
-            onNavigateToCockpit={() => setDashboardView('cockpit')}
+            onNavigateToAdvisory={() => setDashboardView('advisory')}
             onOpenNewParcelWizard={handleAddNewParcel}
           />
         )}
@@ -514,16 +514,16 @@ function FieldGuardApp() {
             parcels={parcels}
             activeParcelId={activeParcelId}
             onSelectParcel={handleSelectParcel}
-            onNavigateToCockpit={() => setDashboardView('cockpit')}
+            onNavigateToAdvisory={() => setDashboardView('advisory')}
             onOpenNewParcelWizard={handleAddNewParcel}
             onEditParcel={handleEditParcel}
             onDeleteParcel={handleDeleteParcel}
           />
         )}
 
-        {/* WORKSPACE VIEW 3: Field Decision Cockpit */}
-        {dashboardView === 'cockpit' && (
-          <FieldCockpitView
+        {/* WORKSPACE VIEW 3: Field Decision Advisory */}
+        {dashboardView === 'advisory' && (
+          <FieldAdvisoryView
             currentFarm={currentFarm}
             currentForecast={currentForecast}
             decision={decision}

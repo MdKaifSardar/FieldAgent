@@ -23,7 +23,8 @@ interface FieldsDirectoryViewProps {
   parcels: FarmProfile[];
   activeParcelId: string | null;
   onSelectParcel: (parcelId: string) => void;
-  onNavigateToCockpit: () => void;
+  onNavigateToAdvisory?: () => void;
+  onNavigateToCockpit?: () => void;
   onOpenNewParcelWizard: () => void;
   onEditParcel: (parcel: FarmProfile) => void;
   onDeleteParcel: (parcelId: string) => void;
@@ -33,6 +34,7 @@ export function FieldsDirectoryView({
   parcels,
   activeParcelId,
   onSelectParcel,
+  onNavigateToAdvisory,
   onNavigateToCockpit,
   onOpenNewParcelWizard,
   onEditParcel,
@@ -41,7 +43,14 @@ export function FieldsDirectoryView({
   const { language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterStorage, setFilterStorage] = useState<string>('all');
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleOpenAdvisory = () => {
+    if (onNavigateToAdvisory) {
+      onNavigateToAdvisory();
+    } else if (onNavigateToCockpit) {
+      onNavigateToCockpit();
+    }
+  };
 
   // Filter parcels
   const filteredParcels = parcels.filter((farm) => {
@@ -72,9 +81,9 @@ export function FieldsDirectoryView({
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* 1. Header & Search Control Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl bg-white dark:bg-[#141D17] border border-[#E1E8DE] dark:border-[#1F2D24] shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl bg-white dark:bg-[#0D2232] border border-[#E1E8DE] dark:border-[#16364D] shadow-xs">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white font-['Outfit']">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit']">
             {language === 'hi' ? 'खेत निर्देशिका' : language === 'bn' ? 'জমির ডিরেক্টরি' : 'My Fields Directory'}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -87,7 +96,7 @@ export function FieldsDirectoryView({
         <button
           type="button"
           onClick={onOpenNewParcelWizard}
-          className="px-4 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+          className="px-4 py-2.5 rounded-lg font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>{language === 'hi' ? 'नया खेत जोड़ें' : 'Register New Field'}</span>
@@ -104,7 +113,7 @@ export function FieldsDirectoryView({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={language === 'hi' ? 'खेत, फसल या स्थान खोजें...' : 'Search field by name, crop or village...'}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-[#141D17] border border-[#E1E8DE] dark:border-[#1F2D24] text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:border-emerald-500 transition-colors"
+            className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white dark:bg-[#0D2232] border border-[#E1E8DE] dark:border-[#16364D] text-xs text-slate-800 dark:text-[#F0F9FF] placeholder-slate-400 focus:outline-hidden focus:border-sky-500 transition-colors"
           />
         </div>
 
@@ -120,10 +129,10 @@ export function FieldsDirectoryView({
               key={tab.id}
               type="button"
               onClick={() => setFilterStorage(tab.id)}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 filterStorage === tab.id
-                  ? 'bg-emerald-600 text-white shadow-2xs'
-                  : 'bg-white dark:bg-[#141D17] border border-[#E1E8DE] dark:border-[#1F2D24] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  ? 'bg-sky-600 text-white shadow-2xs'
+                  : 'bg-white dark:bg-[#0D2232] border border-[#E1E8DE] dark:border-[#16364D] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#0A1C2A]'
               }`}
             >
               {tab.label}
@@ -134,11 +143,11 @@ export function FieldsDirectoryView({
 
       {/* 3. Empty State */}
       {filteredParcels.length === 0 && (
-        <div className="py-16 px-4 text-center bg-white dark:bg-[#141D17] border border-[#E1E8DE] dark:border-[#1F2D24] rounded-3xl shadow-sm">
-          <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+        <div className="py-16 px-4 text-center bg-white dark:bg-[#0D2232] border border-[#E1E8DE] dark:border-[#16364D] rounded-xl shadow-xs">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-slate-100 dark:bg-[#0A1C2A] flex items-center justify-center text-slate-400">
             <Layers className="w-7 h-7" />
           </div>
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-1">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-[#F0F9FF] mb-1">
             {parcels.length === 0 ? 'No Fields Registered Yet' : 'No Matching Fields Found'}
           </h2>
           <p className="text-xs text-slate-500 max-w-sm mx-auto mb-6">
@@ -150,7 +159,7 @@ export function FieldsDirectoryView({
             <button
               type="button"
               onClick={onOpenNewParcelWizard}
-              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-all inline-flex items-center gap-2 cursor-pointer"
+              className="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition-all inline-flex items-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Configure First Field</span>
@@ -172,10 +181,10 @@ export function FieldsDirectoryView({
           return (
             <div
               key={farm.id}
-              className={`p-5 rounded-3xl bg-white dark:bg-[#141D17] border transition-all flex flex-col justify-between shadow-xs ${
+              className={`p-5 rounded-xl bg-white dark:bg-[#0D2232] border transition-all flex flex-col justify-between shadow-xs ${
                 isSelected
-                  ? 'border-emerald-500 ring-2 ring-emerald-500/20'
-                  : 'border-[#E1E8DE] dark:border-[#1F2D24] hover:border-slate-300 dark:hover:border-slate-700'
+                  ? 'border-sky-500 ring-2 ring-sky-500/20'
+                  : 'border-[#E1E8DE] dark:border-[#16364D] hover:border-slate-300 dark:hover:border-sky-500/40'
               }`}
             >
               <div>
@@ -183,11 +192,11 @@ export function FieldsDirectoryView({
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h2 className="font-bold text-base text-slate-900 dark:text-white truncate font-['Outfit']">
+                      <h2 className="font-bold text-base text-slate-900 dark:text-[#F0F9FF] truncate font-['Outfit']">
                         {farm.farmName}
                       </h2>
                       {isSelected && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800">
                           Active
                         </span>
                       )}
@@ -198,12 +207,12 @@ export function FieldsDirectoryView({
                     </div>
                   </div>
 
-                  {/* Actions dropdown/buttons */}
+                  {/* Actions buttons */}
                   <div className="flex items-center gap-1 shrink-0">
                     <button
                       type="button"
                       onClick={() => onEditParcel(farm)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#0A1C2A] transition-colors cursor-pointer"
                       title="Edit Field Configuration"
                     >
                       <Edit3 className="w-4 h-4" />
@@ -215,7 +224,7 @@ export function FieldsDirectoryView({
                           onDeleteParcel(farm.id);
                         }
                       }}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                      className="p-1.5 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
                       title="Delete Field Parcel"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -226,31 +235,31 @@ export function FieldsDirectoryView({
                 {/* Crop & Soil tags */}
                 <div className="flex flex-wrap gap-1.5 my-3">
                   {primaryPlot && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-200 dark:border-emerald-800/40">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-200 dark:border-emerald-800/40">
                       <Sprout className="w-3.5 h-3.5" />
                       {primaryPlot.cropName} ({primaryPlot.areaValue} {primaryPlot.areaUnit})
                     </span>
                   )}
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium text-xs">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-[#0A1C2A] text-slate-600 dark:text-slate-300 font-medium text-xs">
                     {farm.soil?.texture || 'Loamy Soil'}
                   </span>
                 </div>
 
                 {/* Dedicated Water Reserve Gauge */}
-                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/60 my-3">
+                <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-[#0A1C2A]/70 border border-slate-100 dark:border-[#16364D] my-3">
                   <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
                     <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                       {storageInfo.icon}
                       {storageInfo.label}
                     </span>
-                    <span className="font-bold text-slate-900 dark:text-white">
+                    <span className="font-bold text-slate-900 dark:text-[#F0F9FF]">
                       {available.toLocaleString()} / {capacity.toLocaleString()} L
                     </span>
                   </div>
                   <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
                     <div 
                       className={`h-full transition-all rounded-full ${
-                        percent < 25 ? 'bg-amber-500' : 'bg-emerald-500'
+                        percent < 25 ? 'bg-amber-500' : 'bg-sky-500'
                       }`}
                       style={{ width: `${percent}%` }}
                     />
@@ -259,7 +268,7 @@ export function FieldsDirectoryView({
               </div>
 
               {/* Bottom Card Launch Action */}
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+              <div className="pt-3 border-t border-slate-100 dark:border-[#16364D] flex items-center justify-between">
                 <span className="text-[11px] text-slate-400 font-medium">
                   {farm.plots?.length || 1} Plot • {primaryPlot?.growthStage || 'Growing'}
                 </span>
@@ -267,11 +276,11 @@ export function FieldsDirectoryView({
                   type="button"
                   onClick={() => {
                     onSelectParcel(farm.id);
-                    onNavigateToCockpit();
+                    handleOpenAdvisory();
                   }}
-                  className="px-3.5 py-1.5 rounded-xl bg-slate-900 dark:bg-white hover:bg-emerald-600 dark:hover:bg-emerald-500 text-white dark:text-slate-900 hover:text-white dark:hover:text-white font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  className="px-3.5 py-1.5 rounded-lg bg-slate-900 dark:bg-sky-500 hover:bg-sky-600 text-white dark:text-slate-950 hover:text-white dark:hover:text-white font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
-                  <span>Open Cockpit</span>
+                  <span>Open Advisory</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>

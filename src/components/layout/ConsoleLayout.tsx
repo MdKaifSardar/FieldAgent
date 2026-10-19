@@ -7,8 +7,8 @@ import { FarmProfile } from '../../types/farm';
 import { AuthSession } from '../../adapters/cognitoAdapter';
 
 interface ConsoleLayoutProps {
-  currentView: 'profile' | 'fields' | 'cockpit';
-  onNavigate: (view: 'profile' | 'fields' | 'cockpit') => void;
+  currentView: 'profile' | 'fields' | 'advisory';
+  onNavigate: (view: 'profile' | 'fields' | 'advisory') => void;
   parcels: FarmProfile[];
   activeParcel: FarmProfile | null;
   onSelectParcel: (parcelId: string) => void;
@@ -32,13 +32,14 @@ export function ConsoleLayout({
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
 
   return (
-    <div className="min-h-screen bg-[#F6F8F5] dark:bg-[#0D1410] text-[#121C15] dark:text-[#F0F4F1] flex transition-colors duration-200">
+    <div className="min-h-screen bg-[#F6F8F5] dark:bg-[#06131D] text-[#121C15] dark:text-[#F0F9FF] flex transition-colors duration-200">
       {/* 1. Left Persistent Sidebar (Desktop & Tablet) + Rich Mobile Drawer */}
       <ConsoleSidebar
         currentView={currentView}
         onNavigate={onNavigate}
         parcels={parcels}
         activeParcel={activeParcel}
+        onSelectParcel={onSelectParcel}
         onOpenNewParcelWizard={onOpenNewParcelWizard}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
