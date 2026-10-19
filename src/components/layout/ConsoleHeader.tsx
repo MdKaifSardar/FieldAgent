@@ -3,6 +3,7 @@
 import React from 'react';
 import { useLanguage } from '../common/LanguageContext';
 import { useTheme } from '../common/ThemeContext';
+import { LanguageSelector } from '../common/LanguageSelector';
 import { SupportedLanguage } from '../../adapters/speechAdapter';
 import { AuthSession } from '../../adapters/cognitoAdapter';
 import { FarmProfile } from '../../types/farm';
@@ -113,19 +114,9 @@ export function ConsoleHeader({
 
       {/* 2. RIGHT: Desktop Controls & Profile */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        {/* Desktop Language Dropdown */}
-        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-[#112B3E] border border-slate-200 dark:border-[#16364D] text-xs text-slate-700 dark:text-[#F0F9FF]">
-          <Globe className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value as SupportedLanguage)}
-            aria-label="Select Language"
-            className="bg-transparent border-none text-xs font-semibold text-slate-700 dark:text-[#F0F9FF] focus:outline-hidden cursor-pointer"
-          >
-            <option value="en" className="dark:bg-[#0A1C2A] dark:text-[#F0F9FF]">English</option>
-            <option value="hi" className="dark:bg-[#0A1C2A] dark:text-[#F0F9FF]">हिन्दी (Hindi)</option>
-            <option value="bn" className="dark:bg-[#0A1C2A] dark:text-[#F0F9FF]">বাংলা (Bengali)</option>
-          </select>
+        {/* Desktop Custom Language Dropdown */}
+        <div className="hidden md:block">
+          <LanguageSelector />
         </div>
 
         {/* Desktop Theme Toggle */}

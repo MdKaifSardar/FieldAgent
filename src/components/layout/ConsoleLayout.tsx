@@ -32,8 +32,8 @@ export function ConsoleLayout({
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
 
   return (
-    <div className="min-h-screen bg-[#F6F8F5] dark:bg-[#06131D] text-[#121C15] dark:text-[#F0F9FF] flex transition-colors duration-200">
-      {/* 1. Left Persistent Sidebar (Desktop & Tablet) + Rich Mobile Drawer */}
+    <div className="h-screen w-screen overflow-hidden bg-[#F6F8F5] dark:bg-[#06131D] text-[#121C15] dark:text-[#F0F9FF] flex transition-colors duration-200">
+      {/* 1. Left Persistent Sidebar (Fixed in place, non-scrolling rail) */}
       <ConsoleSidebar
         currentView={currentView}
         onNavigate={onNavigate}
@@ -47,9 +47,9 @@ export function ConsoleLayout({
         onSignOut={onSignOut}
       />
 
-      {/* 2. Main Content Canvas */}
-      <div className="flex-1 flex flex-col min-w-0 pb-6">
-        {/* Universal Top Console Bar */}
+      {/* 2. Main Workspace Canvas: Dedicated Smooth Scroll Area */}
+      <div className="flex-1 h-screen flex flex-col min-w-0 overflow-y-auto">
+        {/* Universal Top Console Bar (Sticky) */}
         <ConsoleHeader
           currentView={currentView}
           onNavigate={onNavigate}
@@ -62,7 +62,7 @@ export function ConsoleLayout({
         />
 
         {/* Viewport Workspace */}
-        <main className="flex-1 px-3 sm:px-6 lg:px-8 py-5 max-w-7xl w-full mx-auto">
+        <main className="flex-1 px-3 sm:px-6 lg:px-8 py-5 max-w-7xl w-full mx-auto pb-12">
           {children}
         </main>
       </div>
