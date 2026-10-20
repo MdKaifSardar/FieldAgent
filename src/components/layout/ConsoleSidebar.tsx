@@ -6,6 +6,7 @@ import { useTheme } from '../common/ThemeContext';
 import { LanguageSelector } from '../common/LanguageSelector';
 import { FarmProfile } from '../../types/farm';
 import { AuthSession } from '../../adapters/cognitoAdapter';
+import { localizeFieldTitle } from '../../utils/agriculturalLocalization';
 import { 
   User, 
   Sprout, 
@@ -47,13 +48,13 @@ export function ConsoleSidebar({
   authSession,
   onSignOut,
 }: ConsoleSidebarProps) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [isFieldsAccordionOpen, setIsFieldsAccordionOpen] = useState<boolean>(true);
 
-  const tOverview = language === 'hi' ? 'खाता सारांश' : language === 'bn' ? 'অ্যাকাউন্ট ওভারভিউ' : 'Profile & Overview';
-  const tFields = language === 'hi' ? 'खेत निर्देशिका' : language === 'bn' ? 'জমির ডিরেক্টরি' : 'My Fields Directory';
+  const tOverview = t.profileOverview;
+  const tFields = t.myFieldsDirectory;
 
   return (
     <>
@@ -107,7 +108,7 @@ export function ConsoleSidebar({
           <div>
             {!isCollapsed && (
               <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#94A3B8]">
-                Management
+                {t.management}
               </p>
             )}
 
@@ -217,9 +218,9 @@ export function ConsoleSidebar({
                                 ? 'bg-sky-500/15 text-sky-600 dark:text-[#38BDF8] font-bold border-sky-500/30'
                                 : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#112B3E]'
                             }`}
-                            title={`Switch to ${farm.farmName}`}
+                            title={`Switch to ${localizeFieldTitle(farm.farmName, language)}`}
                           >
-                            <span className="truncate">{farm.farmName}</span>
+                            <span className="truncate">{localizeFieldTitle(farm.farmName, language)}</span>
                             {isActive && (
                               <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0 ml-1.5" />
                             )}
@@ -238,7 +239,7 @@ export function ConsoleSidebar({
                     type="button"
                     onClick={onOpenNewParcelWizard}
                     className="w-10 h-10 mx-auto rounded-lg flex items-center justify-center bg-sky-600 hover:bg-sky-500 text-white shadow-xs transition-all cursor-pointer"
-                    title="Register New Field"
+                    title={t.registerNewField}
                   >
                     <Plus className="w-4 h-4" />
                   </button>
@@ -249,7 +250,7 @@ export function ConsoleSidebar({
                     className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-bold text-xs bg-sky-600 hover:bg-sky-500 text-white shadow-xs transition-all cursor-pointer"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>Register Field</span>
+                    <span>{t.registerField}</span>
                   </button>
                 )}
               </div>
@@ -264,9 +265,9 @@ export function ConsoleSidebar({
               <button
                 type="button"
                 onClick={toggleTheme}
-                aria-label="Toggle Theme"
+                aria-label={t.themeMode}
                 className="w-10 h-10 mx-auto flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#112B3E] transition-colors cursor-pointer"
-                title="Toggle Theme"
+                title={t.themeMode}
               >
                 {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
               </button>
@@ -274,9 +275,9 @@ export function ConsoleSidebar({
                 <button
                   type="button"
                   onClick={onSignOut}
-                  aria-label="Sign Out"
+                  aria-label={t.signOut}
                   className="w-10 h-10 mx-auto flex items-center justify-center rounded-lg text-rose-500 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
-                  title="Sign Out"
+                  title={t.signOut}
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -291,10 +292,10 @@ export function ConsoleSidebar({
               >
                 <span className="flex items-center gap-2">
                   {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-500" />}
-                  <span>Theme</span>
+                  <span>{t.themeMode}</span>
                 </span>
                 <span className="text-[11px] font-bold text-sky-600 dark:text-[#38BDF8]">
-                  {theme === 'dark' ? 'Dark' : 'Light'}
+                  {theme === 'dark' ? t.themeDark : t.themeLight}
                 </span>
               </button>
               {onSignOut && (
@@ -304,7 +305,7 @@ export function ConsoleSidebar({
                   className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>Sign Out</span>
+                  <span>{t.signOut}</span>
                 </button>
               )}
             </div>
@@ -347,10 +348,10 @@ export function ConsoleSidebar({
                 </div>
                 <div className="min-w-0">
                   <p className="font-bold text-xs text-slate-900 dark:text-[#F0F9FF] truncate">
-                    {authSession?.displayName || 'Farmer Account'}
+                    {authSession?.displayName || t.farmerAccount}
                   </p>
                   <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                    Active Session
+                    {t.cloudSessionActive}
                   </span>
                 </div>
               </div>
@@ -360,7 +361,7 @@ export function ConsoleSidebar({
             <div className="flex-1 p-4 space-y-4 overflow-y-auto">
               <div>
                 <p className="px-1 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Navigation
+                  {t.management}
                 </p>
                 <nav className="space-y-1.5 text-xs">
                   <button
@@ -405,6 +406,7 @@ export function ConsoleSidebar({
                     <div className="pl-4 pr-1 space-y-1 border-l border-slate-200 dark:border-[#16364D] ml-5 my-1.5">
                       {parcels.map((farm) => {
                         const isActive = activeParcel?.id === farm.id && currentView === 'advisory';
+                        const localizedName = localizeFieldTitle(farm.farmName, language);
                         return (
                           <button
                             key={farm.id}
@@ -420,7 +422,7 @@ export function ConsoleSidebar({
                                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                             }`}
                           >
-                            <span className="truncate">{farm.farmName}</span>
+                            <span className="truncate">{localizedName}</span>
                             {isActive && (
                               <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0 ml-1.5" />
                             )}
@@ -443,7 +445,7 @@ export function ConsoleSidebar({
                   className="w-full flex items-center justify-center gap-2 py-2 rounded-lg font-bold text-xs bg-sky-600 text-white shadow-xs cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Register Field</span>
+                  <span>{t.registerField}</span>
                 </button>
               </div>
             </div>
@@ -453,7 +455,7 @@ export function ConsoleSidebar({
               {/* Custom Language Selector */}
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#94A3B8] mb-1.5 block px-1">
-                  Language / भाषा
+                  Language / ভাষা
                 </label>
                 <LanguageSelector className="w-full" />
               </div>
@@ -467,10 +469,10 @@ export function ConsoleSidebar({
                 >
                   <span className="flex items-center gap-2">
                     {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-slate-500" />}
-                    <span>Theme Mode</span>
+                    <span>{t.themeMode}</span>
                   </span>
                   <span className="text-[11px] font-bold text-sky-600 dark:text-[#38BDF8]">
-                    {theme === 'dark' ? 'Dark' : 'Light'}
+                    {theme === 'dark' ? t.themeDark : t.themeLight}
                   </span>
                 </button>
               </div>
@@ -486,7 +488,7 @@ export function ConsoleSidebar({
                   className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs font-semibold transition-colors cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>Sign Out</span>
+                  <span>{t.signOut}</span>
                 </button>
               )}
             </div>

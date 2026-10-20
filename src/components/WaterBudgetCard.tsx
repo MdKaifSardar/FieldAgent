@@ -3,6 +3,7 @@
 import React from 'react';
 import { PlotCalculationResult } from '../types/decision';
 import { useLanguage } from './common/LanguageContext';
+import { localizeCrop, localizeIrrigationMethod } from '../utils/agriculturalLocalization';
 import { Database, Sprout, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 interface WaterBudgetCardProps {
@@ -19,7 +20,7 @@ export function WaterBudgetCard({
   waterShortfall_liters,
   plots,
 }: WaterBudgetCardProps) {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const isDeficit = waterShortfall_liters > 0;
   const reservePct = totalDemand_liters > 0 
     ? Math.min(100, Math.round((availableReserve_liters / totalDemand_liters) * 100))
@@ -34,7 +35,7 @@ export function WaterBudgetCard({
             <div className="flex items-center gap-2">
               <Database className="w-5 h-5 text-sky-500 shrink-0" />
               <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit']">
-                {t.availableReserve} & Multi-Crop Balance
+                {t.availableReserve} & {t.multiCropBalance}
               </h3>
             </div>
             <span className={`self-start sm:self-auto text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
@@ -89,10 +90,10 @@ export function WaterBudgetCard({
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-slate-900 dark:text-[#F0F9FF] text-sm font-['Outfit']">
-                        {plot.cropName}
+                        {localizeCrop(plot.cropName, language)}
                       </span>
                       <span className="text-[10px] bg-white dark:bg-[#112B3E] text-sky-600 dark:text-[#38BDF8] px-1.5 py-0.5 rounded font-mono border border-slate-200 dark:border-[#16364D]">
-                        {(plot.irrigationMethod || 'surface_flood').toUpperCase()} ({Math.round((plot.irrigationEfficiency || 0.75) * 100)}%)
+                        {localizeIrrigationMethod(plot.irrigationMethod, language)} ({Math.round((plot.irrigationEfficiency || 0.75) * 100)}%)
                       </span>
                     </div>
                     <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${

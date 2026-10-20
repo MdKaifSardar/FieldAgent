@@ -11,6 +11,13 @@ import { WaterBudgetCard } from '../WaterBudgetCard';
 import { EnvironmentalLedgerCard } from '../EnvironmentalLedgerCard';
 import { CockpitSkeleton } from '../skeletons/CockpitSkeleton';
 import { 
+  localizeCrop, 
+  localizeSoil, 
+  localizeLocation, 
+  localizeStorageType, 
+  localizeFieldTitle 
+} from '../../utils/agriculturalLocalization';
+import { 
   Sprout, 
   MapPin, 
   Droplets, 
@@ -64,7 +71,7 @@ export function FieldAdvisoryView({
   interactiveTankLiters,
   onTankSliderChange,
 }: FieldAdvisoryViewProps) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const [activeTab, setActiveTab] = useState<AdvisoryTab>('advisory');
 
   // 1. Shimmer loading state
@@ -80,12 +87,12 @@ export function FieldAdvisoryView({
           <Sprout className="w-7 h-7" />
         </div>
         <h2 className="text-xl font-bold text-slate-900 dark:text-[#F0F9FF] mb-2 font-['Outfit']">
-          {language === 'hi' ? 'कोई सक्रिय खेत चयनित नहीं है' : 'No Active Field Selected'}
+          {language === 'hi' ? 'कोई सक्रिय खेत चयनित नहीं है' : language === 'bn' ? 'কোনো সক্রিয় জমি নির্বাচন করা হয়নি' : 'No Active Field Selected'}
         </h2>
         <p className="text-xs text-slate-500 dark:text-[#94A3B8] max-w-sm mx-auto mb-6">
           {parcels.length > 0 
-            ? 'Please choose a field from your sidebar directory to view its agronomic advisory.'
-            : 'Configure your first field parcel with geo-coordinates, soil texture, and water source to activate precision irrigation.'}
+            ? (language === 'hi' ? 'सलाह देखने के लिए साइडबार से खेत चुनें।' : language === 'bn' ? 'পরামর্শ দেখতে সাইডবার থেকে একটি জমি নির্বাচন করুন।' : 'Please choose a field from your sidebar directory to view its agronomic advisory.')
+            : t.noFieldsSub}
         </p>
 
         {parcels.length > 0 ? (
@@ -97,7 +104,7 @@ export function FieldAdvisoryView({
                 onClick={() => onSelectParcel(p.id)}
                 className="px-4 py-2 rounded-md bg-slate-900 dark:bg-sky-600 text-white text-xs font-bold hover:bg-sky-500 transition-colors cursor-pointer"
               >
-                Open {p.farmName}
+                {localizeFieldTitle(p.farmName, language)}
               </button>
             ))}
           </div>
@@ -108,7 +115,7 @@ export function FieldAdvisoryView({
             className="px-5 py-2.5 rounded-md bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-xs transition-all inline-flex items-center gap-2 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Configure First Field</span>
+            <span>{t.configureFirstField}</span>
           </button>
         )}
       </div>
@@ -134,16 +141,18 @@ export function FieldAdvisoryView({
             </div>
             <div className="min-w-0">
               <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit'] truncate leading-tight">
-                {currentFarm.farmName}
+                {localizeFieldTitle(currentFarm.farmName, language)}
               </h1>
               <div className="flex flex-wrap items-center gap-y-1 gap-x-3 text-xs text-slate-500 dark:text-[#94A3B8] mt-1">
                 <span className="flex items-center gap-1 text-sky-600 dark:text-[#38BDF8] font-medium truncate">
                   <MapPin className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">{currentFarm.location.displayName || currentFarm.location.villageOrPincode}</span>
+                  <span className="truncate">{localizeLocation(currentFarm.location.displayName || currentFarm.location.villageOrPincode, language)}</span>
                 </span>
                 <span className="text-slate-300 dark:text-[#1E4765]">•</span>
                 <span>
-                  {primaryPlot ? `${primaryPlot.cropName} (${totalBigha} Bigha / ${totalAcres} Acre)` : `${totalBigha} Bigha`}
+                  {primaryPlot 
+                    ? `${localizeCrop(primaryPlot.cropName, language)} (${totalBigha} ${t.unitBigha} / ${totalAcres} ${t.unitAcre})` 
+                    : `${totalBigha} ${t.unitBigha}`}
                 </span>
               </div>
             </div>
@@ -155,17 +164,13 @@ export function FieldAdvisoryView({
             <span className="px-2.5 py-1.5 rounded-md bg-sky-50 dark:bg-[#112B3E] border border-sky-200 dark:border-[#1E4765] text-sky-800 dark:text-[#38BDF8] font-semibold flex items-center gap-1.5">
               <Droplets className="w-3.5 h-3.5 text-sky-500" />
               <span>
-                {currentFarm.reserve.storageType === 'borewell_hours'
-                  ? `${currentFarm.reserve.pumpPower_hp || 5} HP Tube-well`
-                  : currentFarm.reserve.storageType === 'custom_sump'
-                  ? 'Masonry Sump'
-                  : 'Sintex Tank'}
+                {localizeStorageType(currentFarm.reserve.storageType, language, currentFarm.reserve.pumpPower_hp)}
               </span>
             </span>
 
             {/* Soil Texture Pill */}
-            <span className="px-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-[#112B3E] border border-slate-200 dark:border-[#16364D] text-slate-700 dark:text-slate-300 font-medium capitalize">
-              {currentFarm.soil.texture} Soil
+            <span className="px-2.5 py-1.5 rounded-md bg-slate-100 dark:bg-[#112B3E] border border-slate-200 dark:border-[#16364D] text-slate-700 dark:text-slate-300 font-medium">
+              {localizeSoil(currentFarm.soil.texture, language)}
             </span>
 
             {/* Edit Field Button */}
@@ -173,10 +178,10 @@ export function FieldAdvisoryView({
               type="button"
               onClick={() => onEditParcel(currentFarm)}
               className="px-2.5 py-1.5 rounded-md bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/50 text-sky-700 dark:text-[#38BDF8] border border-sky-200 dark:border-[#1E4765] transition-colors cursor-pointer font-semibold flex items-center gap-1.5"
-              title="Edit Field Configuration"
+              title={t.editFieldConfig}
             >
               <Edit3 className="w-3.5 h-3.5" />
-              <span>Edit Parcel</span>
+              <span>{t.editParcel}</span>
             </button>
           </div>
         </div>
@@ -184,10 +189,10 @@ export function FieldAdvisoryView({
         {/* INTEGRATED HORIZONTAL SUB-NAVIGATION TAB BAR */}
         <div className="px-4 sm:px-6 border-t border-[#E1E8DE] dark:border-[#16364D] bg-slate-50/50 dark:bg-[#0A1C2A] flex items-center gap-2 sm:gap-3 overflow-x-auto">
           {[
-            { id: 'advisory' as AdvisoryTab, label: 'Decision & Advisory', icon: <Zap className="w-4 h-4" /> },
-            { id: 'water' as AdvisoryTab, label: 'Water Budget & Sump', icon: <Droplets className="w-4 h-4" /> },
-            { id: 'climate' as AdvisoryTab, label: 'Micro-Climate Station', icon: <CloudSun className="w-4 h-4" /> },
-            { id: 'ledger' as AdvisoryTab, label: 'Environmental Ledger', icon: <ScrollText className="w-4 h-4" /> },
+            { id: 'advisory' as AdvisoryTab, label: t.tabDecisionAdvisory, icon: <Zap className="w-4 h-4" /> },
+            { id: 'water' as AdvisoryTab, label: t.tabWaterBudget, icon: <Droplets className="w-4 h-4" /> },
+            { id: 'climate' as AdvisoryTab, label: t.tabMicroClimate, icon: <CloudSun className="w-4 h-4" /> },
+            { id: 'ledger' as AdvisoryTab, label: t.tabEnvironmentalLedger, icon: <ScrollText className="w-4 h-4" /> },
           ].map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -228,14 +233,14 @@ export function FieldAdvisoryView({
                   <div className="flex items-center gap-2 mb-3">
                     <Sliders className="w-4 h-4 text-amber-500" />
                     <h3 className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
-                      What-If Simulation Levers (Real-Time Decision Shifts)
+                      {t.simulationLevers}
                     </h3>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-600 dark:text-slate-300">Simulate Forecast Rain:</span>
+                        <span className="text-slate-600 dark:text-slate-300">{t.simulateForecastRain}</span>
                         <strong className="text-sky-600 dark:text-sky-400 font-mono text-sm">{interactiveRainMm} mm</strong>
                       </div>
                       <input
@@ -251,7 +256,7 @@ export function FieldAdvisoryView({
 
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-600 dark:text-slate-300">Simulate Available Reserve:</span>
+                        <span className="text-slate-600 dark:text-slate-300">{t.simulateAvailableReserve}</span>
                         <strong className="text-amber-600 dark:text-amber-400 font-mono text-sm">
                           {interactiveTankLiters.toLocaleString()} L
                         </strong>

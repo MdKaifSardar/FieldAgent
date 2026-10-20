@@ -5,6 +5,11 @@ import { useLanguage } from '../common/LanguageContext';
 import { AuthSession } from '../../adapters/cognitoAdapter';
 import { FarmProfile } from '../../types/farm';
 import { 
+  localizeCrop, 
+  localizeLocation, 
+  localizeFieldTitle 
+} from '../../utils/agriculturalLocalization';
+import { 
   User, 
   Layers, 
   Droplets, 
@@ -38,7 +43,7 @@ export function ProfileOverviewView({
   onNavigateToCockpit,
   onOpenNewParcelWizard,
 }: ProfileOverviewViewProps) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
 
   const handleOpenAdvisory = () => {
     if (onNavigateToAdvisory) {
@@ -76,7 +81,7 @@ export function ProfileOverviewView({
             <div>
               <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit']">
-                  {authSession?.displayName || (language === 'hi' ? 'किसान खाता' : 'Farmer Account')}
+                  {authSession?.displayName || t.farmerAccount}
                 </h1>
               </div>
               <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-500 dark:text-slate-400">
@@ -92,7 +97,7 @@ export function ProfileOverviewView({
                 )}
                 <span className="flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                  Cloud Session Active
+                  {t.cloudSessionActive}
                 </span>
               </div>
             </div>
@@ -105,7 +110,7 @@ export function ProfileOverviewView({
               className="px-4 py-2.5 rounded-lg font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition-all flex items-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>{language === 'hi' ? 'नया खेत जोड़ें' : 'Register New Field'}</span>
+              <span>{t.registerNewField}</span>
             </button>
           </div>
         </div>
@@ -119,14 +124,14 @@ export function ProfileOverviewView({
             <Sprout className="w-5 h-5" />
           </div>
           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-            {language === 'hi' ? 'कुल सिंचित भूमि' : 'Total Farm Land'}
+            {t.totalFarmLand}
           </p>
           <div className="mt-1 flex items-baseline gap-1.5">
             <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit']">
               {totalBigha}
             </span>
             <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-              Bigha ({totalAcres} Acre)
+              {t.unitBigha} ({totalAcres} {t.unitAcre})
             </span>
           </div>
         </div>
@@ -137,14 +142,14 @@ export function ProfileOverviewView({
             <Layers className="w-5 h-5" />
           </div>
           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-            {language === 'hi' ? 'पंजीकृत खेत' : 'Registered Fields'}
+            {t.registeredFields}
           </p>
           <div className="mt-1 flex items-baseline gap-1.5">
             <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit']">
               {parcels.length}
             </span>
             <span className="text-xs font-semibold text-slate-400">
-              {parcels.length === 1 ? 'Parcel' : 'Parcels'}
+              {parcels.length === 1 ? t.unitParcel : t.unitParcels}
             </span>
           </div>
         </div>
@@ -155,14 +160,14 @@ export function ProfileOverviewView({
             <Droplets className="w-5 h-5" />
           </div>
           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-            {language === 'hi' ? 'जल स्रोत क्षमता' : 'Water Infrastructure'}
+            {t.waterInfrastructure}
           </p>
           <div className="mt-1 flex items-baseline gap-1.5">
             <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit']">
               {totalWaterCapacityLiters > 0 ? (totalWaterCapacityLiters / 1000).toFixed(0) : '0'}k
             </span>
             <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400">
-              Litres Capacity
+              {t.litresCapacity}
             </span>
           </div>
         </div>
@@ -180,22 +185,20 @@ export function ProfileOverviewView({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit']">
-                {language === 'hi' ? 'खेत निर्देशिका' : 'My Fields Directory'}
+                {t.myFieldsDirectory}
               </h2>
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#112B3E] text-slate-600 dark:text-slate-300">
-                {parcels.length} {parcels.length === 1 ? 'Field' : 'Fields'}
+                {parcels.length} {parcels.length === 1 ? t.fieldCountSingular : t.fieldsCountSuffix}
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {language === 'hi' 
-                ? 'अपने सभी पंजीकृत खेतों, फसल किस्मों और समर्पित जल स्रोतों को एक साथ प्रबंधित करें।' 
-                : 'Inspect and manage all your registered agricultural parcels, crop stages, and independent water sources.'}
+              {t.myFieldsDirectorySub}
             </p>
           </div>
         </div>
 
         <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 group-hover:bg-emerald-600 group-hover:text-white dark:group-hover:bg-emerald-500 dark:group-hover:text-slate-950 font-bold text-xs transition-colors shrink-0 self-start sm:self-auto">
-          <span>Open Directory</span>
+          <span>{t.openDirectory}</span>
           <ChevronRight className="w-3.5 h-3.5" />
         </span>
       </div>
@@ -206,10 +209,10 @@ export function ProfileOverviewView({
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit']">
-                {language === 'hi' ? 'आपके पंजीकृत खेत' : 'Your Managed Parcels'}
+                {t.yourManagedParcels}
               </h2>
               <p className="text-xs text-slate-400">
-                {language === 'hi' ? 'किसी भी खेत पर क्लिक करके सीधे उसकी सलाह और निर्णय देखें' : 'Click any parcel to instantly launch its advisory workspace'}
+                {t.clickParcelAdvisory}
               </p>
             </div>
             <button
@@ -217,7 +220,7 @@ export function ProfileOverviewView({
               onClick={onNavigateToFields}
               className="text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline cursor-pointer"
             >
-              {language === 'hi' ? 'सभी देखें' : 'View all fields'}
+              {t.viewAllFields}
             </button>
           </div>
 
@@ -225,6 +228,8 @@ export function ProfileOverviewView({
             {parcels.map((farm) => {
               const primaryCrop = farm.plots?.[0]?.cropName || 'Field Crop';
               const isSelected = activeParcel?.id === farm.id;
+              const localizedTitle = localizeFieldTitle(farm.farmName, language);
+              const localizedLoc = localizeLocation(farm.location?.villageOrPincode, language);
 
               return (
                 <div
@@ -242,26 +247,26 @@ export function ProfileOverviewView({
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-bold text-sm text-slate-900 dark:text-[#F0F9FF] truncate">
-                        {farm.farmName}
+                        {localizedTitle}
                       </span>
                       {isSelected && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500 text-white">
-                          Active
+                          {t.active}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mb-2">
                       <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate">{farm.location?.villageOrPincode || 'Location Set'}</span>
+                      <span className="truncate">{localizedLoc}</span>
                     </div>
                   </div>
 
                   <div className="pt-2.5 border-t border-slate-200 dark:border-[#16364D] flex items-center justify-between text-xs">
                     <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                      {primaryCrop}
+                      {localizeCrop(primaryCrop, language)}
                     </span>
                     <span className="text-xs font-semibold text-sky-600 dark:text-[#38BDF8] flex items-center gap-0.5">
-                      <span>Advisory</span>
+                      <span>{t.advisory}</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </span>
                   </div>

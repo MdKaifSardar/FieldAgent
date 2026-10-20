@@ -119,6 +119,63 @@ export interface Translations {
   removePlot: string;
   fieldSections: string;
   totalFarmArea: string;
+  // Dashboard & Console tokens
+  management: string;
+  registerField: string;
+  registerNewField: string;
+  themeMode: string;
+  themeDark: string;
+  themeLight: string;
+  farmerUser: string;
+  farmerAccount: string;
+  cloudSessionActive: string;
+  fieldsCountSuffix: string;
+  fieldCountSingular: string;
+  active: string;
+  openDirectory: string;
+  advisory: string;
+  openAdvisory: string;
+  myFieldsDirectory: string;
+  profileOverview: string;
+  fieldsDirectorySubtitle: string;
+  searchFieldPlaceholder: string;
+  allWaterSupplies: string;
+  filterBorewell: string;
+  filterPondSump: string;
+  filterTank: string;
+  noFieldsRegistered: string;
+  noMatchingFields: string;
+  noFieldsSub: string;
+  noMatchingSub: string;
+  configureFirstField: string;
+  plotCountSingular: string;
+  plotCountPlural: string;
+  editFieldConfig: string;
+  deleteFieldParcel: string;
+  totalFarmLand: string;
+  registeredFields: string;
+  waterInfrastructure: string;
+  unitBigha: string;
+  unitAcre: string;
+  unitParcels: string;
+  unitParcel: string;
+  litresCapacity: string;
+  myFieldsDirectorySub: string;
+  yourManagedParcels: string;
+  clickParcelAdvisory: string;
+  viewAllFields: string;
+  tabDecisionAdvisory: string;
+  tabWaterBudget: string;
+  tabMicroClimate: string;
+  tabEnvironmentalLedger: string;
+  editParcel: string;
+  simulationLevers: string;
+  simulateForecastRain: string;
+  simulateAvailableReserve: string;
+  high: string;
+  low: string;
+  multiCropBalance: string;
+  solarModelLabel: string;
 }
 
 const DICTIONARY: Record<SupportedLanguage, Translations> = {
@@ -238,6 +295,62 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     removePlot: 'Remove Section',
     fieldSections: 'Cultivated Field Sections',
     totalFarmArea: 'Total Cultivated Land Area',
+    management: 'Management',
+    registerField: '+ Register Field',
+    registerNewField: 'Register New Field',
+    themeMode: 'Theme',
+    themeDark: 'Dark',
+    themeLight: 'Light',
+    farmerUser: 'Farmer User',
+    farmerAccount: 'Farmer Account',
+    cloudSessionActive: 'Cloud Session Active',
+    fieldsCountSuffix: 'Fields',
+    fieldCountSingular: 'Field',
+    active: 'Active',
+    openDirectory: 'Open Directory',
+    advisory: 'Advisory',
+    openAdvisory: 'Open Advisory',
+    myFieldsDirectory: 'My Fields Directory',
+    profileOverview: 'Profile & Overview',
+    fieldsDirectorySubtitle: 'Manage all your agricultural parcels, independent water supplies and crop stages',
+    searchFieldPlaceholder: 'Search field by name, crop or village...',
+    allWaterSupplies: 'All Water Supplies',
+    filterBorewell: 'Borewell',
+    filterPondSump: 'Pond / Sump',
+    filterTank: 'Tank',
+    noFieldsRegistered: 'No Fields Registered Yet',
+    noMatchingFields: 'No Matching Fields Found',
+    noFieldsSub: 'Get started by configuring your first field parcel with location, crop, and dedicated water reserve.',
+    noMatchingSub: 'Try searching with a different name, crop, or change the water supply filter.',
+    configureFirstField: 'Configure First Field',
+    plotCountSingular: 'Plot',
+    plotCountPlural: 'Plots',
+    editFieldConfig: 'Edit Field Configuration',
+    deleteFieldParcel: 'Delete Field Parcel',
+    totalFarmLand: 'Total Farm Land',
+    registeredFields: 'Registered Fields',
+    waterInfrastructure: 'Water Infrastructure',
+    unitBigha: 'Bigha',
+    unitAcre: 'Acre',
+    unitParcels: 'Parcels',
+    unitParcel: 'Parcel',
+    litresCapacity: 'Litres Capacity',
+    myFieldsDirectorySub: 'Inspect and manage all your registered agricultural parcels, crop stages, and independent water sources.',
+    yourManagedParcels: 'Your Managed Parcels',
+    clickParcelAdvisory: 'Click any parcel to instantly launch its advisory workspace',
+    viewAllFields: 'View all fields',
+    tabDecisionAdvisory: 'Decision & Advisory',
+    tabWaterBudget: 'Water Budget & Sump',
+    tabMicroClimate: 'Micro-Climate Station',
+    tabEnvironmentalLedger: 'Environmental Ledger',
+    editParcel: 'Edit Parcel',
+    simulationLevers: 'What-If Simulation Levers (Real-Time Decision Shifts)',
+    simulateForecastRain: 'Simulate Forecast Rain:',
+    simulateAvailableReserve: 'Simulate Available Reserve:',
+    high: 'High',
+    low: 'Low',
+    multiCropBalance: 'Multi-Crop Balance',
+    solarModelLabel: 'Penman-Monteith Solar',
   },
   hi: {
     appName: 'फील्डगार्ड (FieldGuard)',
@@ -355,6 +468,62 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     removePlot: 'खेत हटाएं',
     fieldSections: 'खेती के विभिन्न अनुभाग व फसलें',
     totalFarmArea: 'कुल जोती गई जमीन का क्षेत्रफल',
+    management: 'प्रबंधन',
+    registerField: '+ नया खेत जोड़ें',
+    registerNewField: 'नया खेत जोड़ें',
+    themeMode: 'थीम',
+    themeDark: 'डार्क',
+    themeLight: 'लाइट',
+    farmerUser: 'किसान उपयोगकर्ता',
+    farmerAccount: 'किसान खाता',
+    cloudSessionActive: 'क्लाउड सत्र सक्रिय',
+    fieldsCountSuffix: 'खेत',
+    fieldCountSingular: 'खेत',
+    active: 'सक्रिय',
+    openDirectory: 'निर्देशिका खोलें',
+    advisory: 'सलाहकार',
+    openAdvisory: 'सलाहकार खोलें',
+    myFieldsDirectory: 'खेत निर्देशिका',
+    profileOverview: 'खाता सारांश',
+    fieldsDirectorySubtitle: 'सभी पंजीकृत खेत, फसलें एवं उनके समर्पित जल स्रोतों का प्रबंधन करें',
+    searchFieldPlaceholder: 'खेत, फसल या गांव के नाम से खोजें...',
+    allWaterSupplies: 'सभी जल स्रोत',
+    filterBorewell: 'बोरवेल',
+    filterPondSump: 'तालाब / हौज',
+    filterTank: 'टैंक',
+    noFieldsRegistered: 'कोई खेत पंजीकृत नहीं है',
+    noMatchingFields: 'कोई खेत नहीं मिला',
+    noFieldsSub: 'स्थान, फसल और समर्पित जल भंडारण के साथ अपना पहला खेत जोड़कर शुरुआत करें।',
+    noMatchingSub: 'किसी अन्य नाम, फसल से खोजें या जल स्रोत फ़िल्टर बदलें।',
+    configureFirstField: 'पहला खेत जोड़ें',
+    plotCountSingular: 'प्लॉट',
+    plotCountPlural: 'प्लॉट',
+    editFieldConfig: 'खेत का विवरण बदलें',
+    deleteFieldParcel: 'खेत हटाएं',
+    totalFarmLand: 'कुल सिंचित भूमि',
+    registeredFields: 'पंजीकृत खेत',
+    waterInfrastructure: 'जल स्रोत क्षमता',
+    unitBigha: 'बीघा',
+    unitAcre: 'एकड़',
+    unitParcels: 'खेत',
+    unitParcel: 'खेत',
+    litresCapacity: 'लीटर क्षमता',
+    myFieldsDirectorySub: 'अपने सभी पंजीकृत खेतों, फसल चरणों और समर्पित जल स्रोतों का प्रबंधन करें।',
+    yourManagedParcels: 'आपके प्रबंधित खेत',
+    clickParcelAdvisory: 'सलाह देखने के लिए किसी भी खेत पर क्लिक करें',
+    viewAllFields: 'सभी खेत देखें',
+    tabDecisionAdvisory: 'निर्णय एवं सलाह',
+    tabWaterBudget: 'जल बजट एवं हौज',
+    tabMicroClimate: 'सूक्ष्म-मौसम केंद्र',
+    tabEnvironmentalLedger: 'पर्यावरण संरक्षण खतिहान',
+    editParcel: 'खेत विवरण बदलें',
+    simulationLevers: 'सिमुलेशन लीवर्स (निर्णय जांचें)',
+    simulateForecastRain: 'अनुमानित वर्षा बदलें:',
+    simulateAvailableReserve: 'उपलब्ध पानी बदलें:',
+    high: 'अधिकतम',
+    low: 'न्यूनतम',
+    multiCropBalance: 'बहु-फसल जल संतुलन',
+    solarModelLabel: 'पेनमैन-मोंटेथ सौर मॉडल',
   },
   bn: {
     appName: 'ফিল্ডগার্ড (FieldGuard)',
@@ -472,6 +641,62 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     removePlot: 'অংশ মুছুন',
     fieldSections: 'চাষকৃত জমির বিভিন্ন অংশ ও ফসল',
     totalFarmArea: 'মোট চাষযোগ্য জমির আয়তন',
+    management: 'ব্যবস্থাপনা',
+    registerField: '+ নতুন জমি যোগ করুন',
+    registerNewField: 'নতুন জমি যোগ করুন',
+    themeMode: 'থিম',
+    themeDark: 'ডার্ক',
+    themeLight: 'লাইট',
+    farmerUser: 'কৃষক ব্যবহারকারী',
+    farmerAccount: 'কৃষক অ্যাকাউন্ট',
+    cloudSessionActive: 'ক্লাউড সেশন সক্রিয়',
+    fieldsCountSuffix: 'টি জমি',
+    fieldCountSingular: 'টি জমি',
+    active: 'সক্রিয়',
+    openDirectory: 'ডিরেক্টরি খুলুন',
+    advisory: 'পরামর্শ',
+    openAdvisory: 'পরামর্শ দেখুন',
+    myFieldsDirectory: 'জমির ডিরেক্টরি',
+    profileOverview: 'অ্যাকাউন্ট ওভারভিউ',
+    fieldsDirectorySubtitle: 'আপনার সমস্ত জমি, স্বাধীন জলের উৎস এবং ফসলের পর্যায় পরিচালনা করুন',
+    searchFieldPlaceholder: 'জমির নাম, ফসল বা গ্রামের নাম দিয়ে খুঁজুন...',
+    allWaterSupplies: 'সমস্ত জলের উৎস',
+    filterBorewell: 'বোরওয়েল',
+    filterPondSump: 'পুকুর / চৌবাচ্চা',
+    filterTank: 'ট্যাংক',
+    noFieldsRegistered: 'কোনো জমি যোগ করা হয়নি',
+    noMatchingFields: 'কোনো জমি পাওয়া যায়নি',
+    noFieldsSub: 'অবস্থান, ফসল এবং নিজস্ব জল মজুত নির্ধারণ করে আপনার প্রথম জমি যোগ করে শুরু করুন।',
+    noMatchingSub: 'অন্য নাম বা ফসল দিয়ে অনুসন্ধান করুন অথবা জলের ফিল্টার পরিবর্তন করুন।',
+    configureFirstField: 'প্রথম জমি যোগ করুন',
+    plotCountSingular: 'প্লট',
+    plotCountPlural: 'প্লট',
+    editFieldConfig: 'জমির তথ্য পরিবর্তন',
+    deleteFieldParcel: 'জমি মুছুন',
+    totalFarmLand: 'মোট চাষযোগ্য জমি',
+    registeredFields: 'নিবন্ধিত জমি',
+    waterInfrastructure: 'মোট জল ধারণক্ষমতা',
+    unitBigha: 'বিঘা',
+    unitAcre: 'একর',
+    unitParcels: 'জমি',
+    unitParcel: 'জমি',
+    litresCapacity: 'লিটার ক্ষমতা',
+    myFieldsDirectorySub: 'আপনার সমস্ত নিবন্ধিত জমি, ফসলের পর্যায় এবং স্বাধীন জলের উৎসগুলি পরিচালনা করুন।',
+    yourManagedParcels: 'আপনার আওতাধীন জমি',
+    clickParcelAdvisory: 'পরামর্শ দেখার জন্য যেকোনো জমিতে ক্লিক করুন',
+    viewAllFields: 'সমস্ত জমি দেখুন',
+    tabDecisionAdvisory: 'সিদ্ধান্ত ও পরামর্শ',
+    tabWaterBudget: 'জলের বাজেট ও মজুত',
+    tabMicroClimate: 'আবহাওয়া কেন্দ্র',
+    tabEnvironmentalLedger: 'পরিবেশগত সঞ্চয় খতিয়ান',
+    editParcel: 'জমির তথ্য পরিবর্তন',
+    simulationLevers: 'সিমুলেশন নিয়ন্ত্রণ (সিদ্ধান্ত যাচাই)',
+    simulateForecastRain: 'সম্ভাব্য বৃষ্টি পরিবর্তন করুন:',
+    simulateAvailableReserve: 'মজুত জলের পরিমাণ পরিবর্তন করুন:',
+    high: 'সর্বোচ্চ',
+    low: 'সর্বনিম্ন',
+    multiCropBalance: 'বহু-ফসল জল ভারসাম্য',
+    solarModelLabel: 'পেনম্যান-মন্টেথ সৌর মডেল',
   },
 };
 

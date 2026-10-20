@@ -1,0 +1,325 @@
+import { SupportedLanguage } from '../adapters/speechAdapter';
+
+// 1. CROPS MAPPING
+const CROP_MAP: Record<string, { hi: string; bn: string }> = {
+  wheat: { hi: 'गेहूं', bn: 'গম' },
+  paddy: { hi: 'धान', bn: 'ধান' },
+  rice: { hi: 'धान', bn: 'ধান' },
+  tomato: { hi: 'टमाटर', bn: 'টমেটো' },
+  spinach: { hi: 'पालक', bn: 'পালং শাক' },
+  potato: { hi: 'आलू', bn: 'আলু' },
+  mustard: { hi: 'सरसों', bn: 'সরিষা' },
+  onion: { hi: 'प्याज', bn: 'পেঁয়াজ' },
+  maize: { hi: 'मक्का', bn: 'ভুট্টা' },
+  corn: { hi: 'मक्का', bn: 'ভুট্টা' },
+  chilli: { hi: 'मिर्च', bn: 'লঙ্কা' },
+  pepper: { hi: 'मिर्च', bn: 'লঙ্কা' },
+  brinjal: { hi: 'बैंगन', bn: 'বেগুন' },
+  eggplant: { hi: 'बैंगन', bn: 'বেগুন' },
+  gram: { hi: 'चना', bn: 'ছোলা' },
+  chickpea: { hi: 'चना', bn: 'ছোলা' },
+  cotton: { hi: 'कपास', bn: 'তুলা' },
+  sugarcane: { hi: 'गन्ना', bn: 'আখ' },
+  crop: { hi: 'फसल', bn: 'ফসল' },
+};
+
+export function localizeCrop(cropName: string | undefined | null, lang: SupportedLanguage): string {
+  if (!cropName) return lang === 'hi' ? 'फसल' : lang === 'bn' ? 'ফসল' : 'Crop';
+  if (lang === 'en') return cropName;
+
+  const key = cropName.trim().toLowerCase();
+  if (CROP_MAP[key]) {
+    return CROP_MAP[key][lang];
+  }
+
+  // Check partial match (e.g., "Wheat (Rabi)" -> "गेहूं (Rabi)")
+  for (const [k, v] of Object.entries(CROP_MAP)) {
+    if (key.includes(k)) {
+      return cropName.replace(new RegExp(k, 'gi'), v[lang]);
+    }
+  }
+
+  return cropName;
+}
+
+// 2. SOIL TEXTURES MAPPING
+const SOIL_MAP: Record<string, { hi: string; bn: string }> = {
+  loamy: { hi: 'दोमट मिट्टी', bn: 'দোআঁশ মাটি' },
+  'loamy soil': { hi: 'दोमट मिट्टी', bn: 'দোআঁশ মাটি' },
+  alluvial: { hi: 'जलोढ़ दोमट मिट्टी', bn: 'পলি দোআঁশ মাটি' },
+  'alluvial soil': { hi: 'जलोढ़ दोमट मिट्टी', bn: 'পলি দোআঁশ মাটি' },
+  clayey: { hi: 'चिकनी मिट्टी', bn: 'এঁটেল মাটি' },
+  'clayey soil': { hi: 'चिकनी मिट्टी', bn: 'এঁটেল মাটি' },
+  black_clay: { hi: 'काली चिकनी मिट्टी', bn: 'কালো এঁটেল মাটি' },
+  sandy: { hi: 'बलुई मिट्टी', bn: 'বেলে মাটি' },
+  'sandy soil': { hi: 'बलुई मिट्टी', bn: 'বেলে মাটি' },
+  sandy_loam: { hi: 'बलुई दोमट मिट्टी', bn: 'বেলে দোআঁশ মাটি' },
+  'sandy loam': { hi: 'बलुई दोमट मिट्टी', bn: 'বেলে দোআঁশ মাটি' },
+  red: { hi: 'लाल मिट्टी', bn: 'লাল মাটি' },
+  'red soil': { hi: 'लाल मिट्टी', bn: 'লাল মাটি' },
+};
+
+export function localizeSoil(soilTexture: string | undefined | null, lang: SupportedLanguage): string {
+  if (!soilTexture) return lang === 'hi' ? 'दोमट मिट्टी' : lang === 'bn' ? 'দোআঁশ মাটি' : 'Loamy Soil';
+  if (lang === 'en') {
+    return soilTexture.toLowerCase().endsWith('soil') ? soilTexture : `${soilTexture} Soil`;
+  }
+
+  const key = soilTexture.trim().toLowerCase();
+  if (SOIL_MAP[key]) {
+    return SOIL_MAP[key][lang];
+  }
+
+  for (const [k, v] of Object.entries(SOIL_MAP)) {
+    if (key.includes(k)) {
+      return v[lang];
+    }
+  }
+
+  return lang === 'hi' ? `${soilTexture} मिट्टी` : lang === 'bn' ? `${soilTexture} মাটি` : `${soilTexture} Soil`;
+}
+
+// 3. GROWTH STAGE MAPPING
+const STAGE_MAP: Record<string, { hi: string; bn: string; en: string }> = {
+  initial: { hi: 'प्रारंभिक अवस्था', bn: 'প্রাথমিক পর্যায়', en: 'Initial Stage' },
+  development: { hi: 'विकास अवस्था', bn: 'বর্ধনশীল পর্যায়', en: 'Development Stage' },
+  mid_season: { hi: 'मध्य मौसम अवस्था', bn: 'ফসলের মধ্যবর্তী পর্যায়', en: 'Mid-Season' },
+  midseason: { hi: 'मध्य मौसम अवस्था', bn: 'ফসলের মধ্যবর্তী পর্যায়', en: 'Mid-Season' },
+  late_season: { hi: 'पकने की अवस्था', bn: 'ফসল কাটার পূর্ব পর্যায়', en: 'Late Season / Maturity' },
+  lateseason: { hi: 'पकने की अवस्था', bn: 'ফসল কাটার পূর্ব পর্যায়', en: 'Late Season / Maturity' },
+  growing: { hi: 'बढ़त पर', bn: 'বর্ধনশীল', en: 'Growing' },
+};
+
+export function localizeGrowthStage(stage: string | undefined | null, lang: SupportedLanguage): string {
+  if (!stage) return lang === 'hi' ? 'मध्य मौसम अवस्था' : lang === 'bn' ? 'ফসলের মধ্যবর্তী পর্যায়' : 'Mid-Season';
+  const key = stage.trim().toLowerCase();
+  if (STAGE_MAP[key]) {
+    return STAGE_MAP[key][lang];
+  }
+  return stage;
+}
+
+// 4. STORAGE INFRASTRUCTURE LABELS
+export function localizeStorageType(
+  type: string | undefined | null,
+  lang: SupportedLanguage,
+  hp?: number
+): string {
+  const pumpHp = hp || 5;
+  switch (type) {
+    case 'borewell_hours':
+      if (lang === 'hi') return `${pumpHp} एचपी नलकूप / बोरवेल`;
+      if (lang === 'bn') return `${pumpHp} এইচপি নলকূপ / বোরওয়েল`;
+      return `${pumpHp} HP Tube-well`;
+    case 'custom_sump':
+      if (lang === 'hi') return 'पक्का हौज / तालाब';
+      if (lang === 'bn') return 'পাকা হাউজ / পুকুর';
+      return 'Masonry Sump / Pond';
+    case 'sintex_tank':
+    default:
+      if (lang === 'hi') return 'ओवरहेड सिंटेक्स टैंक';
+      if (lang === 'bn') return 'ওভারহেড সিনটেক্স ট্যাংক';
+      return 'Overhead Tank (Sintex)';
+  }
+}
+
+// 5. GEOGRAPHIC ENTITIES (INDIAN STATES, DISTRICTS, AND KEY TERMS)
+const GEO_ENTITIES: Record<string, { hi: string; bn: string }> = {
+  // States
+  'West Bengal': { hi: 'पश्चिम बंगाल', bn: 'পশ্চিমবঙ্গ' },
+  'Uttar Pradesh': { hi: 'उत्तर प्रदेश', bn: 'উত্তর প্রদেশ' },
+  'Bihar': { hi: 'बिहार', bn: 'বিহার' },
+  'Maharashtra': { hi: 'महाराष्ट्र', bn: 'মহারাষ্ট্র' },
+  'Punjab': { hi: 'पंजाब', bn: 'পাঞ্জাব' },
+  'Haryana': { hi: 'हरियाणा', bn: 'হরিয়ানা' },
+  'Madhya Pradesh': { hi: 'मध्य प्रदेश', bn: 'মধ্যপ্রদেশ' },
+  'Odisha': { hi: 'ओडिशा', bn: 'ওড়িশা' },
+  'Jharkhand': { hi: 'झारखंड', bn: 'ঝাড়খণ্ড' },
+  'Gujarat': { hi: 'गुजरात', bn: 'গুজরাট' },
+  'Rajasthan': { hi: 'राजस्थान', bn: 'রাজস্থান' },
+  'Tamil Nadu': { hi: 'तमिलनाडु', bn: 'তামিলনাড়ু' },
+  'Karnataka': { hi: 'कर्नाटक', bn: 'কর্ণাটক' },
+  'Andhra Pradesh': { hi: 'आंध्र प्रदेश', bn: 'অন্ধ্রপ্রদেশ' },
+  'Telangana': { hi: 'तेलंगाना', bn: 'তেলেঙ্গানা' },
+  'Kerala': { hi: 'केरल', bn: 'কেরালা' },
+  'Assam': { hi: 'असम', bn: 'আসাম' },
+  'India': { hi: 'भारत', bn: 'ভারত' },
+
+  // Key Districts (especially Eastern India & prominent hubs)
+  'Purba Bardhaman': { hi: 'पूर्व बर्धमान', bn: 'পূর্ব বর্ধমান' },
+  'Paschim Bardhaman': { hi: 'पश्चिम बर्धमान', bn: 'পশ্চিম বর্ধমান' },
+  'Bardhaman': { hi: 'बर्धमान', bn: 'বর্ধমান' },
+  'South 24 Parganas': { hi: 'दक्षिण २४ परगना', bn: 'দক্ষিণ ২৪ পরগনা' },
+  'North 24 Parganas': { hi: 'उत्तर २४ परगना', bn: 'উত্তর ২৪ পরগনা' },
+  'Hooghly': { hi: 'हुगली', bn: 'হুগলি' },
+  'Howrah': { hi: 'हावड़ा', bn: 'হাওড়া' },
+  'Kolkata': { hi: 'कोलकाता', bn: 'কলকাতা' },
+  'Nadia': { hi: 'नदिया', bn: 'নদিয়া' },
+  'Murshidabad': { hi: 'मुर्शिदाबाद', bn: 'মুর্শিদাবাদ' },
+  'Birbhum': { hi: 'बीरभूम', bn: 'বীরভূম' },
+  'Bankura': { hi: 'बांकुड़ा', bn: 'বাঁকুড়া' },
+  'Purulia': { hi: 'पुरुलिया', bn: 'পুরুলিয়া' },
+  'Paschim Medinipur': { hi: 'पश्चिम मेदिनीपुर', bn: 'পশ্চিম মেদিনীপুর' },
+  'Purba Medinipur': { hi: 'पूर्व मेदिनीपुर', bn: 'পূর্ব মেদিনীপুর' },
+  'Medinipur': { hi: 'मेदिनीपुर', bn: 'মেদিনীপুর' },
+  'Malda': { hi: 'मालदा', bn: 'মালদা' },
+  'Nashik': { hi: 'नासिक', bn: 'নাসিক' },
+  'Pune': { hi: 'पुणे', bn: 'পুনে' },
+  'Patna': { hi: 'पटना', bn: 'পাটনা' },
+  'Gaya': { hi: 'गया', bn: 'গয়া' },
+  'Varanasi': { hi: 'वाराणसी', bn: 'বারাণসী' },
+  'Lucknow': { hi: 'लखनऊ', bn: 'লখনউ' },
+  'Ludhiana': { hi: 'लुधियाना', bn: 'লুধিয়ানা' },
+  'Karnal': { hi: 'करनाल', bn: 'করনাল' },
+
+  // Generic Geo Words
+  'District': { hi: 'जिला', bn: 'জেলা' },
+  'Block': { hi: 'प्रखंड', bn: 'ব্লক' },
+  'Village': { hi: 'गांव', bn: 'গ্রাম' },
+  'Location Set': { hi: 'स्थान निर्धारित', bn: 'অবস্থান নির্ধারিত' },
+};
+
+export function localizeLocation(locationStr: string | undefined | null, lang: SupportedLanguage): string {
+  if (!locationStr) return lang === 'hi' ? 'स्थान निर्धारित' : lang === 'bn' ? 'অবস্থান নির্ধারিত' : 'Location Set';
+  if (lang === 'en') return locationStr;
+
+  let localized = locationStr;
+  for (const [enTerm, trans] of Object.entries(GEO_ENTITIES)) {
+    if (localized.includes(enTerm)) {
+      localized = localized.replace(new RegExp(enTerm, 'g'), trans[lang]);
+    }
+  }
+
+  return localized;
+}
+
+// 6. METEOROLOGICAL SOURCE FEEDS
+const SOURCE_FEED_MAP: Record<string, { hi: string; bn: string }> = {
+  'Open-Meteo Meteorological Feed': {
+    hi: 'ओपन-मेटियो मौसम पूर्वानुमान फीड',
+    bn: 'ওপেন-মেটিও আবহাওয়া পূর্বাভাস ফিড',
+  },
+  'Open-Meteo High-Resolution Numerical Model': {
+    hi: 'ओपन-मेटियो हाई-रेजोल्यूशन मॉडल',
+    bn: 'ওপেন-মেটিও হাই-রেজোলিউশন মডেল',
+  },
+  'Open-Meteo ECMWF High-Res Grid': {
+    hi: 'ओपन-मेटियो ईसीएमडब्ल्यूएफ ग्रिड',
+    bn: 'ওপেন-মেটিও ইসিএমডাব্লুএফ গ্রিড',
+  },
+  'Penman-Monteith Solar': {
+    hi: 'पेनमैन-मोंटेथ सौर मॉडल',
+    bn: 'পেনম্যান-মন্টেথ সৌর মডেল',
+  },
+};
+
+export function localizeSourceFeed(feedStr: string | undefined | null, lang: SupportedLanguage): string {
+  if (!feedStr) return '';
+  if (lang === 'en') return feedStr;
+
+  const key = feedStr.trim();
+  if (SOURCE_FEED_MAP[key]) {
+    return SOURCE_FEED_MAP[key][lang];
+  }
+
+  let result = feedStr;
+  for (const [enTerm, trans] of Object.entries(SOURCE_FEED_MAP)) {
+    if (result.includes(enTerm)) {
+      result = result.replace(enTerm, trans[lang]);
+    }
+  }
+  return result;
+}
+
+// 7. DEFAULT FIELD / PARCEL TITLES (e.g. "Wheat Field (Local Parcel)")
+export function localizeFieldTitle(title: string | undefined | null, lang: SupportedLanguage): string {
+  if (!title) return '';
+  if (lang === 'en') return title;
+
+  let localized = title;
+
+  // Localize phrases before individual words
+  localized = localized.replace(/\bLocal Parcel\b/g, lang === 'hi' ? 'स्थानीय खेत' : 'স্থানীয় পার্সেল');
+  localized = localized.replace(/\bField\b/g, lang === 'hi' ? 'खेत' : 'জমি');
+  localized = localized.replace(/\bParcel\b/g, lang === 'hi' ? 'खेत' : 'পার্সেল');
+
+  // Localize crops within title
+  for (const [k, v] of Object.entries(CROP_MAP)) {
+    const capitalized = k.charAt(0).toUpperCase() + k.slice(1);
+    if (localized.includes(capitalized)) {
+      localized = localized.replace(new RegExp(capitalized, 'g'), v[lang]);
+    }
+  }
+
+  // Localize district within parentheses (e.g. "(South 24 Parganas)" -> "(দক্ষিণ ২৪ পরগনা)")
+  localized = localizeLocation(localized, lang);
+
+  return localized;
+}
+
+// 8. IRRIGATION METHODS
+export function localizeIrrigationMethod(method: string | undefined | null, lang: SupportedLanguage): string {
+  const m = (method || 'surface_flood').toLowerCase();
+  switch (m) {
+    case 'drip':
+      return lang === 'hi' ? 'ड्रिप (टपक) सेच' : lang === 'bn' ? 'ড্রিপ সেচ' : 'DRIP';
+    case 'sprinkler':
+      return lang === 'hi' ? 'फव्वारा (स्प्रिंकलर)' : lang === 'bn' ? 'স্প্রিংকলার সেচ' : 'SPRINKLER';
+    case 'surface_flood':
+    case 'flood':
+    default:
+      return lang === 'hi' ? 'पारंपरिक नाली / बहाव' : lang === 'bn' ? 'প্লাবন / ভাসিয়ে সেচ' : 'SURFACE_FLOOD';
+  }
+}
+
+// 9. CONFIDENCE & ACTION WINDOW
+export function localizeConfidence(conf: string | undefined | null, lang: SupportedLanguage): string {
+  const c = (conf || 'HIGH').toUpperCase();
+  if (lang === 'hi') {
+    if (c === 'HIGH') return 'उच्च (विश्वसनीय)';
+    if (c === 'MEDIUM') return 'मध्यम';
+    return 'सामान्य';
+  }
+  if (lang === 'bn') {
+    if (c === 'HIGH') return 'উচ্চ (নির্ভরযোগ্য)';
+    if (c === 'MEDIUM') return 'মাঝারি';
+    return 'সাধারণ';
+  }
+  return c;
+}
+
+export function localizeActionWindow(window: string | undefined | null, lang: SupportedLanguage): string {
+  if (!window) return '';
+  if (lang === 'en') return window;
+
+  if (window.includes('48 hours') || window.includes('48h')) {
+    return lang === 'hi' ? 'अगले 48 घंटों तक सुरक्षित' : 'পরবর্তী ৪৮ ঘণ্টার জন্য নিরাপদ';
+  }
+  if (window.includes('24 hours') || window.includes('24h')) {
+    return lang === 'hi' ? 'अगले 24 घंटे में आवश्यक' : 'পরবর্তী ২৪ ঘণ্টায় প্রয়োজনীয়';
+  }
+  if (window.includes('12 hours') || window.includes('12h')) {
+    return lang === 'hi' ? 'अति आवश्यक: 12 घंटे' : 'জরুরি: ১২ ঘণ্টার মধ্যে';
+  }
+  if (window.includes('Morning') || window.includes('morning')) {
+    return lang === 'hi' ? 'सुबह के समय अनुकूल' : 'সকালের অনুকূল সময়';
+  }
+  return window;
+}
+
+// 10. WEEKDAY LOCALIZATION
+const WEEKDAY_MAP: Record<number, { hi: string; bn: string; en: string }> = {
+  0: { hi: 'रवि', bn: 'রবি', en: 'Sun' },
+  1: { hi: 'सोम', bn: 'সোম', en: 'Mon' },
+  2: { hi: 'मंगल', bn: 'মঙ্গল', en: 'Tue' },
+  3: { hi: 'बुध', bn: 'বুধ', en: 'Wed' },
+  4: { hi: 'गुरु', bn: 'বৃহঃ', en: 'Thu' },
+  5: { hi: 'शुक्र', bn: 'শুক্র', en: 'Fri' },
+  6: { hi: 'शनि', bn: 'শনি', en: 'Sat' },
+};
+
+export function localizeWeekday(dateStr: string, lang: SupportedLanguage): string {
+  const date = new Date(dateStr);
+  const dayIndex = isNaN(date.getDay()) ? 0 : date.getDay();
+  return WEEKDAY_MAP[dayIndex]?.[lang] || WEEKDAY_MAP[dayIndex]?.en || 'Day';
+}

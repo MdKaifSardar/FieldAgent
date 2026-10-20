@@ -4,6 +4,12 @@ import React from 'react';
 import { DecisionResponse } from '../types/decision';
 import { useLanguage } from './common/LanguageContext';
 import { AudioAdvisoryButton } from './decision/AudioAdvisoryButton';
+import { 
+  localizeCrop, 
+  localizeIrrigationMethod, 
+  localizeConfidence, 
+  localizeActionWindow 
+} from '../utils/agriculturalLocalization';
 import { CloudRain, AlertOctagon, CheckCircle2, Clock, ShieldCheck, Database } from 'lucide-react';
 
 interface DecisionCardProps {
@@ -84,12 +90,12 @@ export function DecisionCard({ decision }: DecisionCardProps) {
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-white dark:bg-[#0A1C2A] border border-[#E1E8DE] dark:border-[#16364D] text-slate-600 dark:text-slate-300 shadow-2xs">
               <Clock className="w-3.5 h-3.5 text-slate-400" />
-              <span>{decision.actionWindow}</span>
+              <span>{localizeActionWindow(decision.actionWindow, language)}</span>
             </div>
 
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-white dark:bg-[#0A1C2A] border border-[#E1E8DE] dark:border-[#16364D] text-slate-600 dark:text-slate-300 shadow-2xs">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-              <span>{t.confidence}: {decision.confidence}</span>
+              <span>{t.confidence}: {localizeConfidence(decision.confidence, language)}</span>
             </div>
           </div>
         </div>
@@ -103,7 +109,7 @@ export function DecisionCard({ decision }: DecisionCardProps) {
         <div className="pt-0.5 mb-3.5">
           <AudioAdvisoryButton 
             advisoryText={decision.advisoryText} 
-            cropName={primaryPlot?.cropName || 'Crop'} 
+            cropName={localizeCrop(primaryPlot?.cropName, language)} 
             variant={badgeConfig.variant}
           />
         </div>
@@ -117,7 +123,7 @@ export function DecisionCard({ decision }: DecisionCardProps) {
         <div className="flex items-center gap-3">
           {primaryPlot && (
             <span className="text-sky-600 dark:text-[#38BDF8] font-mono">
-              {t.method}: {(primaryPlot.irrigationMethod || 'surface_flood').toUpperCase()} (Eff: {Math.round((primaryPlot.irrigationEfficiency || 0.75) * 100)}%)
+              {t.method}: {localizeIrrigationMethod(primaryPlot.irrigationMethod, language)} (Eff: {Math.round((primaryPlot.irrigationEfficiency || 0.75) * 100)}%)
             </span>
           )}
           <span className="flex items-center gap-1 text-slate-400 dark:text-slate-400 font-mono text-[11px]">

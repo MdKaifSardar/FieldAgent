@@ -4,6 +4,14 @@ import React, { useState } from 'react';
 import { useLanguage } from '../common/LanguageContext';
 import { FarmProfile, StorageTier } from '../../types/farm';
 import { 
+  localizeCrop, 
+  localizeSoil, 
+  localizeGrowthStage, 
+  localizeLocation, 
+  localizeStorageType, 
+  localizeFieldTitle 
+} from '../../utils/agriculturalLocalization';
+import { 
   Search, 
   Plus, 
   MapPin, 
@@ -40,7 +48,7 @@ export function FieldsDirectoryView({
   onEditParcel,
   onDeleteParcel,
 }: FieldsDirectoryViewProps) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterStorage, setFilterStorage] = useState<string>('all');
 
@@ -69,12 +77,12 @@ export function FieldsDirectoryView({
   const getStorageBadge = (tier: StorageTier) => {
     switch (tier) {
       case 'borewell_hours':
-        return { label: 'Borewell / Tubewell', icon: <Waves className="w-3.5 h-3.5 text-blue-500" /> };
+        return { label: localizeStorageType('borewell_hours', language), icon: <Waves className="w-3.5 h-3.5 text-blue-500" /> };
       case 'custom_sump':
-        return { label: 'Masonry Sump / Pond', icon: <Droplets className="w-3.5 h-3.5 text-cyan-500" /> };
+        return { label: localizeStorageType('custom_sump', language), icon: <Droplets className="w-3.5 h-3.5 text-cyan-500" /> };
       case 'sintex_tank':
       default:
-        return { label: 'Overhead Tank (Sintex)', icon: <Cylinder className="w-3.5 h-3.5 text-amber-500" /> };
+        return { label: localizeStorageType('sintex_tank', language), icon: <Cylinder className="w-3.5 h-3.5 text-amber-500" /> };
     }
   };
 
@@ -84,12 +92,10 @@ export function FieldsDirectoryView({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl bg-white dark:bg-[#0D2232] border border-[#E1E8DE] dark:border-[#16364D] shadow-xs">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit']">
-            {language === 'hi' ? 'खेत निर्देशिका' : language === 'bn' ? 'জমির ডিরেক্টরি' : 'My Fields Directory'}
+            {t.myFieldsDirectory}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {language === 'hi' 
-              ? 'सभी पंजीकृत खेत, फसलें एवं उनके समर्पित जल स्रोतों का प्रबंधन करें'
-              : 'Manage all your agricultural parcels, independent water supplies and crop stages'}
+            {t.fieldsDirectorySubtitle}
           </p>
         </div>
 
@@ -99,7 +105,7 @@ export function FieldsDirectoryView({
           className="px-4 py-2.5 rounded-lg font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>{language === 'hi' ? 'नया खेत जोड़ें' : 'Register New Field'}</span>
+          <span>{t.registerNewField}</span>
         </button>
       </div>
 
@@ -112,7 +118,7 @@ export function FieldsDirectoryView({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={language === 'hi' ? 'खेत, फसल या स्थान खोजें...' : 'Search field by name, crop or village...'}
+            placeholder={t.searchFieldPlaceholder}
             className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white dark:bg-[#0D2232] border border-[#E1E8DE] dark:border-[#16364D] text-xs text-slate-800 dark:text-[#F0F9FF] placeholder-slate-400 focus:outline-hidden focus:border-sky-500 transition-colors"
           />
         </div>
@@ -120,10 +126,10 @@ export function FieldsDirectoryView({
         {/* Filter Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
           {[
-            { id: 'all', label: 'All Water Supplies' },
-            { id: 'borewell_hours', label: 'Borewell' },
-            { id: 'custom_sump', label: 'Pond / Sump' },
-            { id: 'sintex_tank', label: 'Tank' },
+            { id: 'all', label: t.allWaterSupplies },
+            { id: 'borewell_hours', label: t.filterBorewell },
+            { id: 'custom_sump', label: t.filterPondSump },
+            { id: 'sintex_tank', label: t.filterTank },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -148,12 +154,10 @@ export function FieldsDirectoryView({
             <Layers className="w-7 h-7" />
           </div>
           <h2 className="text-lg font-bold text-slate-800 dark:text-[#F0F9FF] mb-1">
-            {parcels.length === 0 ? 'No Fields Registered Yet' : 'No Matching Fields Found'}
+            {parcels.length === 0 ? t.noFieldsRegistered : t.noMatchingFields}
           </h2>
           <p className="text-xs text-slate-500 max-w-sm mx-auto mb-6">
-            {parcels.length === 0 
-              ? 'Get started by configuring your first field parcel with location, crop, and dedicated water reserve.'
-              : 'Try searching with a different name, crop, or change the water supply filter.'}
+            {parcels.length === 0 ? t.noFieldsSub : t.noMatchingSub}
           </p>
           {parcels.length === 0 && (
             <button
@@ -162,7 +166,7 @@ export function FieldsDirectoryView({
               className="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition-all inline-flex items-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Configure First Field</span>
+              <span>{t.configureFirstField}</span>
             </button>
           )}
         </div>
@@ -177,6 +181,8 @@ export function FieldsDirectoryView({
           const capacity = farm.reserve?.totalCapacity_liters || 0;
           const available = farm.reserve?.currentAvailable_liters || 0;
           const percent = capacity > 0 ? Math.min(100, Math.round((available / capacity) * 100)) : 0;
+          const localizedTitle = localizeFieldTitle(farm.farmName, language);
+          const localizedLoc = localizeLocation(farm.location?.villageOrPincode, language);
 
           return (
             <div
@@ -193,17 +199,17 @@ export function FieldsDirectoryView({
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <h2 className="font-bold text-base text-slate-900 dark:text-[#F0F9FF] truncate font-['Outfit']">
-                        {farm.farmName}
+                        {localizedTitle}
                       </h2>
                       {isSelected && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800">
-                          Active
+                          {t.active}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-1">
                       <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate">{farm.location?.villageOrPincode || 'Location Set'}</span>
+                      <span className="truncate">{localizedLoc}</span>
                     </div>
                   </div>
 
@@ -213,7 +219,7 @@ export function FieldsDirectoryView({
                       type="button"
                       onClick={() => onEditParcel(farm)}
                       className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#0A1C2A] transition-colors cursor-pointer"
-                      title="Edit Field Configuration"
+                      title={t.editFieldConfig}
                     >
                       <Edit3 className="w-4 h-4" />
                     </button>
@@ -225,7 +231,7 @@ export function FieldsDirectoryView({
                         }
                       }}
                       className="p-1.5 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
-                      title="Delete Field Parcel"
+                      title={t.deleteFieldParcel}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -237,11 +243,11 @@ export function FieldsDirectoryView({
                   {primaryPlot && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-200 dark:border-emerald-800/40">
                       <Sprout className="w-3.5 h-3.5" />
-                      {primaryPlot.cropName} ({primaryPlot.areaValue} {primaryPlot.areaUnit})
+                      {localizeCrop(primaryPlot.cropName, language)} ({primaryPlot.areaValue} {primaryPlot.areaUnit === 'bigha' ? t.unitBigha : primaryPlot.areaUnit === 'acre' ? t.unitAcre : primaryPlot.areaUnit})
                     </span>
                   )}
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-[#0A1C2A] text-slate-600 dark:text-slate-300 font-medium text-xs">
-                    {farm.soil?.texture || 'Loamy Soil'}
+                    {localizeSoil(farm.soil?.texture, language)}
                   </span>
                 </div>
 
@@ -270,7 +276,7 @@ export function FieldsDirectoryView({
               {/* Bottom Card Launch Action */}
               <div className="pt-3 border-t border-slate-100 dark:border-[#16364D] flex items-center justify-between">
                 <span className="text-[11px] text-slate-400 font-medium">
-                  {farm.plots?.length || 1} Plot • {primaryPlot?.growthStage || 'Growing'}
+                  {farm.plots?.length || 1} {farm.plots?.length === 1 ? t.plotCountSingular : t.plotCountPlural} • {localizeGrowthStage(primaryPlot?.growthStage, language)}
                 </span>
                 <button
                   type="button"
@@ -280,7 +286,7 @@ export function FieldsDirectoryView({
                   }}
                   className="px-3.5 py-1.5 rounded-lg bg-slate-900 dark:bg-sky-500 hover:bg-sky-600 text-white dark:text-slate-950 hover:text-white dark:hover:text-white font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
-                  <span>Open Advisory</span>
+                  <span>{t.openAdvisory}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>

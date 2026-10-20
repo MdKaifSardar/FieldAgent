@@ -4,6 +4,11 @@ import React, { useState } from 'react';
 import { DailyWeatherForecast } from '../../types/weather';
 import { useLanguage } from '../common/LanguageContext';
 import { 
+  localizeSourceFeed, 
+  localizeLocation, 
+  localizeWeekday 
+} from '../../utils/agriculturalLocalization';
+import { 
   CloudRain, 
   Sun, 
   Wind, 
@@ -43,7 +48,7 @@ export function LiveClimateStation({
   errorMessage,
   showDevLevers = false,
 }: LiveClimateStationProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [showOutlook, setShowOutlook] = useState(false);
   const [showMapPreview, setShowMapPreview] = useState(false);
 
@@ -64,7 +69,7 @@ export function LiveClimateStation({
                 {forecast.isLive ? t.liveWeather : t.offlineCache}
               </span>
               <span className="text-xs text-slate-500 dark:text-[#94A3B8] truncate">
-                {forecast.source}
+                {localizeSourceFeed(forecast.source, language)}
               </span>
             </div>
             <h2 
@@ -72,7 +77,7 @@ export function LiveClimateStation({
               title={locationName}
             >
               <MapPin className="w-4 h-4 text-sky-500 shrink-0" />
-              <span className="truncate">{locationName}</span>
+              <span className="truncate">{localizeLocation(locationName, language)}</span>
             </h2>
           </div>
 
@@ -128,7 +133,7 @@ export function LiveClimateStation({
             <div className="flex items-center justify-between text-xs mb-2">
               <span className="font-semibold text-slate-800 dark:text-[#F0F9FF] flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-sky-500" />
-                <span>{t.satelliteMap} • {locationName}</span>
+                <span>{t.satelliteMap} • {localizeLocation(locationName, language)}</span>
               </span>
               <span className="font-mono text-[11px] text-sky-600 dark:text-[#38BDF8]">
                 {latitude.toFixed(4)}° N, {longitude.toFixed(4)}° E
@@ -168,7 +173,7 @@ export function LiveClimateStation({
                 {forecast.current_temp_c !== undefined ? forecast.current_temp_c : forecast.temp_max_c}°C
               </div>
               <div className="text-[10px] text-slate-400 truncate">
-                High {forecast.temp_max_c}° / Low {forecast.temp_min_c}°
+                {t.high} {forecast.temp_max_c}° / {t.low} {forecast.temp_min_c}°
               </div>
             </div>
           </div>
@@ -218,7 +223,7 @@ export function LiveClimateStation({
                 {forecast.reference_et0_mm} <span className="text-xs font-normal text-slate-400">mm/d</span>
               </div>
               <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium truncate">
-                Penman-Monteith Solar
+                {t.solarModelLabel}
               </div>
             </div>
           </div>
@@ -240,7 +245,7 @@ export function LiveClimateStation({
           {showOutlook && (
             <div className="mt-3 grid grid-cols-7 gap-1.5 sm:gap-2 overflow-x-auto pb-1 text-center">
               {forecast.sevenDayOutlook.map((day, i) => {
-                const dayName = new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' });
+                const dayName = localizeWeekday(day.date, language);
                 const isRainy = day.rainfall_mm >= 5;
                 return (
                   <div 
