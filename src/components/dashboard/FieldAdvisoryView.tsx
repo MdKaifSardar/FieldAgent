@@ -182,7 +182,7 @@ export function FieldAdvisoryView({
         </div>
 
         {/* INTEGRATED HORIZONTAL SUB-NAVIGATION TAB BAR */}
-        <div className="px-4 sm:px-5 border-t border-[#E1E8DE] dark:border-[#16364D] bg-slate-50/70 dark:bg-[#0A1C2A] flex items-center gap-1 sm:gap-2 overflow-x-auto">
+        <div className="px-4 sm:px-6 border-t border-[#E1E8DE] dark:border-[#16364D] bg-slate-50/50 dark:bg-[#0A1C2A] flex items-center gap-2 sm:gap-3 overflow-x-auto">
           {[
             { id: 'advisory' as AdvisoryTab, label: 'Decision & Advisory', icon: <Zap className="w-4 h-4" /> },
             { id: 'water' as AdvisoryTab, label: 'Water Budget & Sump', icon: <Droplets className="w-4 h-4" /> },
@@ -195,16 +195,19 @@ export function FieldAdvisoryView({
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-3 px-3 sm:px-4 text-xs font-semibold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                className={`py-3.5 px-3 text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap relative ${
                   isActive
-                    ? 'border-sky-500 text-sky-600 dark:text-[#38BDF8] font-bold bg-white/60 dark:bg-[#0D2232]'
-                    : 'border-transparent text-slate-500 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/[0.03]'
+                    ? 'text-sky-600 dark:text-[#38BDF8] font-bold'
+                    : 'text-slate-500 dark:text-[#94A3B8] hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <span className={isActive ? 'text-sky-500 dark:text-[#38BDF8]' : 'text-slate-400'}>
                   {tab.icon}
                 </span>
                 <span>{tab.label}</span>
+                {isActive && (
+                  <span className="absolute bottom-0 inset-x-0 h-0.5 bg-sky-500 rounded-t-full shadow-xs" />
+                )}
               </button>
             );
           })}

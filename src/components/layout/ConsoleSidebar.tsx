@@ -349,9 +349,8 @@ export function ConsoleSidebar({
                   <p className="font-bold text-xs text-slate-900 dark:text-[#F0F9FF] truncate">
                     {authSession?.displayName || 'Farmer Account'}
                   </p>
-                  <span className="inline-flex items-center gap-1 text-[10px] text-sky-600 dark:text-[#38BDF8] font-semibold">
-                    <CheckCircle2 className="w-3 h-3" />
-                    Cognito Verified
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                    Active Session
                   </span>
                 </div>
               </div>

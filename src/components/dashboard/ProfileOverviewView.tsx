@@ -8,14 +8,11 @@ import {
   User, 
   Layers, 
   Droplets, 
-  ShieldCheck, 
   Plus, 
   MapPin, 
   Sprout, 
-  Zap, 
   Phone, 
   Mail,
-  CheckCircle2,
   Calendar,
   ChevronRight
 } from 'lucide-react';
@@ -81,10 +78,6 @@ export function ProfileOverviewView({
                 <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit']">
                   {authSession?.displayName || (language === 'hi' ? 'किसान खाता' : 'Farmer Account')}
                 </h1>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-50 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800">
-                  <CheckCircle2 className="w-3 h-3 text-sky-600 dark:text-sky-400" />
-                  Cognito Verified
-                </span>
               </div>
               <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-500 dark:text-slate-400">
                 {authSession?.emailOrPhone && (
@@ -118,9 +111,9 @@ export function ProfileOverviewView({
         </div>
       </div>
 
-      {/* 2. Portfolio Aggregate KPIs (4 Cards) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-        {/* Total Managed Area */}
+      {/* 2. Portfolio Aggregate KPIs (Clean 3-Card Agricultural Grid) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
+        {/* Metric 1: Total Managed Area */}
         <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0D2232] border border-[#E1E8DE] dark:border-[#16364D] shadow-xs">
           <div className="w-9 h-9 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2.5">
             <Sprout className="w-5 h-5" />
@@ -138,7 +131,7 @@ export function ProfileOverviewView({
           </div>
         </div>
 
-        {/* Registered Parcels Count */}
+        {/* Metric 2: Registered Parcels Count */}
         <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0D2232] border border-[#E1E8DE] dark:border-[#16364D] shadow-xs">
           <div className="w-9 h-9 rounded-lg bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center mb-2.5">
             <Layers className="w-5 h-5" />
@@ -156,7 +149,7 @@ export function ProfileOverviewView({
           </div>
         </div>
 
-        {/* Total Water Infrastructure */}
+        {/* Metric 3: Total Water Infrastructure */}
         <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0D2232] border border-[#E1E8DE] dark:border-[#16364D] shadow-xs">
           <div className="w-9 h-9 rounded-lg bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 flex items-center justify-center mb-2.5">
             <Droplets className="w-5 h-5" />
@@ -173,109 +166,41 @@ export function ProfileOverviewView({
             </span>
           </div>
         </div>
-
-        {/* Cloud Architecture Status */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0D2232] border border-[#E1E8DE] dark:border-[#16364D] shadow-xs">
-          <div className="w-9 h-9 rounded-lg bg-sky-500/15 text-sky-500 flex items-center justify-center mb-2.5">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-            {language === 'hi' ? 'क्लाउड सिंक' : 'Cloud Sync Engine'}
-          </p>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-base sm:text-lg font-bold text-sky-500 font-['Outfit']">
-              DynamoDB
-            </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-sky-100 dark:bg-sky-950/60 font-bold text-sky-700 dark:text-sky-300">
-              Live
-            </span>
-          </div>
-        </div>
       </div>
 
-      {/* 3. Fast Workspace Launchpads (Single Clean Action Per Card, No Duplicate Links) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* Launchpad 1: Fields Directory */}
-        <div 
-          onClick={onNavigateToFields}
-          className="p-6 rounded-xl bg-white dark:bg-[#0D2232] border border-[#E1E8DE] dark:border-[#16364D] shadow-xs hover:border-emerald-500/50 transition-all cursor-pointer group flex flex-col justify-between"
-        >
+      {/* 3. My Fields Directory Access Banner */}
+      <div 
+        onClick={onNavigateToFields}
+        className="p-5 sm:p-6 rounded-xl bg-white dark:bg-[#0D2232] border border-[#E1E8DE] dark:border-[#16364D] shadow-xs hover:border-emerald-500/50 transition-all cursor-pointer group flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-11 h-11 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <Layers className="w-5 h-5" />
+          </div>
           <div>
-            <div className="flex items-center justify-between mb-3.5">
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                <Layers className="w-5 h-5" />
-              </div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit']">
+                {language === 'hi' ? 'खेत निर्देशिका' : 'My Fields Directory'}
+              </h2>
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#112B3E] text-slate-600 dark:text-slate-300">
                 {parcels.length} {parcels.length === 1 ? 'Field' : 'Fields'}
               </span>
             </div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit'] mb-1">
-              {language === 'hi' ? 'खेत निर्देशिका' : 'My Fields Directory'}
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               {language === 'hi' 
                 ? 'अपने सभी पंजीकृत खेतों, फसल किस्मों और समर्पित जल स्रोतों को एक साथ प्रबंधित करें।' 
                 : 'Inspect and manage all your registered agricultural parcels, crop stages, and independent water sources.'}
             </p>
           </div>
-
-          <div className="mt-5 pt-3.5 border-t border-slate-100 dark:border-[#16364D] flex items-center justify-between">
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              Parcel Directory
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 group-hover:bg-emerald-600 group-hover:text-white dark:group-hover:bg-emerald-500 dark:group-hover:text-slate-950 font-bold text-xs transition-colors">
-              <span>View Directory</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </span>
-          </div>
         </div>
 
-        {/* Launchpad 2: Active Field Advisory */}
-        <div 
-          onClick={() => {
-            if (activeParcel) {
-              handleOpenAdvisory();
-            } else if (parcels.length > 0) {
-              onSelectParcel(parcels[0].id);
-              handleOpenAdvisory();
-            } else {
-              onOpenNewParcelWizard();
-            }
-          }}
-          className="p-6 rounded-xl bg-white dark:bg-[#0D2232] border border-[#E1E8DE] dark:border-[#16364D] shadow-xs hover:border-sky-500/50 transition-all cursor-pointer group flex flex-col justify-between"
-        >
-          <div>
-            <div className="flex items-center justify-between mb-3.5">
-              <div className="w-10 h-10 rounded-lg bg-sky-500/15 text-sky-500 dark:text-[#38BDF8] flex items-center justify-center">
-                <Zap className="w-5 h-5" />
-              </div>
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-900/60">
-                {activeParcel ? 'Live Active' : 'Setup Required'}
-              </span>
-            </div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit'] mb-1">
-              {language === 'hi' ? 'खेत सलाहकार एवं निर्णय केंद्र' : 'Field Advisory & Decision Engine'}
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              {activeParcel 
-                ? `Active: ${activeParcel.farmName}. Open-Meteo micro-climate sync, soil depletion tracking & Amazon Polly audio guidance.` 
-                : 'No active parcel selected. Configure your field parcel to unlock precision FAO-56 irrigation decisions.'}
-            </p>
-          </div>
-
-          <div className="mt-5 pt-3.5 border-t border-slate-100 dark:border-[#16364D] flex items-center justify-between">
-            <span className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[140px]">
-              {activeParcel ? activeParcel.farmName : 'No Active Field'}
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-[#38BDF8] group-hover:bg-sky-600 group-hover:text-white dark:group-hover:bg-sky-500 dark:group-hover:text-slate-950 font-bold text-xs transition-colors">
-              <span>{activeParcel ? 'Open Advisory' : 'Configure Field'}</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </span>
-          </div>
-        </div>
+        <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 group-hover:bg-emerald-600 group-hover:text-white dark:group-hover:bg-emerald-500 dark:group-hover:text-slate-950 font-bold text-xs transition-colors shrink-0 self-start sm:self-auto">
+          <span>Open Directory</span>
+          <ChevronRight className="w-3.5 h-3.5" />
+        </span>
       </div>
 
-      {/* 4. Registered Fields Fast Grid (Preview) */}
+      {/* 4. Registered Fields Fast Grid (Direct Parcel Access to Advisory) */}
       {parcels.length > 0 && (
         <div className="p-6 rounded-xl bg-white dark:bg-[#0D2232] border border-[#E1E8DE] dark:border-[#16364D] shadow-xs space-y-4">
           <div className="flex items-center justify-between">
@@ -297,7 +222,7 @@ export function ProfileOverviewView({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-            {parcels.slice(0, 3).map((farm) => {
+            {parcels.map((farm) => {
               const primaryCrop = farm.plots?.[0]?.cropName || 'Field Crop';
               const isSelected = activeParcel?.id === farm.id;
 
@@ -336,7 +261,7 @@ export function ProfileOverviewView({
                       {primaryCrop}
                     </span>
                     <span className="text-xs font-semibold text-sky-600 dark:text-[#38BDF8] flex items-center gap-0.5">
-                      <span>View</span>
+                      <span>Advisory</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </span>
                   </div>

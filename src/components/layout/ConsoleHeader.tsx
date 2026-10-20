@@ -43,7 +43,7 @@ export function ConsoleHeader({
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-white/95 dark:bg-[#0A1C2A]/95 backdrop-blur-md border-b border-[#E1E8DE] dark:border-[#16364D] px-3 sm:px-6 flex items-center justify-between transition-colors">
+    <header className="sticky top-0 z-30 h-16 shrink-0 min-h-[64px] bg-white/95 dark:bg-[#0A1C2A]/95 backdrop-blur-md border-b border-[#E1E8DE] dark:border-[#16364D] px-3 sm:px-6 flex items-center justify-between transition-colors">
       {/* 1. LEFT: Hamburger (Mobile) + Title (Mobile) OR Dynamic Breadcrumbs (Desktop) */}
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         {/* Mobile Hamburger Toggle */}
