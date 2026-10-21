@@ -24,8 +24,8 @@ import {
 } from 'lucide-react';
 
 interface ConsoleSidebarProps {
-  currentView: 'profile' | 'fields' | 'advisory';
-  onNavigate: (view: 'profile' | 'fields' | 'advisory') => void;
+  currentView: 'profile' | 'fields' | 'advisory' | 'register-field' | 'edit-field';
+  onNavigate: (view: 'profile' | 'fields' | 'advisory' | 'register-field' | 'edit-field') => void;
   parcels: FarmProfile[];
   activeParcel: FarmProfile | null;
   onSelectParcel: (parcelId: string) => void;

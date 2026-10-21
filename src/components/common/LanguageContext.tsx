@@ -176,6 +176,86 @@ export interface Translations {
   low: string;
   multiCropBalance: string;
   solarModelLabel: string;
+  // Creation Stepper & Form Localization
+  stepWord: string;
+  ofWord: string;
+  locationStepDesc: string;
+  locationSearchPlaceholder: string;
+  clearSearch: string;
+  tapOrPressEnter: string;
+  orDivider: string;
+  liveParcelMapLabel: string;
+  selectedCoordinates: string;
+  regionLabel: string;
+  stateLabel: string;
+  localClusterFallback: string;
+  awcIdealTag: string;
+  awcExplanation: string;
+  stepCropFullDesc: string;
+  sectionSingular: string;
+  sectionPlural: string;
+  sectionLabel: string;
+  selectCropLabel: string;
+  cropGrowthStageLabel: string;
+  stageInitial: string;
+  stageDevelopment: string;
+  stageMidSeason: string;
+  stageLateSeason: string;
+  fieldSectionAreaLabel: string;
+  optBigha: string;
+  optAcre: string;
+  optGuntha: string;
+  optCent: string;
+  optHectare: string;
+  optSqMeters: string;
+  normalizedAreaLabel: string;
+  cropBlockSingular: string;
+  cropBlockPlural: string;
+  tankCapacityLabel: string;
+  fillGaugeLabel: string;
+  gaugeLow: string;
+  gaugeAvailable: string;
+  gaugeFull: string;
+  sumpCalcLabel: string;
+  dimLength: string;
+  dimWidth: string;
+  dimDepth: string;
+  calculatedCapacity: string;
+  pumpPowerLabel: string;
+  cancelRegistration: string;
+  saveAndContinue: string;
+  liveParcelSummary: string;
+  noCropsConfigured: string;
+  // Map Picker localization
+  switchMapType: string;
+  mapStreet: string;
+  mapSatellite: string;
+  recenterGps: string;
+  mapDragHelper: string;
+  // Edit Settings Workspace localization
+  editFieldTitle: string;
+  editFieldSubtitle: string;
+  backToAdvisory: string;
+  backToFields: string;
+  parcelIdLabel: string;
+  lastCalibrated: string;
+  tabCrops: string;
+  tabWater: string;
+  tabSoil: string;
+  tabGeospatial: string;
+  tabDanger: string;
+  unsavedChangesNotice: string;
+  discardChanges: string;
+  saveChanges: string;
+  savingChanges: string;
+  advanceStageHelp: string;
+  currentKc: string;
+  rootDepth: string;
+  decommissionBlock: string;
+  addBlockToParcel: string;
+  decommissionParcel: string;
+  decommissionWarning: string;
+  confirmDecommission: string;
 }
 
 const DICTIONARY: Record<SupportedLanguage, Translations> = {
@@ -351,6 +431,86 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     low: 'Low',
     multiCropBalance: 'Multi-Crop Balance',
     solarModelLabel: 'Penman-Monteith Solar',
+    // Creation Stepper & Form Localization
+    stepWord: 'Step',
+    ofWord: 'of',
+    locationStepDesc: 'FieldGuard pulls live meteorological and rainfall forecasts from Open-Meteo for your coordinates.',
+    locationSearchPlaceholder: 'e.g. Bardhaman, 713101, Nashik, or Galsi...',
+    clearSearch: 'Clear input',
+    tapOrPressEnter: 'Tap or Press Enter',
+    orDivider: 'OR',
+    liveParcelMapLabel: 'Live Parcel Map (Drag Pin or Tap to Set)',
+    selectedCoordinates: 'Selected Coordinates:',
+    regionLabel: 'Region:',
+    stateLabel: 'State:',
+    localClusterFallback: 'Local Cluster',
+    awcIdealTag: '(Ideal)',
+    awcExplanation: 'AWC (Available Water Capacity) indicates how many millimetres of water 1 metre of this soil can store before draining.',
+    stepCropFullDesc: 'Configure crop variety, growth stage, and cultivated area for each plot section.',
+    sectionSingular: 'Section',
+    sectionPlural: 'Sections',
+    sectionLabel: 'Section',
+    selectCropLabel: 'Select Crop',
+    cropGrowthStageLabel: 'Crop Growth Stage',
+    stageInitial: 'Initial Stage (Germination / Seedling)',
+    stageDevelopment: 'Vegetative Development',
+    stageMidSeason: 'Mid-Season (Flowering & Fruit Set — Peak Water)',
+    stageLateSeason: 'Late Season (Ripening & Harvest)',
+    fieldSectionAreaLabel: 'Field Section Area',
+    optBigha: 'Bigha (~1,338 m² East)',
+    optAcre: 'Acre (~4,047 m²)',
+    optGuntha: 'Guntha (~101 m² West)',
+    optCent: 'Cent (~40.5 m² South)',
+    optHectare: 'Hectare (10,000 m²)',
+    optSqMeters: 'Square Metres (m²)',
+    normalizedAreaLabel: 'Normalized Section Area:',
+    cropBlockSingular: 'Crop Block',
+    cropBlockPlural: 'Crop Blocks',
+    tankCapacityLabel: 'Tank Capacity',
+    fillGaugeLabel: 'Visual Fill Level Gauge',
+    gaugeLow: 'Low (10%)',
+    gaugeAvailable: 'Available:',
+    gaugeFull: 'Full (100%)',
+    sumpCalcLabel: 'Geometric Volume Calculator (L × W × D)',
+    dimLength: 'Length (m)',
+    dimWidth: 'Width (m)',
+    dimDepth: 'Depth (m)',
+    calculatedCapacity: 'Calculated Capacity:',
+    pumpPowerLabel: 'Tube-well / Pump Power',
+    cancelRegistration: 'Cancel Registration',
+    saveAndContinue: 'Save & Continue',
+    liveParcelSummary: 'Live Parcel Summary',
+    noCropsConfigured: 'No crops configured yet',
+    // Map Picker localization
+    switchMapType: 'Switch Map Type',
+    mapStreet: 'Street',
+    mapSatellite: 'Satellite',
+    recenterGps: '1-Tap GPS Re-center',
+    mapDragHelper: 'Drag marker or tap map to refine farm parcel',
+    // Edit Settings Workspace localization
+    editFieldTitle: 'Field Parcel Settings',
+    editFieldSubtitle: 'Manage parcel agronomic profile, crop stages, and water infrastructure',
+    backToAdvisory: 'Back to Field Advisory',
+    backToFields: 'Back to My Fields',
+    parcelIdLabel: 'Parcel ID:',
+    lastCalibrated: 'Last Calibrated:',
+    tabCrops: 'Crops & Phenology',
+    tabWater: 'Water & Hydraulics',
+    tabSoil: 'Root-Zone Soil',
+    tabGeospatial: 'Geospatial Location',
+    tabDanger: 'Danger Zone',
+    unsavedChangesNotice: 'You have unsaved configuration changes.',
+    discardChanges: 'Discard Modifications',
+    saveChanges: 'Save Changes',
+    savingChanges: 'Saving Changes...',
+    advanceStageHelp: 'Updating growth stage recalculates FAO-56 Crop Coefficient (Kc) and root-zone water demand.',
+    currentKc: 'Current Kc:',
+    rootDepth: 'Root Depth:',
+    decommissionBlock: 'Decommission Block',
+    addBlockToParcel: 'Add Additional Crop Block to this Parcel',
+    decommissionParcel: 'Decommission / Delete Parcel',
+    decommissionWarning: 'This will permanently remove this parcel and its historical advisory records. This action cannot be undone.',
+    confirmDecommission: 'Permanently Delete Parcel',
   },
   hi: {
     appName: 'फील्डगार्ड (FieldGuard)',
@@ -524,6 +684,86 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     low: 'न्यूनतम',
     multiCropBalance: 'बहु-फसल जल संतुलन',
     solarModelLabel: 'पेनमैन-मोंटेथ सौर मॉडल',
+    // Creation Stepper & Form Localization
+    stepWord: 'चरण',
+    ofWord: 'में से',
+    locationStepDesc: 'फील्डगार्ड आपके निर्देशांकों के लिए ओपन-मेटियो से सटीक मौसम और वर्षा पूर्वानुमान प्राप्त करता है।',
+    locationSearchPlaceholder: 'उदा. बर्धमान, 713101, नासिक, या गलसी...',
+    clearSearch: 'इनपुट साफ़ करें',
+    tapOrPressEnter: 'टैप करें या एंटर दबाएं',
+    orDivider: 'या',
+    liveParcelMapLabel: 'लाइव पार्सल नक्शा (पिन खींचें या सेट करने हेतु टैप करें)',
+    selectedCoordinates: 'चयनित निर्देशांक:',
+    regionLabel: 'क्षेत्र:',
+    stateLabel: 'राज्य:',
+    localClusterFallback: 'स्थानीय क्लस्टर',
+    awcIdealTag: '(आदर्श)',
+    awcExplanation: 'AWC (उपलब्ध जल क्षमता) दर्शाती है कि 1 मीटर मिट्टी बहने से पहले कितने मिमी पानी रोक सकती है।',
+    stepCropFullDesc: 'प्रत्येक खेत खंड के लिए फसल किस्म, विकास चरण और बुवाई क्षेत्र निर्धारित करें।',
+    sectionSingular: 'खंड',
+    sectionPlural: 'खंड',
+    sectionLabel: 'खंड',
+    selectCropLabel: 'फसल चुनें',
+    cropGrowthStageLabel: 'फसल विकास चरण',
+    stageInitial: 'प्रारंभिक अवस्था (अंकुरण / अंकुर)',
+    stageDevelopment: 'वानस्पतिक विकास (पत्ते व शाखाएं)',
+    stageMidSeason: 'मध्य-मौसम (फूल व फल - अधिकतम जल आवश्यकता)',
+    stageLateSeason: 'अंतिम चरण (परिपक्वता व कटाई)',
+    fieldSectionAreaLabel: 'खेत खंड का क्षेत्रफल',
+    optBigha: 'बीघा (~1,338 वर्ग मी पूर्व)',
+    optAcre: 'एकड़ (~4,047 वर्ग मी)',
+    optGuntha: 'गुंठा (~101 वर्ग मी पश्चिम)',
+    optCent: 'सेंट (~40.5 वर्ग मी दक्षिण)',
+    optHectare: 'हेक्टेयर (10,000 वर्ग मी)',
+    optSqMeters: 'वर्ग मीटर (m²)',
+    normalizedAreaLabel: 'मानकीकृत खंड क्षेत्रफल:',
+    cropBlockSingular: 'फसल खंड',
+    cropBlockPlural: 'फसल खंड',
+    tankCapacityLabel: 'टैंक क्षमता',
+    fillGaugeLabel: 'वर्तमान जल स्तर गेज',
+    gaugeLow: 'कम (10%)',
+    gaugeAvailable: 'उपलब्ध जल:',
+    gaugeFull: 'भरा हुआ (100%)',
+    sumpCalcLabel: 'ज्यामितीय आयतन कैलकुलेटर (लंबाई × चौड़ाई × गहराई)',
+    dimLength: 'लंबाई (मीटर)',
+    dimWidth: 'चौड़ाई (मीटर)',
+    dimDepth: 'गहराई (मीटर)',
+    calculatedCapacity: 'गणना की गई क्षमता:',
+    pumpPowerLabel: 'ट्यूबवेल / पंप मोटर क्षमता',
+    cancelRegistration: 'पंजीकरण रद्द करें',
+    saveAndContinue: 'सहेजें व आगे बढ़ें',
+    liveParcelSummary: 'खेत का लाइव सारांश',
+    noCropsConfigured: 'अभी तक कोई फसल नहीं चुनी गई',
+    // Map Picker localization
+    switchMapType: 'मानचित्र का प्रकार बदलें',
+    mapStreet: 'सड़क मार्ग',
+    mapSatellite: 'उपग्रह (सैटेलाइट)',
+    recenterGps: '1-टैप जीपीएस पुनः केंद्र',
+    mapDragHelper: 'खेत की सीमा तय करने हेतु मार्कर खींचें या नक्शे पर टैप करें',
+    // Edit Settings Workspace localization
+    editFieldTitle: 'खेत पार्सल सेटिंग्स',
+    editFieldSubtitle: 'कृषि प्रोफ़ाइल, फसल अवस्था और जल बुनियादी ढांचे का प्रबंधन करें',
+    backToAdvisory: 'खेत सलाह पर वापस जाएं',
+    backToFields: 'मेरे खेतों पर वापस जाएं',
+    parcelIdLabel: 'पार्सल आईडी:',
+    lastCalibrated: 'अंतिम अपडेट:',
+    tabCrops: 'फसलें एवं विकास चरण',
+    tabWater: 'जल एवं पंप प्रबंधन',
+    tabSoil: 'जड़-क्षेत्र मिट्टी मॉडल',
+    tabGeospatial: 'भौगोलिक स्थिति व नक्शा',
+    tabDanger: 'खतरा क्षेत्र (हटाएं)',
+    unsavedChangesNotice: 'आपके पास बिना सहेजे गए परिवर्तन हैं।',
+    discardChanges: 'बदलाव छोड़ें',
+    saveChanges: 'परिवर्तन सहेजें',
+    savingChanges: 'परिवर्तन सहेजे जा रहे हैं...',
+    advanceStageHelp: 'विकास चरण बदलने से एफएओ-56 फसल गुणांक (Kc) और जल मांग की पुनः गणना होती है।',
+    currentKc: 'वर्तमान Kc:',
+    rootDepth: 'जड़ की गहराई:',
+    decommissionBlock: 'यह फसल खंड हटाएं',
+    addBlockToParcel: 'इस खेत में एक और फसल खंड जोड़ें',
+    decommissionParcel: 'खेत पार्सल हटाएं / निष्क्रिय करें',
+    decommissionWarning: 'यह इस खेत और उसके सभी ऐतिहासिक मौसम रिकॉर्ड को स्थायी रूप से हटा देगा। यह क्रिया वापस नहीं ली जा सकती।',
+    confirmDecommission: 'खेत को स्थायी रूप से हटाएं',
   },
   bn: {
     appName: 'ফিল্ডগার্ড (FieldGuard)',
@@ -697,6 +937,86 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     low: 'সর্বনিম্ন',
     multiCropBalance: 'বহু-ফসল জল ভারসাম্য',
     solarModelLabel: 'পেনম্যান-মন্টেথ সৌর মডেল',
+    // Creation Stepper & Form Localization
+    stepWord: 'ধাপ',
+    ofWord: 'এর',
+    locationStepDesc: 'ফিল্ডগার্ড আপনার ভৌগোলিক অবস্থানের জন্য ওপেন-মেটিও থেকে সরাসরি আবহাওয়া ও বৃষ্টির তথ্য আনে।',
+    locationSearchPlaceholder: 'যেমন: বর্ধমান, ৭১৩১০১, নাসিক, বা গলসি...',
+    clearSearch: 'ইনপুট মুছুন',
+    tapOrPressEnter: 'ট্যাপ করুন বা এন্টার চাপুন',
+    orDivider: 'বা',
+    liveParcelMapLabel: 'লাইভ জমির মানচিত্র (পিন টানুন বা সেট করতে ট্যাপ করুন)',
+    selectedCoordinates: 'নির্বাচিত স্থানাঙ্ক:',
+    regionLabel: 'অঞ্চল:',
+    stateLabel: 'রাজ্য:',
+    localClusterFallback: 'স্থানীয় ক্লাস্টার',
+    awcIdealTag: '(আদর্শ)',
+    awcExplanation: 'AWC (উপলব্ধ জলধারণ ক্ষমতা) নির্দেশ করে মাটির ১ মিটার কত মিলিমিটার জল ধরে রাখতে পারে।',
+    stepCropFullDesc: 'প্রতিটি জমির অংশের জন্য ফসলের জাত, বৃদ্ধির পর্যায় ও জমির পরিমাণ নির্ধারণ করুন।',
+    sectionSingular: 'অংশ',
+    sectionPlural: 'অংশ',
+    sectionLabel: 'অংশ',
+    selectCropLabel: 'ফসল নির্বাচন করুন',
+    cropGrowthStageLabel: 'ফসলের বৃদ্ধির পর্যায়',
+    stageInitial: 'প্রাথমিক পর্যায় (অঙ্কুরোদগম / চারা)',
+    stageDevelopment: 'বৃদ্ধি পর্যায় (ডালপালা ও পাতা বিস্তার)',
+    stageMidSeason: 'মধ্য-মৌসুম (ফুল ও ফল ধরা — সর্বোচ্চ জল চাহিদা)',
+    stageLateSeason: 'শেষ পর্যায় (পাকা ও ফসল তোলা)',
+    fieldSectionAreaLabel: 'জমির অংশের আয়তন',
+    optBigha: 'বিঘা (~১,৩৩৮ বর্গমিটার পূর্ব)',
+    optAcre: 'একর (~৪,০৪৭ বর্গমিটার)',
+    optGuntha: 'গুন্ঠা (~১০১ বর্গমিটার পশ্চিম)',
+    optCent: 'সেন্ট (~৪০.৫ বর্গমিটার দক্ষিণ)',
+    optHectare: 'হেক্টর (১০,০০০ বর্গমিটার)',
+    optSqMeters: 'বর্গমিটার (m²)',
+    normalizedAreaLabel: 'মানসম্মত মোট আয়তন:',
+    cropBlockSingular: 'ফসল অংশ',
+    cropBlockPlural: 'ফসল অংশসমূহ',
+    tankCapacityLabel: 'ট্যাঙ্কের ধারণক্ষমতা',
+    fillGaugeLabel: 'বর্তমান জলের স্তর গেজ',
+    gaugeLow: 'কম (১০%)',
+    gaugeAvailable: 'মজুত জল:',
+    gaugeFull: 'পরিপূর্ণ (১০০%)',
+    sumpCalcLabel: 'জ্যামিতিক আয়তন ক্যালকুলেটর (দৈর্ঘ্য × প্রস্থ × গভীরতা)',
+    dimLength: 'দৈর্ঘ্য (মিটার)',
+    dimWidth: 'প্রস্থ (মিটার)',
+    dimDepth: 'গভীরতা (মিটার)',
+    calculatedCapacity: 'হিসাবকৃত ধারণক্ষমতা:',
+    pumpPowerLabel: 'টিউবওয়েল / পাম্প মোটরের ক্ষমতা',
+    cancelRegistration: 'নিবন্ধন বাতিল করুন',
+    saveAndContinue: 'সংরক্ষণ ও পরবর্তী ধাপ',
+    liveParcelSummary: 'জমির সার্বিক বিবরণ',
+    noCropsConfigured: 'এখনও কোনো ফসল যুক্ত করা হয়নি',
+    // Map Picker localization
+    switchMapType: 'মানচিত্রের ধরন পরিবর্তন',
+    mapStreet: 'রাস্তার মানচিত্র',
+    mapSatellite: 'স্যাটেলাইট মানচিত্র',
+    recenterGps: '১-ট্যাপ জিপিএস অবস্থান',
+    mapDragHelper: 'জমির অবস্থান চিহ্নিত করতে মার্কার টানুন বা মানচিত্রে ট্যাপ করুন',
+    // Edit Settings Workspace localization
+    editFieldTitle: 'জমির সেটিংস ও বিন্যাস',
+    editFieldSubtitle: 'কৃষি প্রোফাইল, ফসলের পর্যায় এবং জল পরিকাঠামো পরিচালনা করুন',
+    backToAdvisory: 'ক্ষেত উপদেষ্টায় ফিরে যান',
+    backToFields: 'আমার জমি তালিকায় ফিরুন',
+    parcelIdLabel: 'পার্সেল আইডি:',
+    lastCalibrated: 'সর্বশেষ আপডেট:',
+    tabCrops: 'ফসল ও বৃদ্ধির পর্যায়',
+    tabWater: 'জল ও পাম্প পরিকাঠামো',
+    tabSoil: 'মূল-অঞ্চল মাটি মডেল',
+    tabGeospatial: 'ভৌগোলিক অবস্থান ও মানচিত্র',
+    tabDanger: 'বিপদ অঞ্চল (মুছে ফেলুন)',
+    unsavedChangesNotice: 'আপনার কিছু অসংরক্ষিত পরিবর্তন রয়েছে।',
+    discardChanges: 'পরিবর্তন বাতিল করুন',
+    saveChanges: 'পরিবর্তন সংরক্ষণ করুন',
+    savingChanges: 'সংরক্ষণ করা হচ্ছে...',
+    advanceStageHelp: 'বৃদ্ধির পর্যায় পরিবর্তন করলে FAO-56 ফসল গুণাঙ্ক (Kc) এবং জল চাহিদা পুনরায় হিসাব হবে।',
+    currentKc: 'বর্তমান Kc:',
+    rootDepth: 'শিকড়ের গভীরতা:',
+    decommissionBlock: 'এই ফসলের অংশ সরান',
+    addBlockToParcel: 'এই জমিতে আরেকটি ফসলের অংশ যোগ করুন',
+    decommissionParcel: 'জমি নিষ্ক্রিয় / মুছে ফেলুন',
+    decommissionWarning: 'এটি স্থায়ীভাবে আপনার অ্যাকাউন্ট থেকে এই জমি এবং ঐতিহাসিক আবহাওয়া রেকর্ড মুছে দেবে। এই কাজটি ফেরানো যাবে না।',
+    confirmDecommission: 'স্থায়ীভাবে জমি মুছে ফেলুন',
   },
 };
 

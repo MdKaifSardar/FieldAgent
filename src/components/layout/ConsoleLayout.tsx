@@ -7,8 +7,8 @@ import { FarmProfile } from '../../types/farm';
 import { AuthSession } from '../../adapters/cognitoAdapter';
 
 interface ConsoleLayoutProps {
-  currentView: 'profile' | 'fields' | 'advisory';
-  onNavigate: (view: 'profile' | 'fields' | 'advisory') => void;
+  currentView: 'profile' | 'fields' | 'advisory' | 'register-field' | 'edit-field';
+  onNavigate: (view: 'profile' | 'fields' | 'advisory' | 'register-field' | 'edit-field') => void;
   parcels: FarmProfile[];
   activeParcel: FarmProfile | null;
   onSelectParcel: (parcelId: string) => void;

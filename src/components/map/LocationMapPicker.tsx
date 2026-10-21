@@ -25,7 +25,7 @@ export function LocationMapPicker({
   locationName,
   zoom = 14,
 }: LocationMapPickerProps) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
@@ -234,10 +234,10 @@ export function LocationMapPicker({
             type="button"
             onClick={handleToggleMapType}
             className="px-2 py-1 rounded-lg bg-black/75 hover:bg-black/90 backdrop-blur-md text-[11px] font-medium text-white border border-white/10 shadow-lg transition-colors cursor-pointer flex items-center gap-1"
-            title="Switch Map Type"
+            title={t.switchMapType}
           >
             <Layers className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="capitalize">{mapType === 'satellite' ? 'Street' : 'Satellite'}</span>
+            <span className="capitalize">{mapType === 'satellite' ? t.mapStreet : t.mapSatellite}</span>
           </button>
 
           {interactive && (
@@ -246,7 +246,7 @@ export function LocationMapPicker({
               onClick={handleCenterDeviceLocation}
               disabled={isLocating}
               className="p-1.5 rounded-lg bg-black/75 hover:bg-black/90 backdrop-blur-md text-white border border-white/10 shadow-lg transition-colors cursor-pointer disabled:opacity-50"
-              title="1-Tap GPS Re-center"
+              title={t.recenterGps}
             >
               <Crosshair className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin text-emerald-400' : 'text-emerald-400'}`} />
             </button>
@@ -258,7 +258,7 @@ export function LocationMapPicker({
       {interactive && (
         <div className="absolute bottom-2.5 left-2.5 pointer-events-none z-10">
           <span className="px-2.5 py-1 rounded-md bg-black/75 backdrop-blur-md text-[10px] text-slate-300 border border-white/10 shadow-md">
-            Drag marker or tap map to refine farm parcel
+            {t.mapDragHelper}
           </span>
         </div>
       )}

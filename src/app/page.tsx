@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '../components/Header';
-import { StepperWizard } from '../components/onboarding/StepperWizard';
 import { DemoSandboxDock } from '../components/demo/DemoSandboxDock';
 import { LandingPage } from '../components/landing/LandingPage';
 import { LanguageProvider } from '../components/common/LanguageContext';
@@ -25,6 +24,8 @@ import { ConsoleLayout } from '../components/layout/ConsoleLayout';
 import { ProfileOverviewView } from '../components/dashboard/ProfileOverviewView';
 import { FieldsDirectoryView } from '../components/dashboard/FieldsDirectoryView';
 import { FieldAdvisoryView } from '../components/dashboard/FieldAdvisoryView';
+import { RegisterFieldWorkspaceView } from '../components/dashboard/RegisterFieldWorkspaceView';
+import { EditFieldWorkspaceView } from '../components/dashboard/EditFieldWorkspaceView';
 import { X } from 'lucide-react';
 
 function FieldGuardApp() {
@@ -33,8 +34,8 @@ function FieldGuardApp() {
   // High-level navigation: 'landing' (unauth / marketing) vs 'dashboard' (authenticated enterprise console)
   const [activeView, setActiveView] = useState<'landing' | 'dashboard'>('landing');
 
-  // Enterprise Console Subview: 'profile' (default landing) | 'fields' (directory) | 'advisory' (active parcel advisory)
-  const [dashboardView, setDashboardView] = useState<'profile' | 'fields' | 'advisory'>('profile');
+  // Enterprise Console Subview: 'profile' | 'fields' | 'advisory' | 'register-field' | 'edit-field'
+  const [dashboardView, setDashboardView] = useState<'profile' | 'fields' | 'advisory' | 'register-field' | 'edit-field'>('profile');
 
   // Multi-Parcel Portfolio State
   const [parcels, setParcels] = useState<FarmProfile[]>([]);
@@ -50,9 +51,6 @@ function FieldGuardApp() {
   const lastLoggedDecisionKeyRef = useRef<string | null>(null);
   const [decision, setDecision] = useState<DecisionResponse | null>(null);
   const [storageStatus, setStorageStatus] = useState<string>('aws_dynamodb');
-  
-  // Modals & Panels
-  const [isParcelWizardOpen, setIsParcelWizardOpen] = useState<boolean>(false);
   const [authSession, setAuthSession] = useState<AuthSession | null>(null);
   
   // Loading & Diagnostics
@@ -247,7 +245,6 @@ function FieldGuardApp() {
     setActiveView('dashboard');
     // Open the Advisory for the newly created or edited field
     setDashboardView('advisory');
-    setIsParcelWizardOpen(false);
     setEditingParcel(null);
 
     // 1. Persist to localStorage
@@ -285,12 +282,12 @@ function FieldGuardApp() {
 
   const handleAddNewParcel = () => {
     setEditingParcel(null);
-    setIsParcelWizardOpen(true);
+    setDashboardView('register-field');
   };
 
   const handleEditParcel = (parcel: FarmProfile) => {
     setEditingParcel(parcel);
-    setIsParcelWizardOpen(true);
+    setDashboardView('edit-field');
   };
 
   const handleDeleteParcel = (parcelId: string) => {
@@ -419,7 +416,8 @@ function FieldGuardApp() {
           <LandingPage
             onOpenOnboarding={() => {
               if (authSession) {
-                setIsParcelWizardOpen(true);
+                setActiveView('dashboard');
+                setDashboardView('register-field');
               } else {
                 router.push('/register');
               }
@@ -442,17 +440,6 @@ function FieldGuardApp() {
             FieldGuard — Autonomous Agronomic Decision Cockpit & Field Telemetry • Built with Next.js & AWS Serverless
           </p>
         </footer>
-
-        {/* Configuration Wizard Modal */}
-        <StepperWizard
-          isOpen={isParcelWizardOpen}
-          onClose={() => {
-            setIsParcelWizardOpen(false);
-            setEditingParcel(null);
-          }}
-          onSubmit={handleCustomFarmSubmit}
-          initialFarm={editingParcel}
-        />
       </div>
     );
   }
@@ -543,18 +530,35 @@ function FieldGuardApp() {
             onTankSliderChange={handleTankSliderChange}
           />
         )}
-      </ConsoleLayout>
 
-      {/* Parcel Configuration Wizard Modal */}
-      <StepperWizard
-        isOpen={isParcelWizardOpen}
-        onClose={() => {
-          setIsParcelWizardOpen(false);
-          setEditingParcel(null);
-        }}
-        onSubmit={handleCustomFarmSubmit}
-        initialFarm={editingParcel}
-      />
+        {/* WORKSPACE VIEW 4: Register Field Workspace (Full Canvas) */}
+        {dashboardView === 'register-field' && (
+          <RegisterFieldWorkspaceView
+            onCancel={() => setDashboardView(parcels.length > 0 ? 'fields' : 'profile')}
+            onSubmit={handleCustomFarmSubmit}
+          />
+        )}
+
+        {/* WORKSPACE VIEW 5: Edit Field Settings Workspace (Direct Tabbed Access) */}
+        {dashboardView === 'edit-field' && (
+          editingParcel ? (
+            <EditFieldWorkspaceView
+              initialFarm={editingParcel}
+              onCancel={() => setDashboardView('advisory')}
+              onSubmit={handleCustomFarmSubmit}
+              onDeleteParcel={(id) => {
+                handleDeleteParcel(id);
+                setDashboardView('fields');
+              }}
+            />
+          ) : (
+            <RegisterFieldWorkspaceView
+              onCancel={() => setDashboardView(parcels.length > 0 ? 'fields' : 'profile')}
+              onSubmit={handleCustomFarmSubmit}
+            />
+          )
+        )}
+      </ConsoleLayout>
 
       {/* Developer Demo Sandbox Dock */}
       {isDemoMode && (

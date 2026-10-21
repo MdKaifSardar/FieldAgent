@@ -20,8 +20,8 @@ import {
 } from 'lucide-react';
 
 interface ConsoleHeaderProps {
-  currentView: 'profile' | 'fields' | 'advisory';
-  onNavigate: (view: 'profile' | 'fields' | 'advisory') => void;
+  currentView: 'profile' | 'fields' | 'advisory' | 'register-field' | 'edit-field';
+  onNavigate: (view: 'profile' | 'fields' | 'advisory' | 'register-field' | 'edit-field') => void;
   activeParcel: FarmProfile | null;
   parcels: FarmProfile[];
   onSelectParcel: (parcelId: string) => void;
@@ -67,6 +67,10 @@ export function ConsoleHeader({
               ? 'FieldGuard' 
               : currentView === 'fields' 
               ? t.myFieldsDirectory 
+              : currentView === 'register-field'
+              ? t.registerNewField
+              : currentView === 'edit-field'
+              ? t.editFieldTitle
               : activeParcel ? localizeFieldTitle(activeParcel.farmName, language) : t.fieldAdvisor}
           </span>
         </div>
@@ -107,6 +111,46 @@ export function ConsoleHeader({
               <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-[#1E4765] shrink-0" />
               <span className="font-bold text-sky-600 dark:text-[#38BDF8] truncate">
                 {activeParcel ? localizeFieldTitle(activeParcel.farmName, language) : t.fieldAdvisor}
+              </span>
+            </>
+          )}
+
+          {currentView === 'register-field' && (
+            <>
+              <button
+                type="button"
+                onClick={() => onNavigate('fields')}
+                className="hover:text-sky-600 dark:hover:text-[#38BDF8] transition-colors shrink-0 cursor-pointer"
+              >
+                {t.fieldsCountSuffix}
+              </button>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-[#1E4765] shrink-0" />
+              <span className="font-bold text-sky-600 dark:text-[#38BDF8] truncate">
+                {t.registerNewField}
+              </span>
+            </>
+          )}
+
+          {currentView === 'edit-field' && (
+            <>
+              <button
+                type="button"
+                onClick={() => onNavigate('fields')}
+                className="hover:text-sky-600 dark:hover:text-[#38BDF8] transition-colors shrink-0 cursor-pointer"
+              >
+                {t.fieldsCountSuffix}
+              </button>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-[#1E4765] shrink-0" />
+              <button
+                type="button"
+                onClick={() => onNavigate('advisory')}
+                className="hover:text-sky-600 dark:hover:text-[#38BDF8] transition-colors shrink-0 cursor-pointer truncate max-w-[140px]"
+              >
+                {activeParcel ? localizeFieldTitle(activeParcel.farmName, language) : t.fieldAdvisor}
+              </button>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-[#1E4765] shrink-0" />
+              <span className="font-bold text-sky-600 dark:text-[#38BDF8] truncate">
+                {t.editFieldTitle}
               </span>
             </>
           )}
