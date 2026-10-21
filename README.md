@@ -1,4 +1,4 @@
-# FieldGuard (प्रकृति मित्र) / FieldGuard
+# FieldGuard
 ### Weather-Aware Groundwater Resilience & Agronomic Decision Cockpit
 
 > **FieldGuard Agronomic Intelligence — FieldGuard Autonomous Telemetry (Event 02)**  
@@ -72,7 +72,7 @@ Existing agricultural apps act as passive weather graphs or theoretical crop cal
 
 ## 4. Key Differentiators vs. Existing Solutions
 
-| Feature | Standard Agri-Apps / Crop Calculators | FieldGuard (FieldGuard) |
+| Feature | Standard Agri-Apps / Crop Calculators | FieldGuard |
 | :--- | :--- | :--- |
 | **Calculation Model** | Pure theoretical crop thirst ($ET_c$) | **Dual-Engine**: Balances crop thirst against usable storage volume, replenishment timing, and irrigation method efficiency |
 | **Effective Rain Infiltration** | Flat monthly estimates or raw rainfall totals | **Daily Soil Water Balance**: Infiltration capped by actual root-zone deficit ($D_r$), excess goes to runoff |
