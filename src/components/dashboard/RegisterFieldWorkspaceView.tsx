@@ -40,9 +40,16 @@ import {
   Hash,
   Plus,
   Trash2,
-  CheckCircle2
+  CheckCircle2,
+  Zap
 } from 'lucide-react';
 import { LocationMapPicker } from '../map/LocationMapPicker';
+import { FieldVoiceSpeaker, stopAllFieldVoice } from '../common/FieldVoiceSpeaker';
+import { 
+  CROP_VISUAL_ASSETS, 
+  SOIL_VISUAL_ASSETS, 
+  IRRIGATION_VISUAL_ASSETS 
+} from '../../data/agriculturalVisualAssets';
 
 interface RegisterFieldWorkspaceViewProps {
   onCancel: () => void;
@@ -53,6 +60,17 @@ export function RegisterFieldWorkspaceView({ onCancel, onSubmit }: RegisterField
   const { t, language } = useLanguage();
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+
+  // Anti-Leakage Guard: Silence active voice guidance whenever step changes or component unmounts
+  useEffect(() => {
+    stopAllFieldVoice();
+  }, [step]);
+
+  useEffect(() => {
+    return () => {
+      stopAllFieldVoice();
+    };
+  }, []);
 
   // STEP 1: Location state
   const [queryLocation, setQueryLocation] = useState('Bardhaman, West Bengal');
@@ -382,170 +400,123 @@ export function RegisterFieldWorkspaceView({ onCancel, onSubmit }: RegisterField
 
   return (
     <div className="space-y-6">
-      {/* Workspace Header & Back Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#E1E8DE] dark:border-[#16364D]">
-        <div>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-600 dark:text-[#38BDF8] hover:underline mb-1 cursor-pointer"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>{t.backToFields}</span>
-          </button>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit']">
-            {t.registerNewField}
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-[#94A3B8] mt-0.5">
-            {t.onboardingSubtitle}
-          </p>
+      {/* UNIFIED PERSISTENT MASTER BANNER */}
+      <div className="rounded-xl bg-white dark:bg-[#0D2232] border border-[#E1E8DE] dark:border-[#16364D] shadow-xs overflow-hidden">
+        {/* Top Header Row */}
+        <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-600 dark:text-[#38BDF8] hover:underline mb-1 cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>{t.backToFields}</span>
+            </button>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit']">
+              {t.registerNewField}
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-[#94A3B8] mt-0.5">
+              {t.onboardingSubtitle}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
+            <span className="px-3 py-1 rounded-full bg-sky-50 dark:bg-[#112B3E] border border-sky-200 dark:border-[#1E4765] text-sky-700 dark:text-[#38BDF8] font-bold text-xs flex items-center gap-1.5 font-mono">
+              <span>{t.stepWord} {step} {t.ofWord} 4</span>
+              <span className="text-slate-300 dark:text-slate-600">•</span>
+              <span>{Math.round((step / 4) * 100)}%</span>
+            </span>
+
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-[#16364D] text-xs font-semibold text-slate-600 dark:text-[#94A3B8] hover:bg-slate-100 dark:hover:bg-[#112B3E] transition-colors cursor-pointer"
+            >
+              {t.cancelRegistration}
+            </button>
+          </div>
         </div>
 
-        <button
-          type="button"
-          onClick={onCancel}
-          className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-[#16364D] text-xs font-semibold text-slate-600 dark:text-[#94A3B8] hover:bg-slate-100 dark:hover:bg-[#112B3E] transition-colors cursor-pointer"
-        >
-          {t.cancelRegistration}
-        </button>
+        {/* INTEGRATED HORIZONTAL SUB-NAVIGATION TAB BAR */}
+        <div className="px-4 sm:px-6 border-t border-[#E1E8DE] dark:border-[#16364D] bg-slate-50/50 dark:bg-[#0A1C2A] flex items-center gap-2 sm:gap-4 overflow-x-auto">
+          {[
+            { s: 1 as const, label: t.locationStep, icon: MapPin },
+            { s: 2 as const, label: t.soilStep, icon: Layers },
+            { s: 3 as const, label: t.cropStep, icon: Sprout },
+            { s: 4 as const, label: t.reserveStep, icon: Droplets },
+          ].map(({ s, label, icon: Icon }) => {
+            const isCurrent = step === s;
+            const isPassed = step > s;
+
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => {
+                  if (s <= step || isPassed) setStep(s);
+                }}
+                disabled={s > step && !isPassed}
+                className={`py-3.5 px-3 text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap relative ${
+                  isCurrent
+                    ? 'text-sky-600 dark:text-[#38BDF8] font-bold'
+                    : isPassed
+                    ? 'text-emerald-600 dark:text-emerald-400 font-semibold hover:text-slate-900 dark:hover:text-white'
+                    : 'text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-60'
+                }`}
+              >
+                <div className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold ${
+                  isCurrent
+                    ? 'bg-sky-600 text-white'
+                    : isPassed
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-slate-100 dark:bg-[#16364D] text-slate-400'
+                }`}>
+                  {isPassed ? <Check className="w-3 h-3" /> : s}
+                </div>
+                <Icon className={`w-4 h-4 ${isCurrent ? 'text-sky-500 dark:text-[#38BDF8]' : isPassed ? 'text-emerald-500' : 'text-slate-400'}`} />
+                <span>{label}</span>
+                {isCurrent && (
+                  <span className="absolute bottom-0 inset-x-0 h-0.5 bg-sky-500 rounded-t-full shadow-xs" />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Main 2-Column Responsive Console Grid */}
+      {/* Main 2-Column Responsive Console Grid (Canvas 8 cols + Sticky Live Summary 4 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* LEFT COLUMN: Sticky Stepper Rail & Live Parcel Preview (4 cols) */}
-        <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-20">
-          
-          {/* Stepper Navigation Card */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#0A1C2A] border border-[#E1E8DE] dark:border-[#16364D] shadow-xs space-y-3">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-400 dark:text-[#94A3B8] uppercase tracking-wider pb-2 border-b border-slate-100 dark:border-[#16364D]/60">
-              <span>{t.stepWord} {step} {t.ofWord} 4</span>
-              <span className="font-mono text-sky-600 dark:text-[#38BDF8]">{Math.round((step / 4) * 100)}%</span>
-            </div>
-
-            <nav className="space-y-1.5">
-              {[
-                { s: 1, label: t.locationStep, icon: MapPin },
-                { s: 2, label: t.soilStep, icon: Layers },
-                { s: 3, label: t.cropStep, icon: Sprout },
-                { s: 4, label: t.reserveStep, icon: Droplets },
-              ].map(({ s, label, icon: Icon }) => {
-                const isCurrent = step === s;
-                const isPassed = step > s;
-
-                return (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => {
-                      if (s < step) setStep(s as any);
-                    }}
-                    disabled={s > step}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-xs font-semibold transition-all cursor-pointer ${
-                      isCurrent
-                        ? 'bg-sky-50 dark:bg-[#102A3E] text-sky-600 dark:text-[#38BDF8] border border-sky-200 dark:border-[#1E4765]'
-                        : isPassed
-                        ? 'text-emerald-600 dark:text-emerald-400 hover:bg-slate-50 dark:hover:bg-[#0D2232]'
-                        : 'text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-60'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${
-                        isCurrent
-                          ? 'bg-sky-600 text-white'
-                          : isPassed
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-slate-100 dark:bg-[#16364D] text-slate-400'
-                      }`}>
-                        {isPassed ? <Check className="w-3.5 h-3.5" /> : s}
-                      </div>
-                      <span>{label}</span>
-                    </div>
-
-                    {isPassed && <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-
-          {/* Live Parcel Summary Card */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#0A1C2A] border border-[#E1E8DE] dark:border-[#16364D] shadow-xs space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-[#94A3B8] flex items-center justify-between">
-              <span>{t.liveParcelSummary}</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
-            </h3>
-
-            <div className="space-y-2.5 text-xs divide-y divide-slate-100 dark:divide-[#16364D]/60">
-              <div className="pt-1 flex items-start justify-between gap-2">
-                <span className="text-slate-500 dark:text-[#94A3B8]">{t.locationStep}:</span>
-                <span className="font-semibold text-slate-900 dark:text-[#F0F9FF] text-right truncate max-w-[180px]">
-                  {district || 'Bardhaman'}, {stateName || 'India'}
-                </span>
-              </div>
-
-              <div className="pt-2 flex items-center justify-between gap-2">
-                <span className="text-slate-500 dark:text-[#94A3B8]">{t.selectedCoordinates}</span>
-                <span className="font-mono text-[11px] text-sky-600 dark:text-[#38BDF8] font-bold">
-                  {lat.toFixed(3)}°, {lon.toFixed(3)}°
-                </span>
-              </div>
-
-              <div className="pt-2 flex items-center justify-between gap-2">
-                <span className="text-slate-500 dark:text-[#94A3B8]">{t.soilStep}:</span>
-                <span className="font-semibold text-slate-900 dark:text-[#F0F9FF]">
-                  {soilTexture === 'loamy' ? t.alluvialName : soilTexture === 'sandy' ? t.sandyLoamName : t.blackClayName}
-                </span>
-              </div>
-
-              <div className="pt-2 flex items-start justify-between gap-2">
-                <span className="text-slate-500 dark:text-[#94A3B8]">{t.cropStep}:</span>
-                <div className="text-right">
-                  <span className="font-bold text-slate-900 dark:text-[#F0F9FF] block">
-                    {plots.map(p => localizeCrop(p.cropName, language)).join(', ')}
-                  </span>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
-                    {totalCalculatedAreaM2.toLocaleString()} m² ({plots.length} {plots.length === 1 ? t.sectionSingular : t.sectionPlural})
-                  </span>
-                </div>
-              </div>
-
-              <div className="pt-2 flex items-center justify-between gap-2">
-                <span className="text-slate-500 dark:text-[#94A3B8]">{t.reserveStep}:</span>
-                <span className="font-mono font-bold text-slate-900 dark:text-[#F0F9FF]">
-                  {storageType === 'custom_sump'
-                    ? `${calculateSumpVolumeLiters(sumpLength, sumpWidth, sumpDepth).toLocaleString()} L`
-                    : `${tankCapacity.toLocaleString()} L`} • {pumpHp} HP
-                </span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        {/* RIGHT COLUMN: Active Step Form Canvas (8 cols) */}
+        {/* LEFT COLUMN: Active Step Form Canvas (8 cols) */}
         <div className="lg:col-span-8">
           <div className="rounded-2xl bg-white dark:bg-[#0A1C2A] border border-[#E1E8DE] dark:border-[#16364D] p-5 sm:p-7 shadow-sm space-y-6">
             
             {/* STEP 1: FIELD LOCATION */}
             {step === 1 && (
               <div className="space-y-5">
-                <div>
-                  <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit'] flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-sky-600 dark:text-[#38BDF8]" />
-                    <span>{t.locationStep}</span>
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-[#94A3B8] mt-1">
-                    {t.locationStepDesc}
-                  </p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit'] flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-sky-600 dark:text-[#38BDF8] shrink-0" />
+                      <span className="truncate">{t.locationStep}</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-[#94A3B8] mt-1">
+                      {t.locationStepDesc}
+                    </p>
+                  </div>
+                  <FieldVoiceSpeaker scriptKey="step1_overview" className="shrink-0" />
                 </div>
 
                 {/* Search bar with instant autocomplete */}
                 <div className="space-y-1.5 relative">
-                  <label className="text-xs font-semibold text-slate-600 dark:text-[#94A3B8] uppercase tracking-wider flex items-center justify-between">
-                    <span>{t.searchLocationPrompt}</span>
+                  <label className="text-xs font-semibold text-slate-600 dark:text-[#94A3B8] uppercase tracking-wider flex flex-wrap items-center justify-between gap-1.5">
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <span>{t.searchLocationPrompt}</span>
+                      <FieldVoiceSpeaker scriptKey="step1_search" size="sm" className="shrink-0" />
+                    </span>
                     {isLoadingSuggestions && (
-                      <span className="text-[10px] text-sky-600 dark:text-[#38BDF8] font-mono flex items-center gap-1 font-normal">
+                      <span className="text-[10px] text-sky-600 dark:text-[#38BDF8] font-mono flex items-center gap-1 font-normal shrink-0">
                         <Loader2 className="w-3 h-3 animate-spin" /> {t.locatingGPS}
                       </span>
                     )}
@@ -657,15 +628,18 @@ export function RegisterFieldWorkspaceView({ onCancel, onSubmit }: RegisterField
                 </div>
 
                 {/* 1-Tap GPS Button */}
-                <button
-                  type="button"
-                  onClick={handleGPSDetect}
-                  disabled={isLocatingGPS}
-                  className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/30 dark:hover:bg-sky-950/50 border border-sky-200 dark:border-sky-800/40 text-sky-700 dark:text-[#38BDF8] text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
-                >
-                  <Compass className={`w-4 h-4 ${isLocatingGPS ? 'animate-spin' : ''}`} />
-                  <span>{isLocatingGPS ? t.gpsLocating : t.gpsButton}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleGPSDetect}
+                    disabled={isLocatingGPS}
+                    className="flex-1 min-h-[44px] py-2.5 px-4 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/30 dark:hover:bg-sky-950/50 border border-sky-200 dark:border-sky-800/40 text-sky-700 dark:text-[#38BDF8] text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  >
+                    <Compass className={`w-4 h-4 ${isLocatingGPS ? 'animate-spin' : ''}`} />
+                    <span>{isLocatingGPS ? t.gpsLocating : t.gpsButton}</span>
+                  </button>
+                  <FieldVoiceSpeaker scriptKey="step1_gps" className="shrink-0" />
+                </div>
 
                 {locationFeedback && (
                   <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/30 text-xs text-emerald-800 dark:text-emerald-300 font-medium">
@@ -674,14 +648,27 @@ export function RegisterFieldWorkspaceView({ onCancel, onSubmit }: RegisterField
                 )}
 
                 {/* Interactive Satellite / Street Map Picker */}
-                <div className="space-y-1.5 pt-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-600 dark:text-[#94A3B8] flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-sky-600 dark:text-[#38BDF8]" />
-                      <span>{t.liveParcelMapLabel}</span>
-                    </span>
-                    <span className="text-[11px] font-mono text-sky-600 dark:text-[#38BDF8]">
-                      {lat.toFixed(4)}°, {lon.toFixed(4)}°
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-start sm:items-center justify-between gap-2 text-xs">
+                    <div className="flex items-start sm:items-center gap-1.5 min-w-0">
+                      <MapPin className="w-3.5 h-3.5 text-sky-600 dark:text-[#38BDF8] shrink-0 mt-0.5 sm:mt-0" />
+                      <span className="font-semibold text-slate-700 dark:text-[#CBD5E1] leading-snug">
+                        {t.liveParcelMapLabel}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="hidden sm:inline-block text-[11px] font-mono text-sky-600 dark:text-[#38BDF8] bg-sky-50 dark:bg-[#071724] px-2 py-0.5 rounded-md border border-sky-200 dark:border-[#16364D]">
+                        {lat.toFixed(4)}° N, {lon.toFixed(4)}° E
+                      </span>
+                      <FieldVoiceSpeaker scriptKey="step1_map" size="sm" className="shrink-0" />
+                    </div>
+                  </div>
+
+                  {/* Dedicated mobile coordinate badge to prevent small-screen collision */}
+                  <div className="sm:hidden flex items-center justify-between text-[11px] font-mono text-sky-600 dark:text-[#38BDF8] bg-slate-50 dark:bg-[#0D2232] px-2.5 py-1 rounded-lg border border-slate-200 dark:border-[#16364D]">
+                    <span className="text-[10px] text-slate-500 dark:text-[#94A3B8] font-sans font-medium">{t.selectedCoordinates}:</span>
+                    <span className="font-bold">
+                      {lat.toFixed(4)}° N, {lon.toFixed(4)}° E
                     </span>
                   </div>
                   
@@ -711,97 +698,92 @@ export function RegisterFieldWorkspaceView({ onCancel, onSubmit }: RegisterField
             {/* STEP 2: SOIL TEXTURE SELECTION */}
             {step === 2 && (
               <div className="space-y-5">
-                <div>
-                  <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit'] flex items-center gap-2">
-                    <Layers className="w-5 h-5 text-amber-500" />
-                    <span>{t.soilStep}</span>
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-[#94A3B8] mt-1">
-                    {t.stepSoilSubtitle}
-                  </p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit'] flex items-center gap-2">
+                      <Layers className="w-5 h-5 text-amber-500 shrink-0" />
+                      <span className="truncate">{t.soilStep}</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-[#94A3B8] mt-1">
+                      {t.stepSoilSubtitle}
+                    </p>
+                  </div>
+                  <FieldVoiceSpeaker scriptKey="step2_overview" className="shrink-0" />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                  {/* Sandy Loam */}
-                  <button
-                    type="button"
-                    onClick={() => setSoilTexture('sandy')}
-                    className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[120px] ${
-                      soilTexture === 'sandy'
-                        ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-500 ring-2 ring-amber-500/20 text-amber-900 dark:text-amber-200'
-                        : 'bg-white dark:bg-[#0D2232] border-slate-200 dark:border-[#16364D] text-slate-600 dark:text-[#94A3B8] hover:border-amber-400'
-                    }`}
-                  >
-                    <div>
-                      <div className="text-sm font-bold flex items-center justify-between text-slate-900 dark:text-[#F0F9FF]">
-                        <span className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
-                          <span>{t.sandyLoamName}</span>
-                        </span>
-                        {soilTexture === 'sandy' && <Check className="w-4 h-4 text-amber-500" />}
-                      </div>
-                      <div className="text-[11px] text-slate-500 dark:text-[#94A3B8] mt-1.5 leading-relaxed">
-                        {t.sandyLoamDesc}
-                      </div>
-                    </div>
-                    <div className="text-[11px] font-mono text-amber-600 dark:text-amber-400 font-bold mt-3">
-                      AWC: 90 mm/m
-                    </div>
-                  </button>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {(['sandy', 'loamy', 'clay_black'] as const).map((key) => {
+                    const soil = SOIL_VISUAL_ASSETS[key];
+                    const isSelected = soilTexture === key;
 
-                  {/* Alluvial Loam */}
-                  <button
-                    type="button"
-                    onClick={() => setSoilTexture('loamy')}
-                    className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[120px] ${
-                      soilTexture === 'loamy'
-                        ? 'bg-sky-50 dark:bg-[#102A3E] border-sky-500 ring-2 ring-sky-500/20 text-sky-900 dark:text-sky-200'
-                        : 'bg-white dark:bg-[#0D2232] border-slate-200 dark:border-[#16364D] text-slate-600 dark:text-[#94A3B8] hover:border-sky-400'
-                    }`}
-                  >
-                    <div>
-                      <div className="text-sm font-bold flex items-center justify-between text-slate-900 dark:text-[#F0F9FF]">
-                        <span className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block" />
-                          <span>{t.alluvialName}</span>
-                        </span>
-                        {soilTexture === 'loamy' && <Check className="w-4 h-4 text-sky-500" />}
-                      </div>
-                      <div className="text-[11px] text-slate-500 dark:text-[#94A3B8] mt-1.5 leading-relaxed">
-                        {t.alluvialDesc}
-                      </div>
-                    </div>
-                    <div className="text-[11px] font-mono text-sky-600 dark:text-[#38BDF8] font-bold mt-3">
-                      AWC: 150 mm/m {t.awcIdealTag}
-                    </div>
-                  </button>
+                    return (
+                      <div
+                        key={key}
+                        onClick={() => setSoilTexture(key)}
+                        className={`group relative rounded-2xl border text-left transition-all duration-200 cursor-pointer overflow-hidden flex flex-col justify-between ${
+                          isSelected
+                            ? 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-500 ring-2 ring-amber-500/30 shadow-md'
+                            : 'bg-white dark:bg-[#0D2232] border-slate-200 dark:border-[#16364D] hover:border-amber-400 dark:hover:border-amber-500/50 shadow-xs'
+                        }`}
+                      >
+                        {/* Specimen Photography Header */}
+                        <div className="relative h-28 sm:h-32 w-full overflow-hidden bg-slate-900">
+                          <img
+                            src={soil.imageUrl}
+                            alt={soil.name[language]}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 brightness-90 group-hover:brightness-100"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30" />
+                          
+                          {/* Audio Speaker Button */}
+                          <div className="absolute top-2 left-2 z-10">
+                            <FieldVoiceSpeaker scriptKey={`soil_${key}`} size="sm" />
+                          </div>
 
-                  {/* Black Clay */}
-                  <button
-                    type="button"
-                    onClick={() => setSoilTexture('clay_black')}
-                    className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between min-h-[120px] ${
-                      soilTexture === 'clay_black'
-                        ? 'bg-indigo-50 dark:bg-indigo-950/20 border-indigo-500 ring-2 ring-indigo-500/20 text-indigo-900 dark:text-indigo-200'
-                        : 'bg-white dark:bg-[#0D2232] border-slate-200 dark:border-[#16364D] text-slate-600 dark:text-[#94A3B8] hover:border-indigo-400'
-                    }`}
-                  >
-                    <div>
-                      <div className="text-sm font-bold flex items-center justify-between text-slate-900 dark:text-[#F0F9FF]">
-                        <span className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block" />
-                          <span>{t.blackClayName}</span>
-                        </span>
-                        {soilTexture === 'clay_black' && <Check className="w-4 h-4 text-indigo-500" />}
+                          {/* Selected Checkmark Badge */}
+                          {isSelected && (
+                            <div className="absolute top-2 right-2 z-10 p-1 rounded-full bg-emerald-500 text-white shadow-md animate-in zoom-in-75">
+                              <Check className="w-3.5 h-3.5" />
+                            </div>
+                          )}
+
+                          {/* Soil Drainage Tag */}
+                          <div className="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between text-[10px] font-mono text-white/90">
+                            <span className="bg-black/60 backdrop-blur-xs px-2 py-0.5 rounded-md font-semibold">
+                              {soil.drainageRate[language]}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Card Body */}
+                        <div className="p-3.5 sm:p-4 space-y-2 flex-1 flex flex-col justify-between">
+                          <div>
+                            <div className="text-sm font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit'] flex items-center justify-between">
+                              <span>{soil.name[language]}</span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 dark:text-[#94A3B8] mt-1 leading-relaxed">
+                              {soil.tactileDescription[language]}
+                            </p>
+                          </div>
+
+                          {/* AWC Indicator Bar */}
+                          <div className="pt-2 border-t border-slate-100 dark:border-[#16364D]/60 space-y-1">
+                            <div className="flex items-center justify-between text-[10px]">
+                              <span className="text-slate-400 uppercase font-semibold">AWC ({language === 'bn' ? 'জল ধারণ' : language === 'hi' ? 'नमी क्षमता' : 'Retention'})</span>
+                              <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{soil.awcLabel}</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-slate-100 dark:bg-[#16364D] rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-amber-500 rounded-full transition-all duration-300"
+                                style={{ width: `${(soil.awcValue / 180) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-[11px] text-slate-500 dark:text-[#94A3B8] mt-1.5 leading-relaxed">
-                        {t.blackClayDesc}
-                      </div>
-                    </div>
-                    <div className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-bold mt-3">
-                      AWC: 180 mm/m
-                    </div>
-                  </button>
+                    );
+                  })}
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#0D2232] border border-slate-200 dark:border-[#16364D] text-xs text-slate-600 dark:text-[#94A3B8] flex items-start gap-2.5">
@@ -814,19 +796,22 @@ export function RegisterFieldWorkspaceView({ onCancel, onSubmit }: RegisterField
             {/* STEP 3: MULTI-CROP & PLOT SECTIONS */}
             {step === 3 && (
               <div className="space-y-5">
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
                     <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit'] flex items-center gap-2">
-                      <Sprout className="w-5 h-5 text-emerald-500" />
-                      <span>{t.cropStep}</span>
+                      <Sprout className="w-5 h-5 text-emerald-500 shrink-0" />
+                      <span className="truncate">{t.cropStep}</span>
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-[#94A3B8] mt-1">
                       {t.stepCropFullDesc}
                     </p>
                   </div>
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
-                    {plots.length} {plots.length === 1 ? t.sectionSingular : t.sectionPlural}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <FieldVoiceSpeaker scriptKey="step3_overview" className="shrink-0" />
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
+                      {plots.length} {plots.length === 1 ? t.sectionSingular : t.sectionPlural}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -839,16 +824,16 @@ export function RegisterFieldWorkspaceView({ onCancel, onSubmit }: RegisterField
                         key={plot.id}
                         className="p-4 sm:p-5 rounded-2xl bg-slate-50/50 dark:bg-[#0D2232]/50 border border-slate-200 dark:border-[#16364D] space-y-4"
                       >
-                        <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-[#16364D]">
-                          <div className="flex items-center gap-2.5">
-                            <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-bold font-mono">
+                        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-[#16364D]">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-bold font-mono shrink-0">
                               {sectionLetter}
                             </span>
-                            <div>
-                              <span className="text-sm font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit']">
+                            <div className="min-w-0">
+                              <span className="text-sm font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit'] block sm:inline">
                                 {t.sectionLabel} {sectionLetter}: {localizeCrop(plot.cropName, language)}
                               </span>
-                              <span className="text-[11px] text-slate-500 dark:text-[#94A3B8] ml-2 font-mono">
+                              <span className="text-[11px] text-slate-500 dark:text-[#94A3B8] sm:ml-2 font-mono block sm:inline">
                                 ({plot.areaValue} {plot.areaUnit === 'bigha' ? t.unitBigha : plot.areaUnit === 'acre' ? t.unitAcre : plot.areaUnit} • {plotAreaM2.toLocaleString()} m²)
                               </span>
                             </div>
@@ -858,7 +843,7 @@ export function RegisterFieldWorkspaceView({ onCancel, onSubmit }: RegisterField
                             <button
                               type="button"
                               onClick={() => handleRemovePlot(index)}
-                              className="text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 font-semibold px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                              className="text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 font-semibold px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1 shrink-0"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                               <span>{t.removePlot}</span>
@@ -866,36 +851,93 @@ export function RegisterFieldWorkspaceView({ onCancel, onSubmit }: RegisterField
                           )}
                         </div>
 
-                        {/* Crop selector chips */}
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-semibold text-slate-600 dark:text-[#94A3B8] uppercase tracking-wider">
-                            {t.selectCropLabel}
-                          </label>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {/* Photographic Crop Specimen Cards */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[11px] font-semibold text-slate-600 dark:text-[#94A3B8] uppercase tracking-wider">
+                              {t.selectCropLabel}
+                            </label>
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-semibold">
+                              {CROP_VISUAL_ASSETS[plot.cropName]?.emoji} {localizeCrop(plot.cropName, language)}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                             {[
                               'Tomato', 'Wheat', 'Spinach', 'Potato',
                               'Paddy', 'Mustard', 'Onion', 'Chilli'
-                            ].map((c) => (
-                              <button
-                                key={c}
-                                type="button"
-                                onClick={() => handleUpdatePlot(index, { cropName: c })}
-                                className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center ${
-                                  plot.cropName === c
-                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                                    : 'bg-white dark:bg-[#0A1C2A] border-slate-200 dark:border-[#16364D] text-slate-700 dark:text-[#CBD5E1] hover:border-emerald-500'
-                                }`}
-                              >
-                                {localizeCrop(c, language)}
-                              </button>
-                            ))}
+                            ].map((c) => {
+                              const crop = CROP_VISUAL_ASSETS[c];
+                              const isSelected = plot.cropName === c;
+
+                              return (
+                                <div
+                                  key={c}
+                                  onClick={() => handleUpdatePlot(index, { cropName: c })}
+                                  className={`group relative rounded-xl border transition-all duration-200 cursor-pointer overflow-hidden flex flex-col justify-between ${
+                                    isSelected
+                                      ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-500 ring-2 ring-emerald-500/30 shadow-md'
+                                      : 'bg-white dark:bg-[#0A1C2A] border-slate-200 dark:border-[#16364D] hover:border-emerald-400 shadow-2xs'
+                                  }`}
+                                >
+                                  {/* Crop Specimen Photo */}
+                                  <div className="relative h-20 sm:h-22 w-full overflow-hidden bg-slate-900">
+                                    <img
+                                      src={crop?.imageUrl}
+                                      alt={localizeCrop(c, language)}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 brightness-95 group-hover:brightness-100"
+                                      loading="lazy"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+
+                                    {/* Inline Speaker Button */}
+                                    <div className="absolute top-1.5 left-1.5 z-10">
+                                      <FieldVoiceSpeaker scriptKey={`crop_${c}`} size="sm" />
+                                    </div>
+
+                                    {/* Selected Checkmark */}
+                                    {isSelected && (
+                                      <div className="absolute top-1.5 right-1.5 z-10 p-0.5 rounded-full bg-emerald-500 text-white shadow-xs">
+                                        <Check className="w-3 h-3" />
+                                      </div>
+                                    )}
+
+                                    {/* Water Demand Badge */}
+                                    <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between text-[9px] font-mono text-white/90">
+                                      <span className={`px-1.5 py-0.5 rounded-md font-semibold backdrop-blur-xs ${
+                                        crop?.waterTier === 'low'
+                                          ? 'bg-amber-950/80 text-amber-300'
+                                          : crop?.waterTier === 'high'
+                                          ? 'bg-sky-950/80 text-sky-300'
+                                          : 'bg-emerald-950/80 text-emerald-300'
+                                      }`}>
+                                        {crop?.waterTierLabel[language]}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Card Label */}
+                                  <div className="p-2 text-center">
+                                    <span className="text-xs font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit'] block truncate">
+                                      {crop?.emoji} {localizeCrop(c, language)}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 block truncate mt-0.5">
+                                      {crop?.category[language]}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
 
                         {/* Growth stage selector */}
                         <div className="space-y-1.5">
-                          <label className="text-[11px] font-semibold text-slate-600 dark:text-[#94A3B8] uppercase tracking-wider">
-                            {t.cropGrowthStageLabel}
+                          <label className="text-[11px] font-semibold text-slate-600 dark:text-[#94A3B8] uppercase tracking-wider flex items-center justify-between">
+                            <span className="flex items-center gap-1.5">
+                              <span>{t.cropGrowthStageLabel}</span>
+                              <FieldVoiceSpeaker scriptKey="growth_stage" size="sm" />
+                            </span>
                           </label>
                           <select
                             value={plot.growthStage}
@@ -941,45 +983,77 @@ export function RegisterFieldWorkspaceView({ onCancel, onSubmit }: RegisterField
                           </div>
                         </div>
 
-                        {/* Irrigation Method selection */}
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-semibold text-slate-600 dark:text-[#94A3B8] uppercase tracking-wider">
-                            {t.irrigationMethod}
-                          </label>
-                          <div className="grid grid-cols-3 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleUpdatePlot(index, { irrigationMethod: 'drip' })}
-                              className={`py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center ${
-                                plot.irrigationMethod === 'drip'
-                                  ? 'bg-emerald-500/15 border-emerald-500 text-emerald-700 dark:text-emerald-300'
-                                  : 'bg-white dark:bg-[#0A1C2A] border-slate-200 dark:border-[#16364D] text-slate-600 dark:text-[#94A3B8]'
-                              }`}
-                            >
-                              {t.drip}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleUpdatePlot(index, { irrigationMethod: 'sprinkler' })}
-                              className={`py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center ${
-                                plot.irrigationMethod === 'sprinkler'
-                                  ? 'bg-sky-500/15 border-sky-500 text-sky-700 dark:text-sky-300'
-                                  : 'bg-white dark:bg-[#0A1C2A] border-slate-200 dark:border-[#16364D] text-slate-600 dark:text-[#94A3B8]'
-                              }`}
-                            >
-                              {t.sprinkler}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleUpdatePlot(index, { irrigationMethod: 'surface_flood' })}
-                              className={`py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center ${
-                                plot.irrigationMethod === 'surface_flood'
-                                  ? 'bg-amber-500/15 border-amber-500 text-amber-700 dark:text-amber-300'
-                                  : 'bg-white dark:bg-[#0A1C2A] border-slate-200 dark:border-[#16364D] text-slate-600 dark:text-[#94A3B8]'
-                              }`}
-                            >
-                              {t.flood}
-                            </button>
+                        {/* Photographic Watering Method Cards */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[11px] font-semibold text-slate-600 dark:text-[#94A3B8] uppercase tracking-wider">
+                              {t.irrigationMethod}
+                            </label>
+                            <span className="text-[10px] text-sky-600 dark:text-[#38BDF8] font-mono font-semibold">
+                              {IRRIGATION_VISUAL_ASSETS[plot.irrigationMethod || 'drip']?.name[language]}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {(['drip', 'sprinkler', 'surface_flood'] as const).map((methodKey) => {
+                              const method = IRRIGATION_VISUAL_ASSETS[methodKey];
+                              const isSelected = plot.irrigationMethod === methodKey;
+
+                              return (
+                                <div
+                                  key={methodKey}
+                                  onClick={() => handleUpdatePlot(index, { irrigationMethod: methodKey })}
+                                  className={`group relative rounded-xl border transition-all duration-200 cursor-pointer overflow-hidden flex flex-col justify-between ${
+                                    isSelected
+                                      ? 'bg-sky-50/60 dark:bg-[#102A3E] border-sky-500 ring-2 ring-sky-500/30 shadow-md'
+                                      : 'bg-white dark:bg-[#0A1C2A] border-slate-200 dark:border-[#16364D] hover:border-sky-400 shadow-2xs'
+                                  }`}
+                                >
+                                  {/* Irrigation Specimen Image */}
+                                  <div className="relative h-20 sm:h-22 w-full overflow-hidden bg-slate-900">
+                                    <img
+                                      src={method.imageUrl}
+                                      alt={method.name[language]}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 brightness-95"
+                                      loading="lazy"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+
+                                    {/* Inline Speaker */}
+                                    <div className="absolute top-1.5 left-1.5 z-10">
+                                      <FieldVoiceSpeaker scriptKey={`irrigation_${methodKey}`} size="sm" />
+                                    </div>
+
+                                    {/* Selected Checkmark */}
+                                    {isSelected && (
+                                      <div className="absolute top-1.5 right-1.5 z-10 p-0.5 rounded-full bg-sky-500 text-white shadow-xs">
+                                        <Check className="w-3 h-3" />
+                                      </div>
+                                    )}
+
+                                    {/* Efficiency Badge */}
+                                    <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between text-[9px] font-mono text-white/90">
+                                      <span className="bg-black/70 backdrop-blur-xs px-2 py-0.5 rounded-md font-semibold text-sky-300">
+                                        {method.efficiencyPercent}% {language === 'bn' ? 'দক্ষতা' : language === 'hi' ? 'दक्षता' : 'Efficiency'}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Card Body */}
+                                  <div className="p-2.5 space-y-1">
+                                    <div className="text-xs font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit']">
+                                      {method.name[language]}
+                                    </div>
+                                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                                      {method.waterSavingsBadge[language]}
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 dark:text-[#94A3B8] leading-tight line-clamp-2">
+                                      {method.description[language]}
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       </div>
@@ -1015,46 +1089,70 @@ export function RegisterFieldWorkspaceView({ onCancel, onSubmit }: RegisterField
             {/* STEP 4: WATER RESERVE & STORAGE */}
             {step === 4 && (
               <div className="space-y-5">
-                <div>
-                  <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit'] flex items-center gap-2">
-                    <Droplets className="w-5 h-5 text-sky-600 dark:text-[#38BDF8]" />
-                    <span>{t.reserveStep}</span>
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-[#94A3B8] mt-1">
-                    {t.stepReserveSubtitle}
-                  </p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit'] flex items-center gap-2">
+                      <Droplets className="w-5 h-5 text-sky-600 dark:text-[#38BDF8] shrink-0" />
+                      <span className="truncate">{t.reserveStep}</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-[#94A3B8] mt-1">
+                      {t.stepReserveSubtitle}
+                    </p>
+                  </div>
+                  <FieldVoiceSpeaker scriptKey="step4_overview" className="shrink-0" />
                 </div>
 
-                {/* Storage type tabs */}
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
+                {/* Storage type selection cards with embedded audio headers */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div
                     onClick={() => setStorageType('sintex_tank')}
-                    className={`py-3 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                    className={`relative p-3.5 sm:p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2.5 ${
                       storageType === 'sintex_tank'
-                        ? 'bg-sky-50 dark:bg-[#102A3E] border-sky-500 text-sky-700 dark:text-[#38BDF8] ring-2 ring-sky-500/20'
-                        : 'bg-white dark:bg-[#0D2232] border-slate-200 dark:border-[#16364D] text-slate-600 dark:text-[#94A3B8]'
+                        ? 'bg-sky-50/70 dark:bg-[#102A3E] border-sky-500 ring-2 ring-sky-500/20 shadow-xs'
+                        : 'bg-white dark:bg-[#0D2232] border-slate-200 dark:border-[#16364D] hover:border-sky-400'
                     }`}
                   >
-                    <span className="flex items-center justify-center gap-2">
-                      <Cylinder className="w-4 h-4 shrink-0" />
-                      <span>{t.storageBorewell}</span>
-                    </span>
-                  </button>
-                  <button
-                    type="button"
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="p-2 rounded-lg bg-sky-100/80 dark:bg-sky-950/60 text-sky-600 dark:text-[#38BDF8] shrink-0">
+                        <Cylinder className="w-4 h-4" />
+                      </div>
+                      <FieldVoiceSpeaker scriptKey="storage_sintex_tank" size="sm" className="shrink-0" />
+                    </div>
+
+                    <div>
+                      <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit']">
+                        {t.storageBorewell}
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-[#94A3B8] mt-0.5">
+                        {language === 'bn' ? 'স্ট্যান্ডার্ড পিভিসি / সিনটেক্স ট্যাংক' : language === 'hi' ? 'मानक पीवीसी / सिंटेक्स टैंक' : 'Standard PVC / Sintex Tank'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
                     onClick={() => setStorageType('custom_sump')}
-                    className={`py-3 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                    className={`relative p-3.5 sm:p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2.5 ${
                       storageType === 'custom_sump'
-                        ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-500/20'
-                        : 'bg-white dark:bg-[#0D2232] border-slate-200 dark:border-[#16364D] text-slate-600 dark:text-[#94A3B8]'
+                        ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
+                        : 'bg-white dark:bg-[#0D2232] border-slate-200 dark:border-[#16364D] hover:border-emerald-400'
                     }`}
                   >
-                    <span className="flex items-center justify-center gap-2">
-                      <Waves className="w-4 h-4 shrink-0" />
-                      <span>{t.storagePond}</span>
-                    </span>
-                  </button>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="p-2 rounded-lg bg-emerald-100/80 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 shrink-0">
+                        <Waves className="w-4 h-4" />
+                      </div>
+                      <FieldVoiceSpeaker scriptKey="storage_custom_sump" size="sm" className="shrink-0" />
+                    </div>
+
+                    <div>
+                      <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit']">
+                        {t.storagePond}
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-[#94A3B8] mt-0.5">
+                        {language === 'bn' ? 'কাস্টম আয়তনের জলাধার / পাকা চৌবাচ্চা' : language === 'hi' ? 'कस्टम वॉल्यूम जलाशय / पक्का हौज' : 'Custom Reservoir / Open Sump'}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Overhead tank slider */}
@@ -1155,10 +1253,18 @@ export function RegisterFieldWorkspaceView({ onCancel, onSubmit }: RegisterField
                 )}
 
                 {/* Pump power */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs text-slate-600 dark:text-[#94A3B8]">
-                    <span className="font-semibold">{t.pumpPowerLabel}</span>
-                    <span className="font-bold text-slate-900 dark:text-[#F0F9FF] font-mono">{pumpHp} HP</span>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between gap-2 text-xs text-slate-600 dark:text-[#94A3B8]">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Zap className="w-4 h-4 text-amber-500 shrink-0" />
+                      <span className="font-semibold text-slate-700 dark:text-[#CBD5E1] truncate">
+                        {t.pumpPowerLabel}
+                      </span>
+                      <span className="hidden sm:inline-flex text-[11px] font-mono font-bold text-sky-600 dark:text-[#38BDF8] bg-sky-50 dark:bg-[#071724] px-2 py-0.5 rounded-md border border-sky-200 dark:border-[#16364D] shrink-0">
+                        {pumpHp} HP
+                      </span>
+                    </div>
+                    <FieldVoiceSpeaker scriptKey="pump_hp" size="sm" className="shrink-0" />
                   </div>
                   <div className="grid grid-cols-4 gap-2">
                     {[2, 3, 5, 7.5].map((hp) => (
@@ -1216,6 +1322,63 @@ export function RegisterFieldWorkspaceView({ onCancel, onSubmit }: RegisterField
               )}
             </div>
 
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: Sticky Live Parcel Summary Inspector (4 cols) */}
+        <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-20">
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#0A1C2A] border border-[#E1E8DE] dark:border-[#16364D] shadow-sm space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-[#94A3B8] flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-sky-500" />
+                {t.liveParcelSummary}
+              </span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
+            </h3>
+
+            <div className="space-y-3 text-xs divide-y divide-slate-100 dark:divide-[#16364D]/60">
+              <div className="pt-1 flex items-start justify-between gap-2">
+                <span className="text-slate-500 dark:text-[#94A3B8]">{t.locationStep}:</span>
+                <span className="font-semibold text-slate-900 dark:text-[#F0F9FF] text-right truncate max-w-[180px]">
+                  {district || 'Bardhaman'}, {stateName || 'India'}
+                </span>
+              </div>
+
+              <div className="pt-2 flex items-center justify-between gap-2">
+                <span className="text-slate-500 dark:text-[#94A3B8]">{t.selectedCoordinates}</span>
+                <span className="font-mono text-[11px] text-sky-600 dark:text-[#38BDF8] font-bold">
+                  {lat.toFixed(3)}°, {lon.toFixed(3)}°
+                </span>
+              </div>
+
+              <div className="pt-2 flex items-center justify-between gap-2">
+                <span className="text-slate-500 dark:text-[#94A3B8]">{t.soilStep}:</span>
+                <span className="font-semibold text-slate-900 dark:text-[#F0F9FF]">
+                  {soilTexture === 'loamy' ? t.alluvialName : soilTexture === 'sandy' ? t.sandyLoamName : t.blackClayName}
+                </span>
+              </div>
+
+              <div className="pt-2 flex items-start justify-between gap-2">
+                <span className="text-slate-500 dark:text-[#94A3B8]">{t.cropStep}:</span>
+                <div className="text-right">
+                  <span className="font-bold text-slate-900 dark:text-[#F0F9FF] block">
+                    {plots.map(p => localizeCrop(p.cropName, language)).join(', ')}
+                  </span>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
+                    {totalCalculatedAreaM2.toLocaleString()} m² ({plots.length} {plots.length === 1 ? t.sectionSingular : t.sectionPlural})
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-between gap-2">
+                <span className="text-slate-500 dark:text-[#94A3B8]">{t.reserveStep}:</span>
+                <span className="font-mono font-bold text-slate-900 dark:text-[#F0F9FF]">
+                  {storageType === 'custom_sump'
+                    ? `${calculateSumpVolumeLiters(sumpLength, sumpWidth, sumpDepth).toLocaleString()} L`
+                    : `${tankCapacity.toLocaleString()} L`} • {pumpHp} HP
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 

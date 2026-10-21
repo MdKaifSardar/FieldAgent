@@ -226,7 +226,9 @@ export function ProfileOverviewView({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
             {parcels.map((farm) => {
-              const primaryCrop = farm.plots?.[0]?.cropName || 'Field Crop';
+              const cropsLabel = farm.plots?.length
+                ? Array.from(new Set(farm.plots.map((p) => localizeCrop(p.cropName, language)))).join(' • ')
+                : localizeCrop('Crop', language);
               const isSelected = activeParcel?.id === farm.id;
               const localizedTitle = localizeFieldTitle(farm.farmName, language);
               const localizedLoc = localizeLocation(farm.location?.villageOrPincode, language);
@@ -249,11 +251,6 @@ export function ProfileOverviewView({
                       <span className="font-bold text-sm text-slate-900 dark:text-[#F0F9FF] truncate">
                         {localizedTitle}
                       </span>
-                      {isSelected && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500 text-white">
-                          {t.active}
-                        </span>
-                      )}
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mb-2">
                       <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -262,8 +259,8 @@ export function ProfileOverviewView({
                   </div>
 
                   <div className="pt-2.5 border-t border-slate-200 dark:border-[#16364D] flex items-center justify-between text-xs">
-                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                      {localizeCrop(primaryCrop, language)}
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400 truncate max-w-[180px]">
+                      {cropsLabel}
                     </span>
                     <span className="text-xs font-semibold text-sky-600 dark:text-[#38BDF8] flex items-center gap-0.5">
                       <span>{t.advisory}</span>

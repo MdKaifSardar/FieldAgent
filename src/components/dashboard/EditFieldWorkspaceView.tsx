@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   FarmProfile, 
   CropBlock,
@@ -11,6 +11,12 @@ import {
   normalizeAreaToSqMeters, 
   calculateSumpVolumeLiters 
 } from '../../types/farm';
+import { 
+  geocodeLocationQuery, 
+  getDeviceCoordinates,
+  fetchLocationSuggestions,
+  LocationSuggestion
+} from '../../adapters/geocodingAdapter';
 import { useLanguage } from '../common/LanguageContext';
 import { localizeCrop, localizeFieldTitle } from '../../utils/agriculturalLocalization';
 import { 
@@ -31,7 +37,13 @@ import {
   Waves,
   Calendar,
   Sparkles,
-  ShieldAlert
+  ShieldAlert,
+  Search,
+  Loader2,
+  X,
+  Building2,
+  Hash,
+  Compass
 } from 'lucide-react';
 import { LocationMapPicker } from '../map/LocationMapPicker';
 
@@ -58,6 +70,132 @@ export function EditFieldWorkspaceView({
   const [lon, setLon] = useState(initialFarm.location.longitude);
   const [district, setDistrict] = useState(initialFarm.location.district || '');
   const [stateName, setStateName] = useState(initialFarm.location.state || '');
+
+  const [isLocatingGPS, setIsLocatingGPS] = useState(false);
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const [locationFeedback, setLocationFeedback] = useState<string | null>(null);
+
+  // Instant Search-As-You-Type Autocomplete State
+  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Debounced search-as-you-type (280ms)
+  useEffect(() => {
+    const trimmed = queryLocation.trim();
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      setIsDropdownOpen(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsLoadingSuggestions(true);
+      try {
+        const results = await fetchLocationSuggestions(trimmed, language);
+        setSuggestions(results);
+        setIsDropdownOpen(results.length > 0);
+        setSelectedIndex(-1);
+      } catch (err) {
+        setSuggestions([]);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    }, 280);
+
+    return () => clearTimeout(timer);
+  }, [queryLocation, language]);
+
+  // Click-away listener to dismiss autocomplete dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelectSuggestion = (sug: LocationSuggestion) => {
+    setQueryLocation(sug.displayName);
+    setLat(sug.latitude);
+    setLon(sug.longitude);
+    setDistrict(sug.district || 'Selected Region');
+    setStateName(sug.state || 'India');
+    setIsDropdownOpen(false);
+    setLocationFeedback(sug.displayName);
+  };
+
+  const handleSearchLocation = async () => {
+    if (!queryLocation.trim()) return;
+    setIsSearchingLocation(true);
+    setLocationFeedback(null);
+    try {
+      const res = await geocodeLocationQuery(queryLocation);
+      if (res && res.location) {
+        setLat(res.location.latitude);
+        setLon(res.location.longitude);
+        setDistrict(res.location.district || 'Identified District');
+        setStateName(res.location.state || 'India');
+        setLocationFeedback(res.location.displayName || `${res.location.latitude.toFixed(3)}, ${res.location.longitude.toFixed(3)}`);
+      }
+    } catch (e) {
+      // Keep previous
+    } finally {
+      setIsSearchingLocation(false);
+    }
+  };
+
+  const handleGPSDetect = async () => {
+    setIsLocatingGPS(true);
+    setLocationFeedback(null);
+    try {
+      const coords = await getDeviceCoordinates();
+      setLat(coords.lat);
+      setLon(coords.lon);
+      const res = await geocodeLocationQuery(`${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}`);
+      if (res && res.location) {
+        setQueryLocation(res.location.villageOrPincode || res.location.displayName || '');
+        setDistrict(res.location.district || 'Current Location');
+        setStateName(res.location.state || 'India');
+        setLocationFeedback(`${coords.lat.toFixed(4)}°, ${coords.lon.toFixed(4)}°`);
+      }
+    } catch (err) {
+      // Keep previous coordinates
+    } finally {
+      setIsLocatingGPS(false);
+    }
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isDropdownOpen || suggestions.length === 0) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSearchLocation();
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : suggestions.length - 1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
+        handleSelectSuggestion(suggestions[selectedIndex]);
+      } else {
+        handleSearchLocation();
+      }
+    } else if (e.key === 'Escape') {
+      setIsDropdownOpen(false);
+    }
+  };
 
   const [soilTexture, setSoilTexture] = useState<SoilTexture>(initialFarm.soil.texture);
 
@@ -914,10 +1052,144 @@ export function EditFieldWorkspaceView({
               </p>
             </div>
 
-            <div className="space-y-2">
+            {/* Search bar with instant autocomplete */}
+            <div className="space-y-1.5 relative">
+              <label className="text-xs font-semibold text-slate-600 dark:text-[#94A3B8] uppercase tracking-wider flex items-center justify-between">
+                <span>{t.searchLocationPrompt}</span>
+                {isLoadingSuggestions && (
+                  <span className="text-[10px] text-sky-600 dark:text-[#38BDF8] font-mono flex items-center gap-1 font-normal">
+                    <Loader2 className="w-3 h-3 animate-spin" /> {t.locatingGPS}
+                  </span>
+                )}
+              </label>
+
+              <div className="relative flex items-center">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
+                <input
+                  type="text"
+                  value={queryLocation}
+                  onChange={(e) => setQueryLocation(e.target.value)}
+                  onKeyDown={handleInputKeyDown}
+                  onFocus={() => {
+                    if (suggestions.length > 0) setIsDropdownOpen(true);
+                  }}
+                  placeholder={t.locationSearchPlaceholder}
+                  className="w-full pl-10 pr-24 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0D2232] border border-slate-200 dark:border-[#16364D] text-sm text-slate-900 dark:text-[#F0F9FF] focus:outline-none focus:border-sky-500 placeholder:text-slate-400"
+                />
+
+                <div className="absolute right-2 flex items-center gap-1">
+                  {queryLocation && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQueryLocation('');
+                        setSuggestions([]);
+                        setIsDropdownOpen(false);
+                      }}
+                      className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer"
+                      title={t.clearSearch}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleSearchLocation}
+                    disabled={isSearchingLocation}
+                    className="px-3 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-xs font-bold text-white transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {isSearchingLocation ? '...' : t.findBtn}
+                  </button>
+                </div>
+              </div>
+
+              {/* Autocomplete dropdown popover */}
+              {isDropdownOpen && suggestions.length > 0 && (
+                <div 
+                  ref={dropdownRef}
+                  className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-xl bg-white/95 dark:bg-[#0D2232]/95 backdrop-blur-xl border border-slate-200 dark:border-[#16364D] shadow-2xl overflow-hidden divide-y divide-slate-100 dark:divide-[#16364D]/60 animate-in fade-in"
+                >
+                  <div className="px-3 py-1.5 bg-slate-100 dark:bg-[#112B3E] text-[10px] font-semibold text-slate-500 dark:text-[#94A3B8] flex items-center justify-between uppercase tracking-wider">
+                    <span>{t.indianSuggestions}</span>
+                    <span className="font-mono text-[9px]">{t.tapOrPressEnter}</span>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto">
+                    {suggestions.map((item, idx) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleSelectSuggestion(item)}
+                        className={`w-full min-h-[44px] px-3.5 py-2.5 text-left flex items-center justify-between gap-2.5 transition-colors cursor-pointer ${
+                          selectedIndex === idx
+                            ? 'bg-sky-50 dark:bg-[#102A3E] text-slate-900 dark:text-white'
+                            : 'hover:bg-slate-50 dark:hover:bg-[#112B3E]/60 text-slate-700 dark:text-[#CBD5E1]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-[#16364D] text-sky-600 dark:text-[#38BDF8] shrink-0">
+                            {item.type === 'pincode' ? (
+                              <Hash className="w-3.5 h-3.5 text-amber-500" />
+                            ) : item.type === 'district' ? (
+                              <Building2 className="w-3.5 h-3.5 text-blue-500" />
+                            ) : (
+                              <MapPin className="w-3.5 h-3.5 text-emerald-500" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold truncate">
+                              {item.name}
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-[#94A3B8] truncate">
+                              {[item.district, item.state].filter(Boolean).join(', ')}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span className="text-[10px] font-mono text-sky-600 dark:text-[#38BDF8] font-semibold block">
+                            {item.latitude.toFixed(2)}°, {item.longitude.toFixed(2)}°
+                          </span>
+                          <span className="text-[9px] uppercase font-bold text-slate-400">
+                            {item.type}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-px bg-slate-200 dark:bg-[#16364D]" />
+              <span className="text-[10px] text-slate-400 uppercase font-semibold">{t.orDivider}</span>
+              <div className="flex-1 h-px bg-slate-200 dark:bg-[#16364D]" />
+            </div>
+
+            {/* 1-Tap GPS Button */}
+            <button
+              type="button"
+              onClick={handleGPSDetect}
+              disabled={isLocatingGPS}
+              className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/30 dark:hover:bg-sky-950/50 border border-sky-200 dark:border-sky-800/40 text-sky-700 dark:text-[#38BDF8] text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              <Compass className={`w-4 h-4 ${isLocatingGPS ? 'animate-spin' : ''}`} />
+              <span>{isLocatingGPS ? t.gpsLocating : t.gpsButton}</span>
+            </button>
+
+            {locationFeedback && (
+              <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/30 text-xs text-emerald-800 dark:text-emerald-300 font-medium">
+                {locationFeedback}
+              </div>
+            )}
+
+            <div className="space-y-2 pt-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-slate-600 dark:text-[#94A3B8]">
-                  {t.liveParcelMapLabel}
+                <span className="font-semibold text-slate-600 dark:text-[#94A3B8] flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-sky-600 dark:text-[#38BDF8]" />
+                  <span>{t.liveParcelMapLabel}</span>
                 </span>
                 <span className="font-mono text-sky-600 dark:text-[#38BDF8]">
                   {lat.toFixed(4)}°, {lon.toFixed(4)}°

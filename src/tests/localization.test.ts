@@ -8,6 +8,8 @@ import {
   localizeSourceFeed,
   localizeFieldTitle,
   localizeIrrigationMethod,
+  localizeActionWindow,
+  localizeConfidenceReason,
 } from '../utils/agriculturalLocalization';
 import { resolveDistrict, resolveState } from '../data/indiaGazetteer';
 
@@ -73,5 +75,32 @@ describe('Agricultural Localization Engine', () => {
     expect(localizeStorageType('sintex_tank', 'hi')).toBe('ओवरहेड सिंटेक्स टैंक');
     expect(localizeStorageType('borewell_hours', 'bn', 5)).toBe('5 এইচপি নলকূপ / বোরওয়েল');
     expect(localizeStorageType('borewell_hours', 'hi', 5)).toBe('5 एचपी नलकूप / बोरवेल');
+  });
+
+  it('localizes decision action windows and stress deadlines in Bengali and Hindi', () => {
+    expect(localizeActionWindow('Critical stress deadline in 0 hours', 'bn'))
+      .toBe('সংকটজনক চাপের সময়সীমা: অবিলম্বে (০ ঘণ্টা)');
+    expect(localizeActionWindow('Critical stress deadline in 0 hours', 'hi'))
+      .toBe('गंभीर तनाव: तत्काल (0 घंटे)');
+    expect(localizeActionWindow('Critical stress deadline in 4 hours', 'bn'))
+      .toBe('4 ঘণ্টার মধ্যে সংকটজনক চাপের সময়সীমা');
+    expect(localizeActionWindow('Critical stress deadline in 4 hours', 'hi'))
+      .toBe('4 घंटे में गंभीर तनाव की समयसीमा');
+    expect(localizeActionWindow('Reassess within 24–36 hours post-rainfall', 'bn'))
+      .toBe('বৃষ্টির পর ২৪–৩৬ ঘণ্টার মধ্যে পুনরায় পর্যালোচনা');
+  });
+
+  it('localizes engine confidence reasoning and deficit traces in Bengali and Hindi', () => {
+    const deficitReason = 'Available tank/reserve volume is insufficient to meet full root-zone recharge.';
+    expect(localizeConfidenceReason(deficitReason, 'bn'))
+      .toBe('মজুত জল/ট্যাঙ্কের ধারণক্ষমতা ফসলের মূল অঞ্চলের সম্পূর্ণ চাহিদা মেটাতে অপ্রতুল।');
+    expect(localizeConfidenceReason(deficitReason, 'hi'))
+      .toBe('उपलब्ध जल भंडार/टैंक जड़ क्षेत्र की पूरी आवश्यकता पूरी करने के लिए अपर्याप्त है।');
+
+    const rainReason = 'Rain forecast is 80% probable (12 mm expected).';
+    expect(localizeConfidenceReason(rainReason, 'bn'))
+      .toBe('বৃষ্টির পূর্বাভাস: 80% সম্ভাবনা (12 মিমি প্রত্যাশিত)।');
+    expect(localizeConfidenceReason(rainReason, 'hi'))
+      .toBe('बारिश का पूर्वानुमान: 80% संभावना (12 मिमी अपेक्षित)।');
   });
 });

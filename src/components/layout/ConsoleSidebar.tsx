@@ -69,8 +69,8 @@ export function ConsoleSidebar({
           {!isCollapsed ? (
             <div className="flex items-center justify-between w-full min-w-0">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-500 to-emerald-500 flex items-center justify-center text-white shadow-xs shrink-0">
-                  <Sprout className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 shadow-xs border border-emerald-500/30 bg-white dark:bg-[#071724] p-0.5">
+                  <img src="/icon.png" alt="FieldGuard" className="w-full h-full object-contain" />
                 </div>
                 <div className="truncate">
                   <span className="font-bold text-sm tracking-tight text-slate-900 dark:text-[#F0F9FF] block leading-tight font-['Outfit'] truncate">
@@ -95,10 +95,10 @@ export function ConsoleSidebar({
             <button
               type="button"
               onClick={() => setIsCollapsed(false)}
-              className="w-10 h-10 mx-auto rounded-lg bg-gradient-to-tr from-sky-500 to-emerald-500 flex items-center justify-center text-white shadow-xs hover:opacity-90 transition-opacity cursor-pointer shrink-0"
+              className="w-10 h-10 mx-auto rounded-lg overflow-hidden flex items-center justify-center shadow-xs border border-emerald-500/30 bg-white dark:bg-[#071724] hover:opacity-90 transition-opacity cursor-pointer shrink-0 p-1"
               title="Expand Sidebar"
             >
-              <Sprout className="w-5 h-5" />
+              <img src="/icon.png" alt="FieldGuard" className="w-full h-full object-contain" />
             </button>
           )}
         </div>

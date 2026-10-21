@@ -122,11 +122,23 @@ export function FieldAdvisoryView({
     );
   }
 
-  // Calculate primary crop & plot area for header metadata
-  const primaryPlot = currentFarm.plots?.[0];
-  const totalPlotsAreaM2 = currentFarm.plots?.reduce((sum, p) => sum + (p.area_sq_meters || 0), 0) || 0;
+  // Calculate plot areas & crop breakdown for header metadata
+  const plots = currentFarm.plots || [];
+  const totalPlotsAreaM2 = plots.reduce((sum, p) => sum + (p.area_sq_meters || 0), 0);
   const totalBigha = (totalPlotsAreaM2 / 1338.0).toFixed(1);
   const totalAcres = (totalPlotsAreaM2 / 4046.86).toFixed(1);
+
+  let cropsSubtitle: string;
+  if (plots.length === 0) {
+    cropsSubtitle = `${totalBigha} ${t.unitBigha}`;
+  } else if (plots.length === 1) {
+    cropsSubtitle = `${localizeCrop(plots[0].cropName, language)} (${totalBigha} ${t.unitBigha} / ${totalAcres} ${t.unitAcre})`;
+  } else {
+    const plotBreakdown = plots
+      .map((p) => `${localizeCrop(p.cropName, language)} (${p.areaValue} ${p.areaUnit === 'bigha' ? t.unitBigha : p.areaUnit === 'acre' ? t.unitAcre : p.areaUnit})`)
+      .join(' • ');
+    cropsSubtitle = `${plotBreakdown} • ${t.totalFarmArea}: ${totalBigha} ${t.unitBigha} (${totalAcres} ${t.unitAcre})`;
+  }
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
@@ -149,11 +161,7 @@ export function FieldAdvisoryView({
                   <span className="truncate">{localizeLocation(currentFarm.location.displayName || currentFarm.location.villageOrPincode, language)}</span>
                 </span>
                 <span className="text-slate-300 dark:text-[#1E4765]">•</span>
-                <span>
-                  {primaryPlot 
-                    ? `${localizeCrop(primaryPlot.cropName, language)} (${totalBigha} ${t.unitBigha} / ${totalAcres} ${t.unitAcre})` 
-                    : `${totalBigha} ${t.unitBigha}`}
-                </span>
+                <span>{cropsSubtitle}</span>
               </div>
             </div>
           </div>

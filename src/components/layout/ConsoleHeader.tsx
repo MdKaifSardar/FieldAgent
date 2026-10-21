@@ -59,8 +59,8 @@ export function ConsoleHeader({
 
         {/* Mobile Minimal Brand Header */}
         <div className="md:hidden flex items-center gap-2 min-w-0">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-sky-500 to-emerald-500 flex items-center justify-center text-white shrink-0 shadow-xs">
-            <Sprout className="w-4 h-4" />
+          <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center shrink-0 shadow-xs border border-emerald-500/30 bg-white dark:bg-[#071724] p-0.5">
+            <img src="/icon.png" alt="FieldGuard" className="w-full h-full object-contain" />
           </div>
           <span className="font-bold text-sm text-slate-900 dark:text-[#F0F9FF] truncate font-['Outfit']">
             {currentView === 'profile' 

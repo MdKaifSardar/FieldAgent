@@ -87,14 +87,17 @@ export class SpeechAdapter {
     const prefixMatch = allVoices.find(v => v.lang.toLowerCase().startsWith(targetPrefix));
     if (prefixMatch) return { voice: prefixMatch, isExactMatch: true };
 
-    // 3. Fallback to English
+    // 3. Fallback: For Bengali, do NOT fallback to an English voice (prevents character decoding errors)
+    if (lang === 'bn') {
+      return { voice: null, isExactMatch: false };
+    }
     const englishVoice = allVoices.find(v => v.lang.toLowerCase().startsWith('en')) || allVoices[0];
     return { voice: englishVoice || null, isExactMatch: false };
   }
 
   /**
-   * Speaks the text aloud using Amazon Polly (for Hindi & English) with automatic Web Speech fallback.
-   * Bengali ('bn') is routed directly to Web Speech API as Amazon Polly has no native Bengali voice.
+   * Speaks the text aloud using high-fidelity Cloud Neural TTS (Polly / Google AI)
+   * with automatic device-native Web Speech fallback and in-memory Blob caching.
    */
   public speak(
     text: string,
@@ -109,12 +112,7 @@ export class SpeechAdapter {
       return { hasNativeVoice: false };
     }
 
-    // Route Bengali directly to browser Web Speech API for authentic Bengali phonetics
-    if (lang === 'bn') {
-      return this.speakWebSpeech(text, lang, callbacks);
-    }
-
-    // For Hindi and English, attempt high-fidelity Amazon Polly first
+    // Check in-memory audio cache for instant replay & zero network usage
     const cacheKey = `${lang}:${text.trim()}`;
     const cachedBlob = this.audioCache.get(cacheKey);
 
@@ -126,7 +124,7 @@ export class SpeechAdapter {
       return { hasNativeVoice: true };
     }
 
-    // Fetch from Amazon Polly route asynchronously
+    // Fetch from Cloud TTS route asynchronously
     this.activeAbortController = new AbortController();
     const abortSignal = this.activeAbortController.signal;
 
@@ -313,6 +311,39 @@ export class SpeechAdapter {
       this.currentObjectUrl = null;
     }
     this.isAudioPlaying = false;
+    this.isPausedState = false;
+  }
+
+  private isPausedState: boolean = false;
+
+  /**
+   * Pauses current playback (Polly audio or Web Speech synthesis).
+   */
+  public pause() {
+    if (this.currentAudio && this.isAudioPlaying) {
+      this.currentAudio.pause();
+      this.isPausedState = true;
+    } else if (this.synth && this.synth.speaking && !this.synth.paused) {
+      this.synth.pause();
+      this.isPausedState = true;
+    }
+  }
+
+  /**
+   * Resumes paused playback (Polly audio or Web Speech synthesis).
+   */
+  public resume() {
+    if (this.currentAudio && this.isPausedState) {
+      this.currentAudio.play().catch((e) => console.warn('Audio resume error:', e));
+      this.isPausedState = false;
+    } else if (this.synth && this.synth.paused) {
+      this.synth.resume();
+      this.isPausedState = false;
+    }
+  }
+
+  public isPaused(): boolean {
+    return this.isPausedState;
   }
 
   /**
@@ -320,6 +351,7 @@ export class SpeechAdapter {
    */
   public stop() {
     this.cleanupCurrentAudio();
+    this.isPausedState = false;
 
     if (this.synth) {
       try {

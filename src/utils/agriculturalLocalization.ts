@@ -229,6 +229,33 @@ export function localizeActionWindow(window: string | undefined | null, lang: Su
   if (!window) return '';
   if (lang === 'en') return window;
 
+  // 1. Critical stress deadline template: "Critical stress deadline in 0 hours"
+  const stressMatch = window.match(/Critical stress deadline in (\d+) hours?/i);
+  if (stressMatch) {
+    const hours = parseInt(stressMatch[1], 10);
+    if (lang === 'bn') {
+      return hours === 0
+        ? 'সংকটজনক চাপের সময়সীমা: অবিলম্বে (০ ঘণ্টা)'
+        : `${hours} ঘণ্টার মধ্যে সংকটজনক চাপের সময়সীমা`;
+    }
+    if (lang === 'hi') {
+      return hours === 0
+        ? 'गंभीर तनाव: तत्काल (0 घंटे)'
+        : `${hours} घंटे में गंभीर तनाव की समयसीमा`;
+    }
+  }
+
+  // 2. Post-rainfall reassessment: "Reassess within 24–36 hours post-rainfall"
+  if (window.includes('post-rainfall') || window.includes('post-rain')) {
+    return lang === 'hi' ? 'बारिश के बाद 24–36 घंटे में पुनः जांचें' : 'বৃষ্টির পর ২৪–৩৬ ঘণ্টার মধ্যে পুনরায় পর্যালোচনা';
+  }
+
+  // 3. Application window: "Apply within 12–24 hours"
+  if (window.includes('Apply within') || window.includes('12–24') || window.includes('12-24')) {
+    return lang === 'hi' ? '12–24 घंटे के भीतर सिंचाई करें' : '১২–২৪ ঘণ্টার মধ্যে সেচ প্রয়োগ করুন';
+  }
+
+  // 4. Safe buffer: "Safe for the next 48 hours"
   if (window.includes('48 hours') || window.includes('48h')) {
     return lang === 'hi' ? 'अगले 48 घंटों तक सुरक्षित' : 'পরবর্তী ৪৮ ঘণ্টার জন্য নিরাপদ';
   }
@@ -241,7 +268,50 @@ export function localizeActionWindow(window: string | undefined | null, lang: Su
   if (window.includes('Morning') || window.includes('morning')) {
     return lang === 'hi' ? 'सुबह के समय अनुकूल' : 'সকালের অনুকূল সময়';
   }
+
   return window;
+}
+
+// 9b. AGRONOMIC CONFIDENCE REASON
+export function localizeConfidenceReason(
+  reason: string | undefined | null,
+  lang: SupportedLanguage
+): string {
+  if (!reason) return '';
+  if (lang === 'en') return reason;
+
+  // 1. Available reserve shortfall
+  if (reason.includes('Available tank/reserve volume is insufficient')) {
+    return lang === 'hi'
+      ? 'उपलब्ध जल भंडार/टैंक जड़ क्षेत्र की पूरी आवश्यकता पूरी करने के लिए अपर्याप्त है।'
+      : 'মজুত জল/ট্যাঙ্কের ধারণক্ষমতা ফসলের মূল অঞ্চলের সম্পূর্ণ চাহিদা মেটাতে অপ্রতুল।';
+  }
+
+  // 2. Incoming rain forecast (regex parameterized)
+  const rainMatch = reason.match(/Rain forecast is (\d+)% probable \((\d+(?:\.\d+)?) mm expected\)\.?/i);
+  if (rainMatch) {
+    const prob = rainMatch[1];
+    const mm = rainMatch[2];
+    return lang === 'hi'
+      ? `बारिश का पूर्वानुमान: ${prob}% संभावना (${mm} मिमी अपेक्षित)।`
+      : `বৃষ্টির পূর্বাভাস: ${prob}% সম্ভাবনা (${mm} মিমি প্রত্যাশিত)।`;
+  }
+
+  // 3. Root-zone depletion approaching RAW threshold
+  if (reason.includes('Root-zone depletion has reached') || reason.includes('rapidly approaching')) {
+    return lang === 'hi'
+      ? 'जड़ क्षेत्र में नमी की कमी फसल के तनाव स्तर तक पहुंच चुकी है या तेजी से पहुंच रही है।'
+      : 'শিকড় অঞ্চলের আর্দ্রতা হ্রাস ফসলের চরম সংকট সীমায় পৌঁছেছে বা দ্রুত পৌঁছাচ্ছে।';
+  }
+
+  // 4. Safe moisture buffer
+  if (reason.includes('adequate moisture buffer above critical stress')) {
+    return lang === 'hi'
+      ? 'सभी फसल भूखंडों में गंभीर तनाव स्तर से ऊपर पर्याप्त नमी का बफर है।'
+      : 'সকল প্লটেই সংকটজনক স্তরের চেয়ে পর্যাপ্ত আর্দ্রতা সংরক্ষিত আছে।';
+  }
+
+  return reason;
 }
 
 // 10. WEEKDAY LOCALIZATION

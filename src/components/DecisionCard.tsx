@@ -8,7 +8,8 @@ import {
   localizeCrop, 
   localizeIrrigationMethod, 
   localizeConfidence, 
-  localizeActionWindow 
+  localizeActionWindow,
+  localizeConfidenceReason
 } from '../utils/agriculturalLocalization';
 import { CloudRain, AlertOctagon, CheckCircle2, Clock, ShieldCheck, Database } from 'lucide-react';
 
@@ -65,7 +66,10 @@ export function DecisionCard({ decision }: DecisionCardProps) {
         variant: 'water' as const,
       };
 
-  const primaryPlot = decision.plots[0];
+  const plots = decision.plots || [];
+  const allCropsFormatted = plots.length > 0
+    ? Array.from(new Set(plots.map(p => localizeCrop(p.cropName, language)))).join(' & ')
+    : localizeCrop('Crop', language);
 
   return (
     <div className={`h-full flex flex-col justify-between p-4 sm:p-5 rounded-xl border ${badgeConfig.borderColor} ${badgeConfig.bgColor} ${badgeConfig.shadowGlow} transition-all`}>
@@ -109,7 +113,7 @@ export function DecisionCard({ decision }: DecisionCardProps) {
         <div className="pt-0.5 mb-3.5">
           <AudioAdvisoryButton 
             advisoryText={decision.advisoryText} 
-            cropName={localizeCrop(primaryPlot?.cropName, language)} 
+            cropName={allCropsFormatted} 
             variant={badgeConfig.variant}
           />
         </div>
@@ -118,12 +122,14 @@ export function DecisionCard({ decision }: DecisionCardProps) {
       {/* Agronomic Technical Trace */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-[#94A3B8] pt-3 border-t border-[#E1E8DE] dark:border-[#16364D] mt-auto">
         <div className="flex items-center gap-2">
-          <span>{t.reasoning}: {decision.confidenceReason}</span>
+          <span>{t.reasoning}: {localizeConfidenceReason(decision.confidenceReason, language)}</span>
         </div>
         <div className="flex items-center gap-3">
-          {primaryPlot && (
+          {plots.length > 0 && (
             <span className="text-sky-600 dark:text-[#38BDF8] font-mono">
-              {t.method}: {localizeIrrigationMethod(primaryPlot.irrigationMethod, language)} (Eff: {Math.round((primaryPlot.irrigationEfficiency || 0.75) * 100)}%)
+              {t.method}: {Array.from(new Set(plots.map(p => 
+                `${localizeIrrigationMethod(p.irrigationMethod, language)} (Eff: ${Math.round((p.irrigationEfficiency || 0.75) * 100)}%)`
+              ))).join(', ')}
             </span>
           )}
           <span className="flex items-center gap-1 text-slate-400 dark:text-slate-400 font-mono text-[11px]">

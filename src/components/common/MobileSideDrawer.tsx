@@ -70,8 +70,8 @@ export function MobileSideDrawer({
           {/* Top Bar with Brand & Close Button */}
           <div className="flex items-center justify-between pb-4 border-b border-[#E1E8DE] dark:border-[#1F2D24]">
             <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-xl bg-[#16A34A] text-white flex items-center justify-center shadow-xs shrink-0">
-                <Sprout className="h-5 w-5" />
+              <div className="h-9 w-9 rounded-xl overflow-hidden flex items-center justify-center shrink-0 shadow-xs border border-emerald-500/30 bg-white dark:bg-[#071724] p-0.5">
+                <img src="/icon.png" alt="FieldGuard" className="w-full h-full object-contain" />
               </div>
               <div>
                 <span className="text-lg font-bold tracking-tight text-[#121C15] dark:text-[#F0F4F1] font-['Outfit'] block">

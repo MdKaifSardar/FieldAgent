@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useLanguage } from '../common/LanguageContext';
 import { FarmProfile, StorageTier } from '../../types/farm';
+import { IndiaFleetOverviewMap } from './IndiaFleetOverviewMap';
 import { 
   localizeCrop, 
   localizeSoil, 
@@ -62,10 +63,17 @@ export function FieldsDirectoryView({
 
   // Filter parcels
   const filteredParcels = parcels.filter((farm) => {
+    const searchLower = searchQuery.trim().toLowerCase();
     const matchesSearch = 
-      farm.farmName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      farm.location?.villageOrPincode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      farm.plots?.some((p) => p.cropName.toLowerCase().includes(searchQuery.toLowerCase()));
+      !searchLower ||
+      farm.farmName.toLowerCase().includes(searchLower) ||
+      localizeFieldTitle(farm.farmName, language).toLowerCase().includes(searchLower) ||
+      farm.location?.villageOrPincode?.toLowerCase().includes(searchLower) ||
+      localizeLocation(farm.location?.villageOrPincode, language).toLowerCase().includes(searchLower) ||
+      farm.plots?.some((p) => 
+        p.cropName.toLowerCase().includes(searchLower) ||
+        localizeCrop(p.cropName, language).toLowerCase().includes(searchLower)
+      );
 
     const matchesStorage = 
       filterStorage === 'all' || 
@@ -86,27 +94,80 @@ export function FieldsDirectoryView({
     }
   };
 
+  const totalAggregateAreaM2 = useMemo(() => {
+    return parcels.reduce((acc, farm) => {
+      const farmPlotsArea = (farm.plots || []).reduce((pAcc, plot) => {
+        return pAcc + (plot.area_sq_meters || (plot.areaValue ? plot.areaValue * 1338 : 0));
+      }, 0);
+      return acc + farmPlotsArea;
+    }, 0);
+  }, [parcels]);
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* 1. Header & Search Control Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl bg-white dark:bg-[#0D2232] border border-[#E1E8DE] dark:border-[#16364D] shadow-xs">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit']">
-            {t.myFieldsDirectory}
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            {t.fieldsDirectorySubtitle}
-          </p>
-        </div>
+      {/* 1. Header & Pan-India Command Fleet Map */}
+      <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#0D2232] border border-[#E1E8DE] dark:border-[#16364D] shadow-xs">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          {/* Left Column: Title, Subtitle, Stats, and Action Button */}
+          <div className="lg:col-span-7 xl:col-span-8 space-y-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-mono">
+                  {language === 'bn' ? 'জাতীয় কৃষি বহর' : language === 'hi' ? 'अखिल भारतीय खेत बेड़ा' : 'National Agricultural Fleet'}
+                </span>
+              </div>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit'] mt-1">
+                {t.myFieldsDirectory}
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-[#94A3B8] mt-1 max-w-xl leading-relaxed">
+                {t.fieldsDirectorySubtitle}
+              </p>
+            </div>
 
-        <button
-          type="button"
-          onClick={onOpenNewParcelWizard}
-          className="px-4 py-2.5 rounded-lg font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{t.registerNewField}</span>
-        </button>
+            {/* Quick Stat Badges */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <span className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-[#0A1C2A] border border-slate-200 dark:border-[#16364D] text-xs font-semibold text-slate-700 dark:text-[#CBD5E1] flex items-center gap-1.5 font-mono">
+                <Layers className="w-3.5 h-3.5 text-sky-500" />
+                <span>{parcels.length} {language === 'bn' ? 'টি জমি' : language === 'hi' ? 'खेत' : 'Parcels'}</span>
+              </span>
+
+              <span className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-[#0A1C2A] border border-slate-200 dark:border-[#16364D] text-xs font-semibold text-slate-700 dark:text-[#CBD5E1] flex items-center gap-1.5 font-mono">
+                <Sprout className="w-3.5 h-3.5 text-emerald-500" />
+                <span>
+                  {Math.round((totalAggregateAreaM2 / 1338) * 10) / 10} {t.unitBigha} ({Math.round((totalAggregateAreaM2 / 4047) * 10) / 10} {t.unitAcre})
+                </span>
+              </span>
+
+              <span className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-xs font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5 font-mono">
+                <Zap className="w-3.5 h-3.5 text-emerald-500" />
+                <span>{language === 'bn' ? '১০০% সেন্সর সক্রিয়' : language === 'hi' ? '100% सेंसर सक्रिय' : 'Live Telemetry Active'}</span>
+              </span>
+            </div>
+
+            {/* Primary Action Button */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={onOpenNewParcelWizard}
+                className="px-5 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t.registerNewField}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Right Column: Interactive Pan-India Map Radar */}
+          <div className="lg:col-span-5 xl:col-span-4">
+            <IndiaFleetOverviewMap
+              parcels={parcels}
+              activeParcelId={activeParcelId}
+              onSelectParcel={onSelectParcel}
+              onNavigateToAdvisory={handleOpenAdvisory}
+            />
+          </div>
+        </div>
       </div>
 
       {/* 2. Search & Storage Filter Tabs */}
@@ -177,12 +238,15 @@ export function FieldsDirectoryView({
         {filteredParcels.map((farm) => {
           const isSelected = activeParcelId === farm.id;
           const storageInfo = getStorageBadge(farm.reserve?.storageType || 'sintex_tank');
-          const primaryPlot = farm.plots?.[0];
           const capacity = farm.reserve?.totalCapacity_liters || 0;
           const available = farm.reserve?.currentAvailable_liters || 0;
           const percent = capacity > 0 ? Math.min(100, Math.round((available / capacity) * 100)) : 0;
           const localizedTitle = localizeFieldTitle(farm.farmName, language);
           const localizedLoc = localizeLocation(farm.location?.villageOrPincode, language);
+
+          const totalFarmAreaM2 = farm.plots?.reduce((sum, p) => sum + (p.area_sq_meters || 0), 0) || 0;
+          const totalBigha = (totalFarmAreaM2 / 1338.0).toFixed(1);
+          const totalAcres = (totalFarmAreaM2 / 4046.86).toFixed(1);
 
           return (
             <div
@@ -201,11 +265,6 @@ export function FieldsDirectoryView({
                       <h2 className="font-bold text-base text-slate-900 dark:text-[#F0F9FF] truncate font-['Outfit']">
                         {localizedTitle}
                       </h2>
-                      {isSelected && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800">
-                          {t.active}
-                        </span>
-                      )}
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-1">
                       <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -238,14 +297,19 @@ export function FieldsDirectoryView({
                   </div>
                 </div>
 
-                {/* Crop & Soil tags */}
+                {/* Crop & Soil tags (Approach A: Every plot receives an equal badge) */}
                 <div className="flex flex-wrap gap-1.5 my-3">
-                  {primaryPlot && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-200 dark:border-emerald-800/40">
+                  {farm.plots?.map((plot) => (
+                    <span
+                      key={plot.id}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-200 dark:border-emerald-800/40"
+                    >
                       <Sprout className="w-3.5 h-3.5" />
-                      {localizeCrop(primaryPlot.cropName, language)} ({primaryPlot.areaValue} {primaryPlot.areaUnit === 'bigha' ? t.unitBigha : primaryPlot.areaUnit === 'acre' ? t.unitAcre : primaryPlot.areaUnit})
+                      <span>
+                        {localizeCrop(plot.cropName, language)} ({plot.areaValue} {plot.areaUnit === 'bigha' ? t.unitBigha : plot.areaUnit === 'acre' ? t.unitAcre : plot.areaUnit}) • {localizeGrowthStage(plot.growthStage, language)}
+                      </span>
                     </span>
-                  )}
+                  ))}
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-[#0A1C2A] text-slate-600 dark:text-slate-300 font-medium text-xs">
                     {localizeSoil(farm.soil?.texture, language)}
                   </span>
@@ -276,7 +340,7 @@ export function FieldsDirectoryView({
               {/* Bottom Card Launch Action */}
               <div className="pt-3 border-t border-slate-100 dark:border-[#16364D] flex items-center justify-between">
                 <span className="text-[11px] text-slate-400 font-medium">
-                  {farm.plots?.length || 1} {farm.plots?.length === 1 ? t.plotCountSingular : t.plotCountPlural} • {localizeGrowthStage(primaryPlot?.growthStage, language)}
+                  {farm.plots?.length || 1} {farm.plots?.length === 1 ? t.plotCountSingular : t.plotCountPlural} • {t.totalFarmArea}: {totalBigha} {t.unitBigha} ({totalAcres} {t.unitAcre})
                 </span>
                 <button
                   type="button"
