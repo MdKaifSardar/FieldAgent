@@ -8,9 +8,8 @@ import {
   localizeSourceFeed,
   localizeFieldTitle,
   localizeIrrigationMethod,
-  localizeConfidence,
-  localizeActionWindow,
 } from '../utils/agriculturalLocalization';
+import { resolveDistrict, resolveState } from '../data/indiaGazetteer';
 
 describe('Agricultural Localization Engine', () => {
   it('localizes telemetry feed names in Bengali and Hindi', () => {
@@ -20,7 +19,7 @@ describe('Agricultural Localization Engine', () => {
     expect(localizeSourceFeed('Penman-Monteith Solar', 'hi')).toBe('पेनमैन-मोंटेथ सौर मॉडल');
   });
 
-  it('localizes Indian state and district geographic entities', () => {
+  it('localizes Indian state and district geographic entities via India Gazetteer', () => {
     const loc1 = 'Raina - I, Purba Bardhaman, West Bengal';
     expect(localizeLocation(loc1, 'bn')).toBe('Raina - I, পূর্ব বর্ধমান, পশ্চিমবঙ্গ');
     expect(localizeLocation(loc1, 'hi')).toBe('Raina - I, पूर्व बर्धमान, पश्चिम बंगाल');
@@ -30,14 +29,37 @@ describe('Agricultural Localization Engine', () => {
     expect(localizeLocation(loc2, 'hi')).toBe('Kumrokhali, दक्षिण २४ परगना, पश्चिम बंगाल');
   });
 
+  it('resolves legacy and colonial district aliases (Burdwan -> Purba Bardhaman)', () => {
+    expect(resolveDistrict('Burdwan', 'bn')).toBe('পূর্ব বর্ধমান');
+    expect(resolveDistrict('Burdwan', 'hi')).toBe('पूर्व बर्धमान');
+    expect(resolveDistrict('Midnapore', 'bn')).toBe('মেদিনীপুর');
+    expect(resolveDistrict('Baroda', 'bn')).toBe('ভদোদরা');
+
+    const aliasLoc = 'Village Center, Burdwan, West Bengal';
+    expect(localizeLocation(aliasLoc, 'bn')).toBe('গ্রাম Center, পূর্ব বর্ধমান, পশ্চিমবঙ্গ');
+  });
+
+  it('resolves agricultural districts across all Indian regions', () => {
+    expect(resolveDistrict('Alipurduar', 'bn')).toBe('আলিপুরদুয়ার');
+    expect(resolveDistrict('Muzaffarpur', 'bn')).toBe('মুজাফফরপুর');
+    expect(resolveDistrict('Nagpur', 'bn')).toBe('নাগপুর');
+    expect(resolveDistrict('Kurnool', 'bn')).toBe('কুরনুল');
+
+    expect(resolveState('Maharashtra', 'bn')).toBe('মহারাষ্ট্র');
+    expect(resolveState('Punjab', 'hi')).toBe('पंजाब');
+  });
+
   it('localizes default parcel titles with crops and districts', () => {
     expect(localizeFieldTitle('Wheat Field (Local Parcel)', 'bn')).toBe('গম জমি (স্থানীয় পার্সেল)');
     expect(localizeFieldTitle('Wheat Field (Local Parcel)', 'hi')).toBe('गेहूं खेत (स्थानीय खेत)');
+    expect(localizeFieldTitle('Tomato Field (Purba Bardhaman)', 'bn')).toBe('টমেটো জমি (পূর্ব বর্ধমান)');
   });
 
   it('localizes agronomic crops, soil textures, and growth stages', () => {
     expect(localizeCrop('Wheat', 'bn')).toBe('গম');
     expect(localizeCrop('Wheat', 'hi')).toBe('गेहूं');
+    expect(localizeCrop('Tomato', 'bn')).toBe('টমেটো');
+    expect(localizeCrop('Mustard', 'hi')).toBe('सरसों');
     expect(localizeSoil('loamy', 'bn')).toBe('দোআঁশ মাটি');
     expect(localizeSoil('loamy', 'hi')).toBe('दोमट मिट्टी');
     expect(localizeGrowthStage('mid_season', 'bn')).toBe('ফসলের মধ্যবর্তী পর্যায়');

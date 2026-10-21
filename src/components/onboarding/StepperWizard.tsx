@@ -19,6 +19,7 @@ import {
   LocationSuggestion
 } from '../../adapters/geocodingAdapter';
 import { useLanguage } from '../common/LanguageContext';
+import { localizeCrop } from '../../utils/agriculturalLocalization';
 import { 
   MapPin, 
   Sprout, 
@@ -50,7 +51,7 @@ interface StepperWizardProps {
 }
 
 export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: StepperWizardProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
@@ -85,7 +86,7 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
     const timer = setTimeout(async () => {
       setIsLoadingSuggestions(true);
       try {
-        const results = await fetchLocationSuggestions(trimmed);
+        const results = await fetchLocationSuggestions(trimmed, language);
         setSuggestions(results);
         setIsDropdownOpen(results.length > 0);
         setSelectedIndex(-1);
@@ -97,7 +98,7 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
     }, 280);
 
     return () => clearTimeout(timer);
-  }, [queryLocation]);
+  }, [queryLocation, language]);
 
   // Click-away listener to dismiss autocomplete dropdown
   useEffect(() => {
@@ -830,14 +831,14 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                       </label>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                         {[
-                          { id: 'Spinach', label: t.cropSpinach },
-                          { id: 'Wheat', label: t.cropWheat },
-                          { id: 'Paddy', label: t.cropPaddy },
-                          { id: 'Potato', label: t.cropPotato },
-                          { id: 'Tomato', label: 'Tomato' },
-                          { id: 'Mustard', label: 'Mustard' },
-                          { id: 'Onion', label: 'Onion' },
-                          { id: 'Chilli', label: 'Chilli' },
+                          { id: 'Spinach', label: localizeCrop('Spinach', language) },
+                          { id: 'Wheat', label: localizeCrop('Wheat', language) },
+                          { id: 'Paddy', label: localizeCrop('Paddy', language) },
+                          { id: 'Potato', label: localizeCrop('Potato', language) },
+                          { id: 'Tomato', label: localizeCrop('Tomato', language) },
+                          { id: 'Mustard', label: localizeCrop('Mustard', language) },
+                          { id: 'Onion', label: localizeCrop('Onion', language) },
+                          { id: 'Chilli', label: localizeCrop('Chilli', language) },
                         ].map((c) => (
                           <button
                             key={c.id}

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Layers, Crosshair, Loader2, Globe } from 'lucide-react';
+import { useLanguage } from '../common/LanguageContext';
 import { getDeviceCoordinates, reverseGeocodeCoordinates } from '../../adapters/geocodingAdapter';
 
 interface LocationMapPickerProps {
@@ -24,6 +25,7 @@ export function LocationMapPicker({
   locationName,
   zoom = 14,
 }: LocationMapPickerProps) {
+  const { language } = useLanguage();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
@@ -56,7 +58,7 @@ export function LocationMapPicker({
       if (onChangeLocation) {
         setIsReverseGeocoding(true);
         try {
-          const resolvedName = await reverseGeocodeCoordinates(roundedLat, roundedLon);
+          const resolvedName = await reverseGeocodeCoordinates(roundedLat, roundedLon, language);
           onChangeLocation(roundedLat, roundedLon, resolvedName);
         } catch {
           onChangeLocation(roundedLat, roundedLon);
@@ -65,7 +67,7 @@ export function LocationMapPicker({
         }
       }
     },
-    [onChangeLocation]
+    [onChangeLocation, language]
   );
 
   // Initialize Leaflet Map

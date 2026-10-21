@@ -1,5 +1,7 @@
 import { GeocodedLocation } from '../types/farm';
 import { AppError } from '../types/errors';
+import { SupportedLanguage } from './speechAdapter';
+import { resolveDistrict, resolveState } from '../data/indiaGazetteer';
 
 /**
  * Curated offline fallback database of prominent Indian agricultural clusters.
@@ -93,7 +95,7 @@ export interface GeocodingResponse {
 /**
  * Real-time debounced location suggestion search for Indian villages, tehsils, and PIN codes.
  */
-export async function fetchLocationSuggestions(query: string): Promise<LocationSuggestion[]> {
+export async function fetchLocationSuggestions(query: string, lang: SupportedLanguage = 'en'): Promise<LocationSuggestion[]> {
   const cleanQuery = query.trim();
   if (cleanQuery.length < 2) return [];
 
@@ -107,12 +109,15 @@ export async function fetchLocationSuggestions(query: string): Promise<LocationS
       const coordKey = `${center.latitude.toFixed(3)},${center.longitude.toFixed(3)}`;
       if (!seenCoords.has(coordKey)) {
         seenCoords.add(coordKey);
+        const locDist = resolveDistrict(center.district, lang) || center.district || '';
+        const locState = resolveState(center.state, lang) || center.state || 'India';
+        const parts = [center.villageOrPincode.split(',')[0], locDist, locState].filter(Boolean);
         suggestions.push({
           id: `fallback-${key}`,
           name: center.villageOrPincode.split(',')[0],
-          displayName: center.displayName || center.villageOrPincode,
-          district: center.district || '',
-          state: center.state || 'India',
+          displayName: parts.join(', '),
+          district: locDist,
+          state: locState,
           latitude: center.latitude,
           longitude: center.longitude,
           type: /^\d+$/.test(key) ? 'pincode' : 'district',
@@ -121,12 +126,12 @@ export async function fetchLocationSuggestions(query: string): Promise<LocationS
     }
   }
 
-  // 2. Query OSM Nominatim locked to India (countrycodes=in)
+  // 2. Query OSM Nominatim locked to India (countrycodes=in) with active language
   try {
     const isPincode = /^\d{3,6}$/.test(cleanQuery);
     const endpoint = isPincode
-      ? `https://nominatim.openstreetmap.org/search?postalcode=${encodeURIComponent(cleanQuery)}&countrycodes=in&format=json&addressdetails=1&limit=5`
-      : `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanQuery)}&countrycodes=in&format=json&addressdetails=1&limit=6`;
+      ? `https://nominatim.openstreetmap.org/search?postalcode=${encodeURIComponent(cleanQuery)}&countrycodes=in&format=json&addressdetails=1&namedetails=1&accept-language=${lang},en&limit=5`
+      : `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanQuery)}&countrycodes=in&format=json&addressdetails=1&namedetails=1&accept-language=${lang},en&limit=6`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3500);
@@ -151,8 +156,10 @@ export async function fetchLocationSuggestions(query: string): Promise<LocationS
           seenCoords.add(coordKey);
 
           const addr = item.address || {};
-          const district = addr.state_district || addr.county || addr.city || addr.town || '';
-          const state = addr.state || 'India';
+          const rawDistrict = addr.state_district || addr.county || addr.city || addr.town || '';
+          const rawState = addr.state || 'India';
+          const district = resolveDistrict(rawDistrict, lang) || rawDistrict;
+          const state = resolveState(rawState, lang) || rawState;
           const postcode = addr.postcode || '';
           const name = addr.village || addr.suburb || addr.town || addr.city || item.name || cleanQuery;
 
@@ -264,11 +271,11 @@ export async function getDeviceCoordinates(): Promise<{
 /**
  * Reverse geocodes latitude/longitude to a human-readable village/district name.
  */
-export async function reverseGeocodeCoordinates(lat: number, lon: number): Promise<string> {
+export async function reverseGeocodeCoordinates(lat: number, lon: number, lang: SupportedLanguage = 'en'): Promise<string> {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2500);
-    const endpoint = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=14`;
+    const endpoint = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=14&addressdetails=1&namedetails=1&accept-language=${lang},en`;
     const res = await fetch(endpoint, {
       signal: controller.signal,
       headers: {
@@ -281,9 +288,11 @@ export async function reverseGeocodeCoordinates(lat: number, lon: number): Promi
       const data = await res.json();
       if (data && data.address) {
         const addr = data.address;
-        const place = addr.village || addr.suburb || addr.town || addr.city || addr.county || 'Field Parcel';
-        const district = addr.state_district || addr.county || '';
-        const state = addr.state || '';
+        const place = addr.village || addr.suburb || addr.hamlet || addr.town || addr.city || addr.county || '';
+        const rawDistrict = addr.state_district || addr.county || addr.city || '';
+        const rawState = addr.state || '';
+        const district = resolveDistrict(rawDistrict, lang) || rawDistrict;
+        const state = resolveState(rawState, lang) || rawState;
         const formatted = [place, district, state].filter(Boolean).join(', ');
         if (formatted) return formatted;
       }
@@ -291,5 +300,6 @@ export async function reverseGeocodeCoordinates(lat: number, lon: number): Promi
   } catch (e) {
     // Fallback to coordinates
   }
-  return `Parcel (${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E)`;
+  const prefix = lang === 'bn' ? 'পার্সেল' : lang === 'hi' ? 'खेत' : 'Parcel';
+  return `${prefix} (${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E)`;
 }

@@ -1,4 +1,5 @@
 import { SupportedLanguage } from '../adapters/speechAdapter';
+import { localizeAddressWithGazetteer } from '../data/indiaGazetteer';
 
 // 1. CROPS MAPPING
 const CROP_MAP: Record<string, { hi: string; bn: string }> = {
@@ -123,74 +124,10 @@ export function localizeStorageType(
   }
 }
 
-// 5. GEOGRAPHIC ENTITIES (INDIAN STATES, DISTRICTS, AND KEY TERMS)
-const GEO_ENTITIES: Record<string, { hi: string; bn: string }> = {
-  // States
-  'West Bengal': { hi: 'पश्चिम बंगाल', bn: 'পশ্চিমবঙ্গ' },
-  'Uttar Pradesh': { hi: 'उत्तर प्रदेश', bn: 'উত্তর প্রদেশ' },
-  'Bihar': { hi: 'बिहार', bn: 'বিহার' },
-  'Maharashtra': { hi: 'महाराष्ट्र', bn: 'মহারাষ্ট্র' },
-  'Punjab': { hi: 'पंजाब', bn: 'পাঞ্জাব' },
-  'Haryana': { hi: 'हरियाणा', bn: 'হরিয়ানা' },
-  'Madhya Pradesh': { hi: 'मध्य प्रदेश', bn: 'মধ্যপ্রদেশ' },
-  'Odisha': { hi: 'ओडिशा', bn: 'ওড়িশা' },
-  'Jharkhand': { hi: 'झारखंड', bn: 'ঝাড়খণ্ড' },
-  'Gujarat': { hi: 'गुजरात', bn: 'গুজরাট' },
-  'Rajasthan': { hi: 'राजस्थान', bn: 'রাজস্থান' },
-  'Tamil Nadu': { hi: 'तमिलनाडु', bn: 'তামিলনাড়ু' },
-  'Karnataka': { hi: 'कर्नाटक', bn: 'কর্ণাটক' },
-  'Andhra Pradesh': { hi: 'आंध्र प्रदेश', bn: 'অন্ধ্রপ্রদেশ' },
-  'Telangana': { hi: 'तेलंगाना', bn: 'তেলেঙ্গানা' },
-  'Kerala': { hi: 'केरल', bn: 'কেরালা' },
-  'Assam': { hi: 'असम', bn: 'আসাম' },
-  'India': { hi: 'भारत', bn: 'ভারত' },
-
-  // Key Districts (especially Eastern India & prominent hubs)
-  'Purba Bardhaman': { hi: 'पूर्व बर्धमान', bn: 'পূর্ব বর্ধমান' },
-  'Paschim Bardhaman': { hi: 'पश्चिम बर्धमान', bn: 'পশ্চিম বর্ধমান' },
-  'Bardhaman': { hi: 'बर्धमान', bn: 'বর্ধমান' },
-  'South 24 Parganas': { hi: 'दक्षिण २४ परगना', bn: 'দক্ষিণ ২৪ পরগনা' },
-  'North 24 Parganas': { hi: 'उत्तर २४ परगना', bn: 'উত্তর ২৪ পরগনা' },
-  'Hooghly': { hi: 'हुगली', bn: 'হুগলি' },
-  'Howrah': { hi: 'हावड़ा', bn: 'হাওড়া' },
-  'Kolkata': { hi: 'कोलकाता', bn: 'কলকাতা' },
-  'Nadia': { hi: 'नदिया', bn: 'নদিয়া' },
-  'Murshidabad': { hi: 'मुर्शिदाबाद', bn: 'মুর্শিদাবাদ' },
-  'Birbhum': { hi: 'बीरभूम', bn: 'বীরভূম' },
-  'Bankura': { hi: 'बांकुड़ा', bn: 'বাঁকুড়া' },
-  'Purulia': { hi: 'पुरुलिया', bn: 'পুরুলিয়া' },
-  'Paschim Medinipur': { hi: 'पश्चिम मेदिनीपुर', bn: 'পশ্চিম মেদিনীপুর' },
-  'Purba Medinipur': { hi: 'पूर्व मेदिनीपुर', bn: 'পূর্ব মেদিনীপুর' },
-  'Medinipur': { hi: 'मेदिनीपुर', bn: 'মেদিনীপুর' },
-  'Malda': { hi: 'मालदा', bn: 'মালদা' },
-  'Nashik': { hi: 'नासिक', bn: 'নাসিক' },
-  'Pune': { hi: 'पुणे', bn: 'পুনে' },
-  'Patna': { hi: 'पटना', bn: 'পাটনা' },
-  'Gaya': { hi: 'गया', bn: 'গয়া' },
-  'Varanasi': { hi: 'वाराणसी', bn: 'বারাণসী' },
-  'Lucknow': { hi: 'लखनऊ', bn: 'লখনউ' },
-  'Ludhiana': { hi: 'लुधियाना', bn: 'লুধিয়ানা' },
-  'Karnal': { hi: 'करनाल', bn: 'করনাল' },
-
-  // Generic Geo Words
-  'District': { hi: 'जिला', bn: 'জেলা' },
-  'Block': { hi: 'प्रखंड', bn: 'ব্লক' },
-  'Village': { hi: 'गांव', bn: 'গ্রাম' },
-  'Location Set': { hi: 'स्थान निर्धारित', bn: 'অবস্থান নির্ধারিত' },
-};
+// 5. GEOGRAPHIC ENTITIES RESOLUTION VIA CANONICAL INDIA GAZETTEER
 
 export function localizeLocation(locationStr: string | undefined | null, lang: SupportedLanguage): string {
-  if (!locationStr) return lang === 'hi' ? 'स्थान निर्धारित' : lang === 'bn' ? 'অবস্থান নির্ধারিত' : 'Location Set';
-  if (lang === 'en') return locationStr;
-
-  let localized = locationStr;
-  for (const [enTerm, trans] of Object.entries(GEO_ENTITIES)) {
-    if (localized.includes(enTerm)) {
-      localized = localized.replace(new RegExp(enTerm, 'g'), trans[lang]);
-    }
-  }
-
-  return localized;
+  return localizeAddressWithGazetteer(locationStr, lang);
 }
 
 // 6. METEOROLOGICAL SOURCE FEEDS
