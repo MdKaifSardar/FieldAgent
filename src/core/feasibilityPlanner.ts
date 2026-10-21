@@ -282,6 +282,11 @@ export function runFeasibilityPlanner(input: PlanningInput): DecisionResponse {
     return m > 0 ? `${h}h ${m}m` : `${h} hrs`;
   };
 
+  const plotsNeedingWater = plotResults.filter(p => p.urgencyLevel === 'critical' || p.urgencyLevel === 'moderate');
+  const safePlots = plotResults.filter(p => p.urgencyLevel === 'low');
+  const activeFarmDemand_liters = plotsNeedingWater.reduce((acc, p) => acc + p.grossWaterNeeded_liters, 0);
+  const activePumpRuntime_minutes = plotsNeedingWater.reduce((acc, p) => acc + (p.pumpRuntime_minutes || 0), 0);
+
   if (hasHighRainForecast && !anyPlotCritical) {
     decision = 'WAIT_AND_REASSESS';
     const savedVol = environmentalLedger.deferredVolume_liters || 0;
@@ -306,14 +311,33 @@ export function runFeasibilityPlanner(input: PlanningInput): DecisionResponse {
     actionWindow = `Critical stress deadline in ${nearestStress} hours`;
     confidence = 'HIGH';
     confidenceReason = 'Available tank/reserve volume is insufficient to meet full root-zone recharge.';
-  } else if (anyPlotCritical) {
+  } else if (plotsNeedingWater.length > 0) {
     decision = 'IRRIGATE_NOW';
-    primaryAction = `Apply ${totalFarmDemand_liters.toLocaleString()} L of irrigation across plots (~${formatMins(totalPumpRuntime_minutes)} on ${pumpHpStr} pump). Optimal window: ${timingWindow.recommendedWindow}. ${timingWindow.advisoryText}`;
-    primaryActionHindi = `खेतों में ${totalFarmDemand_liters.toLocaleString()} लीटर पानी दें (${pumpHpStr} पंप से लगभग ${formatMins(totalPumpRuntime_minutes)})। उपयुक्त समय: ${timingWindow.recommendedWindow}। ${timingWindow.advisoryText}`;
-    primaryActionBengali = `জমিতে ${totalFarmDemand_liters.toLocaleString()} লিটার সেচ দিন (${pumpHpStr} পাম্পে প্রায় ${formatMins(totalPumpRuntime_minutes)})। উপযুক্ত সময়: ${timingWindow.recommendedWindow}। ${timingWindow.advisoryText}`;
+
+    if (safePlots.length > 0) {
+      // Differential advice: irrigate only plots needing water, explicitly skip safe plots
+      const needTextEn = plotsNeedingWater.map(p => `"${p.cropName}" (${p.grossWaterNeeded_liters.toLocaleString()} L, ~${formatMins(p.pumpRuntime_minutes || 0)})`).join(' & ');
+      const needTextHi = plotsNeedingWater.map(p => `"${p.cropName}" (${p.grossWaterNeeded_liters.toLocaleString()} लीटर, ~${formatMins(p.pumpRuntime_minutes || 0)})`).join(' और ');
+      const needTextBn = plotsNeedingWater.map(p => `"${p.cropName}" (${p.grossWaterNeeded_liters.toLocaleString()} লিটার, ~${formatMins(p.pumpRuntime_minutes || 0)})`).join(' ও ');
+
+      const safeNamesEn = safePlots.map(p => `"${p.cropName}"`).join(' & ');
+      const safeNamesHi = safePlots.map(p => `"${p.cropName}"`).join(' और ');
+      const safeNamesBn = safePlots.map(p => `"${p.cropName}"`).join(' ও ');
+
+      primaryAction = `Irrigate only ${needTextEn} totaling ${activeFarmDemand_liters.toLocaleString()} L (~${formatMins(activePumpRuntime_minutes)} on ${pumpHpStr} pump). Skip ${safeNamesEn} today (moisture buffer is safe). Optimal window: ${timingWindow.recommendedWindow}.`;
+      primaryActionHindi = `केवल ${needTextHi} में कुल ${activeFarmDemand_liters.toLocaleString()} लीटर पानी दें (${pumpHpStr} पंप से ~${formatMins(activePumpRuntime_minutes)})। ${safeNamesHi} में पर्याप्त नमी है—आज इनमें पानी न दें। उपयुक्त समय: ${timingWindow.recommendedWindow}।`;
+      primaryActionBengali = `শুধুমাত্র ${needTextBn}-এ মোট ${activeFarmDemand_liters.toLocaleString()} লিটার সেচ দিন (${pumpHpStr} পাম্পে ~${formatMins(activePumpRuntime_minutes)})। ${safeNamesBn}-এ পর্যাপ্ত আর্দ্রতা রয়েছে—আজ এগুলিতে সেচ দেবেন না। উপযুক্ত সময়: ${timingWindow.recommendedWindow}।`;
+    } else {
+      primaryAction = `Apply ${totalFarmDemand_liters.toLocaleString()} L of irrigation across all plots (~${formatMins(totalPumpRuntime_minutes)} on ${pumpHpStr} pump). Optimal window: ${timingWindow.recommendedWindow}. ${timingWindow.advisoryText}`;
+      primaryActionHindi = `सभी खेतों में कुल ${totalFarmDemand_liters.toLocaleString()} लीटर पानी दें (${pumpHpStr} पंप से लगभग ${formatMins(totalPumpRuntime_minutes)})। उपयुक्त समय: ${timingWindow.recommendedWindow}। ${timingWindow.advisoryText}`;
+      primaryActionBengali = `সব জমিতে মোট ${totalFarmDemand_liters.toLocaleString()} লিটার সেচ দিন (${pumpHpStr} পাম্পে প্রায় ${formatMins(totalPumpRuntime_minutes)})। উপযুক্ত সময়: ${timingWindow.recommendedWindow}। ${timingWindow.advisoryText}`;
+    }
+
     actionWindow = timingWindow.recommendedWindow;
     confidence = 'HIGH';
-    confidenceReason = 'Root-zone depletion has reached or is rapidly approaching the crop stress threshold.';
+    confidenceReason = anyPlotCritical 
+      ? 'Critical moisture threshold reached on active plots.'
+      : 'Moderate depletion approaching stress threshold on active plots.';
   } else {
     decision = 'WAIT_AND_REASSESS';
     primaryAction = `Soil moisture is within safe levels across all plots. No pumping required today. Reassess in 48 hours.`;
@@ -331,6 +355,8 @@ export function runFeasibilityPlanner(input: PlanningInput): DecisionResponse {
     confidence,
     confidenceReason,
     totalFarmDemand_liters,
+    activeFarmDemand_liters,
+    activePumpRuntime_minutes,
     netFarmDemand_liters,
     availableWater_liters,
     waterShortfall_liters,

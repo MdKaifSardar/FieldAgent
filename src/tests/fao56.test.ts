@@ -274,6 +274,12 @@ describe('Feasibility Planner & Multi-Crop Decision Logic', () => {
     // 6. Verify timing window is attached
     expect(plan.timingWindow).toBeDefined();
     expect(plan.timingWindow?.recommendedWindow).toBeDefined();
+
+    // 7. Verify differential plot advice: advises irrigating only Wheat and skipping Tomato & Spinach
+    expect(plan.decision).toBe('IRRIGATE_NOW');
+    expect(plan.primaryAction).toContain('Irrigate only "Wheat"');
+    expect(plan.primaryAction).toContain('Skip "Tomato" & "Spinach" today');
+    expect(plan.activeFarmDemand_liters).toBe(wheatResult?.grossWaterNeeded_liters);
   });
 });
 

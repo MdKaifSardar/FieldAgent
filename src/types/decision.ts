@@ -61,6 +61,8 @@ export interface DecisionResponse {
   confidence: 'HIGH' | 'MODERATE' | 'LOW';
   confidenceReason: string;
   totalFarmDemand_liters: number; // Gross total farm pumping demand
+  activeFarmDemand_liters?: number; // Gross pumping demand strictly for plots requiring water today
+  activePumpRuntime_minutes?: number; // Pump runtime strictly for plots requiring water today
   netFarmDemand_liters: number; // Net crop uptake demand
   availableWater_liters: number;
   waterShortfall_liters: number;
