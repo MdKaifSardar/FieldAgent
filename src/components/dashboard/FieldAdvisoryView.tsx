@@ -294,6 +294,7 @@ export function FieldAdvisoryView({
                 availableReserve_liters={decision.availableWater_liters}
                 waterShortfall_liters={decision.waterShortfall_liters}
                 plots={decision.plots}
+                waterAllocation={decision.waterAllocation}
               />
             </div>
           )}

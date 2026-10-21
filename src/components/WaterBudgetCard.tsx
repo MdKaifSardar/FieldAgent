@@ -12,6 +12,7 @@ interface WaterBudgetCardProps {
   availableReserve_liters: number;
   waterShortfall_liters: number;
   plots: PlotCalculationResult[];
+  waterAllocation?: import('../types/decision').WaterAllocationSummary;
 }
 
 export function WaterBudgetCard({
@@ -19,6 +20,7 @@ export function WaterBudgetCard({
   availableReserve_liters,
   waterShortfall_liters,
   plots,
+  waterAllocation,
 }: WaterBudgetCardProps) {
   const { language, t } = useLanguage();
   const isDeficit = waterShortfall_liters > 0;
@@ -77,6 +79,7 @@ export function WaterBudgetCard({
             {plots.map((plot) => {
               const isCritical = plot.urgencyLevel === 'critical';
               const stressPct = Math.min(100, Math.round((plot.currentDepletion_mm / plot.taw_mm) * 100));
+              const alloc = waterAllocation?.allocations.find(a => a.plotId === plot.plotId);
 
               return (
                 <div 
@@ -106,11 +109,22 @@ export function WaterBudgetCard({
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 dark:text-[#94A3B8] my-2">
+                  <div className="grid grid-cols-3 gap-2 text-xs text-slate-500 dark:text-[#94A3B8] my-2">
                     <div>
                       <span className="text-slate-400 dark:text-slate-400 block text-[10px] uppercase font-semibold">{t.grossDemand}</span>
                       <strong className="text-slate-900 dark:text-[#F0F9FF] font-mono">{plot.grossWaterNeeded_liters.toLocaleString()} L</strong>
                       <span className="text-[10px] text-slate-400 block">(Net: {plot.waterNeeded_liters.toLocaleString()} L)</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 dark:text-slate-400 block text-[10px] uppercase font-semibold">Pump Runtime</span>
+                      <strong className="text-slate-900 dark:text-[#F0F9FF] font-mono">
+                        {plot.pumpRuntime_minutes ? `${plot.pumpRuntime_minutes} mins` : '—'}
+                      </strong>
+                      {alloc && (
+                        <span className="text-[10px] text-amber-600 dark:text-amber-400 block font-medium">
+                          Alloc: {alloc.allocatedLiters.toLocaleString()} L
+                        </span>
+                      )}
                     </div>
                     <div>
                       <span className="text-slate-400 dark:text-slate-400 block text-[10px] uppercase font-semibold">{t.stressDeadline}</span>

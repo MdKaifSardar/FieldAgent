@@ -23,12 +23,41 @@ export interface PlotCalculationResult {
   irrigationMethod: IrrigationMethod;
   irrigationEfficiency: number; // e.g. 0.90 for drip, 0.60 for flood
   urgencyLevel: 'low' | 'moderate' | 'critical';
+  pumpRuntime_minutes: number; // Duration to run pump based on HP flow rate
+}
+
+export interface IrrigationTimingWindow {
+  recommendedWindow: string;
+  advisoryText: string;
+  canIrrigateNow: boolean;
+  evaporativeRisk: 'LOW' | 'MODERATE' | 'HIGH';
+  windWarning?: string;
+}
+
+export interface PlotAllocationResult {
+  plotId: string;
+  cropName: string;
+  demandedLiters: number;
+  allocatedLiters: number;
+  allocatedPumpMinutes: number;
+  unmetLiters: number;
+  priorityRank: number;
+  rationale: string;
+}
+
+export interface WaterAllocationSummary {
+  totalBudgetLiters: number;
+  totalAllocatedLiters: number;
+  unallocatedReserveLiters: number;
+  allocations: PlotAllocationResult[];
 }
 
 export interface DecisionResponse {
   decision: DecisionState;
   primaryAction: string;
   actionWindow: string;
+  timingWindow?: IrrigationTimingWindow;
+  waterAllocation?: WaterAllocationSummary;
   confidence: 'HIGH' | 'MODERATE' | 'LOW';
   confidenceReason: string;
   totalFarmDemand_liters: number; // Gross total farm pumping demand
