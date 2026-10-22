@@ -15,6 +15,39 @@ import { DecisionResponse } from '../types/decision';
 // Runtime store for active / modified farm profiles
 export const farmRuntimeStore = new Map<string, FarmProfile>();
 
+// Long-Term Episodic Farmer Preferences Memory Store
+export interface FarmerPreferences {
+  userId: string;
+  preferredLanguage?: string;
+  preferredIrrigationWindow?: string;
+  primaryCropFocus?: string;
+  lastUpdated: string;
+}
+
+export const farmerPreferencesStore = new Map<string, FarmerPreferences>();
+
+export function getFarmerPreferences(userId: string): FarmerPreferences | null {
+  return farmerPreferencesStore.get(userId) || null;
+}
+
+export function saveFarmerPreferences(userId: string, prefs: Partial<FarmerPreferences>): FarmerPreferences {
+  const existing = farmerPreferencesStore.get(userId) || {
+    userId,
+    preferredLanguage: 'en',
+    preferredIrrigationWindow: 'evening (after 6 PM)',
+    lastUpdated: new Date().toISOString(),
+  };
+
+  const updated: FarmerPreferences = {
+    ...existing,
+    ...prefs,
+    lastUpdated: new Date().toISOString(),
+  };
+
+  farmerPreferencesStore.set(userId, updated);
+  return updated;
+}
+
 // Default presets lookup map
 const PRESET_FARMS: Record<string, FarmProfile> = {
   [PRESET_1_RAIN_AVOIDANCE.farm.id]: PRESET_1_RAIN_AVOIDANCE.farm,

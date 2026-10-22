@@ -18,6 +18,8 @@ import {
   handleLogIrrigationEvent,
   handleUpdatePlotMethod,
   resolveFarm,
+  getFarmerPreferences,
+  saveFarmerPreferences,
 } from '../../mcp/tools';
 
 export interface AgentChatMessage {
@@ -275,7 +277,8 @@ RULES:
 8. When the farmer asks about their parcel, land size, crops, soil, or pump rating, call 'get_farm_context'.
 9. When the farmer asks about weather, rain probability, temperature, or humidity, call 'get_weather_context'.
 10. When the farmer asks for a complete overview or summary of their farm and weather, invoke BOTH 'get_farm_context' and 'get_weather_context' in parallel.
-11. When speaking in Hindi, use warm, respectful tone suitable for rural farmers.`;
+11. When speaking in Hindi, use warm, respectful tone suitable for rural farmers.
+12. STRICT SCOPE GUARDRAIL: You are exclusively an agricultural irrigation and crop-water advisor. If the user asks about out-of-scope topics (e.g. sports, entertainment, cryptocurrency, programming, medical advice, politics), politely decline and redirect them back to farm irrigation.`;
 
 /**
  * Executes a tool by name and records audit telemetry.
@@ -355,6 +358,32 @@ async function runDeterministicFallback(
   const toolAudits: ToolAuditEntry[] = [];
   const farm = await resolveFarm(activeFarmId);
   const farmId = farm?.id || activeFarmId;
+
+  // 0. Update Farmer Long-Term Preferences Memory
+  if (farm?.userId) {
+    saveFarmerPreferences(farm.userId, { preferredLanguage: language });
+  }
+
+  // 0. Strict Scope Guardrail (Topic boundary enforcement)
+  const OUT_OF_SCOPE_KEYWORDS = [
+    'cricket', 'ipl', 'football', 'bitcoin', 'crypto', 'stock market', 'movie', 'actor', 'actress',
+    'cinema', 'song', 'joke', 'python', 'javascript', 'coding', 'politics', 'election', 'minister', 'modi', 'biden'
+  ];
+  const isOutOfScope = OUT_OF_SCOPE_KEYWORDS.some(kw => query.includes(kw)) &&
+    !query.includes('water') && !query.includes('farm') && !query.includes('crop') && !query.includes('irrigation');
+
+  if (isOutOfScope) {
+    const reply = language === 'hi'
+      ? `मैं फील्डगार्ड (FieldGuard) हूँ, आपका सिंचाई और फसल-जल सलाहकार। मैं केवल आपकी फसलों, पानी के बजट, मिट्टी की नमी और मौसम से जुड़े सवालों में सहायता कर सकता हूँ। कृपया अपनी फसलों या सिंचाई के बारे में पूछें।`
+      : `I am FieldGuard, your irrigation and crop-water advisor. I can only assist with your crops, water scheduling, soil moisture, and agricultural weather. Please ask me about your farm or irrigation plan.`;
+
+    return {
+      reply,
+      spokenReply: reply,
+      toolAudits: [],
+      activeScenario: 'out_of_scope',
+    };
+  }
 
   // Detect if a specific crop is mentioned in the query (multilingual)
   const CROP_SYNONYMS: Record<string, string> = {
@@ -507,6 +536,21 @@ async function runDeterministicFallback(
     !query.includes('should') && !query.includes('when') && !query.includes('how') && !query.includes('compare');
 
   if (isIrrigationLog) {
+    // Disambiguation Probe if multiple plots exist and no crop was named
+    if (!detectedCrop && farm && farm.plots.length > 1) {
+      const cropList = farm.plots.map(p => p.cropName).join(' or ');
+      const reply = language === 'hi'
+        ? `आपके खेत में कई फसलें हैं (${farm.plots.map(p => p.cropName).join(', ')})। आपने किस खेत में पानी दिया था: ${cropList}?`
+        : `Your farm has multiple cultivated plots (${farm.plots.map(p => p.cropName).join(', ')}). Which plot did you irrigate: ${cropList}?`;
+
+      return {
+        reply,
+        spokenReply: reply,
+        toolAudits: [],
+        activeScenario: 'clarification_needed',
+      };
+    }
+
     let dateStr = 'today';
     if (query.includes('yesterday') || query.includes('कल')) {
       dateStr = 'yesterday';
@@ -552,6 +596,22 @@ async function runDeterministicFallback(
     !query.includes('compare') && !query.includes('vs') && !query.includes('what if');
 
   if (isMethodSwitch) {
+    // Disambiguation Probe if multiple plots exist and no crop was named
+    if (!detectedCrop && farm && farm.plots.length > 1) {
+      const cropList = farm.plots.map(p => p.cropName).join(' or ');
+      const targetMethod = query.includes('drip') ? 'drip' : query.includes('sprinkler') ? 'sprinkler' : 'surface_flood';
+      const reply = language === 'hi'
+        ? `आप किस फसल को ${targetMethod} सिंचाई में बदलना चाहते हैं: ${cropList}?`
+        : `Which plot would you like to switch to ${targetMethod}: ${cropList}?`;
+
+      return {
+        reply,
+        spokenReply: reply,
+        toolAudits: [],
+        activeScenario: 'clarification_needed',
+      };
+    }
+
     const targetMethod = query.includes('drip') ? 'drip' : query.includes('sprinkler') ? 'sprinkler' : 'surface_flood';
     const { result, audit } = await executeMcpTool('update_plot_method', {
       farmId,
@@ -868,8 +928,10 @@ export async function runAlexaAgent(
 
   if (bedrock) {
     try {
+      // Rolling context window: Keep the last 6 messages (3 conversation turns) to bound latency and token usage
+      const prunedHistory = (conversationHistory || []).slice(-6);
       const messages: BedrockMessage[] = [
-        ...conversationHistory.map(m => ({
+        ...prunedHistory.map(m => ({
           role: m.role,
           content: [{ text: m.content }],
         })),

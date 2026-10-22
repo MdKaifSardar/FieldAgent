@@ -205,4 +205,27 @@ describe('FieldGuard MCP Server & Tool Handlers', () => {
     expect(combinedRes.structuredData.weather).toBeDefined();
     expect(combinedRes.reply).toContain('Overview for');
   });
+
+  it('agent: enforces topic guardrail, disambiguation probing, and farmer memory', async () => {
+    const { runAlexaAgent } = await import('../core/agent/bedrockAgent');
+    const { getFarmerPreferences, saveFarmerPreferences } = await import('../mcp/tools');
+
+    // 1. Topic Guardrail Test
+    const offTopicRes = await runAlexaAgent('Who won the IPL cricket match?', [], 'farm-bardhaman-01');
+    expect(offTopicRes.activeScenario).toBe('out_of_scope');
+    expect(offTopicRes.reply).toContain('FieldGuard');
+    expect(offTopicRes.toolAudits).toHaveLength(0);
+
+    // 2. Disambiguation Probing Test (Nashik multi-crop farm: Tomato + Spinach)
+    const ambiguousSwitchRes = await runAlexaAgent('Switch plot to drip', [], 'farm-nashik-02');
+    expect(ambiguousSwitchRes.activeScenario).toBe('clarification_needed');
+    expect(ambiguousSwitchRes.reply).toContain('Tomato or Spinach');
+
+    // 3. Farmer Preferences Memory Test
+    saveFarmerPreferences('farmer-ramesh', { preferredLanguage: 'hi', primaryCropFocus: 'Tomato' });
+    const prefs = getFarmerPreferences('farmer-ramesh');
+    expect(prefs).toBeDefined();
+    expect(prefs?.preferredLanguage).toBe('hi');
+    expect(prefs?.primaryCropFocus).toBe('Tomato');
+  });
 });
