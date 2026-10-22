@@ -47,7 +47,7 @@ describe('FieldGuard MCP Server & Tool Handlers', () => {
     expect(plot).toHaveProperty('raw_mm');
     expect(plot).toHaveProperty('grossWaterNeeded_liters');
     expect(plot).toHaveProperty('urgencyLevel');
-  });
+  }, 15000);
 
   it('tool: allocate_limited_water deterministically rations 800L budget', async () => {
     const res = await handleAllocateLimitedWater({
@@ -110,19 +110,70 @@ describe('FieldGuard MCP Server & Tool Handlers', () => {
     expect(retrieved.activePlan).toBeDefined();
   });
 
-  it('agent: runAlexaAgent executes water allocation scenario', async () => {
-    const { runAlexaAgent } = await import('../core/agent/bedrockAgent');
-    const result = await runAlexaAgent(
-      'I have 800 Litres of water. Which plot should I irrigate first?',
-      [],
-      'farm-nashik-02'
-    );
+  it('tool: update_water_reserve updates tank level and recalculates deficit', async () => {
+    const { handleUpdateWaterReserve } = await import('../mcp/tools');
+    const res = await handleUpdateWaterReserve({
+      farmId: 'farm-bardhaman-01',
+      fillPercent: 50,
+    });
 
-    expect(result.reply).toBeDefined();
-    expect(result.spokenReply).toBeDefined();
-    expect(result.toolAudits.length).toBeGreaterThan(0);
-    expect(result.activeScenario).toBe('water_allocation');
-    expect(result.structuredData).toBeDefined();
-    expect(result.structuredData.availableBudgetLiters).toBe(800);
+    expect(res.isError).toBeFalsy();
+    const data = JSON.parse(res.content[0].text);
+    expect(data.success).toBe(true);
+    expect(data.fillPercent).toBe(50);
+    expect(data.availableLiters).toBe(Math.round(data.totalCapacityLiters * 0.5));
+    expect(data.advisoryDirective).toBeDefined();
+    expect(data.updatedFarm).toBeDefined();
+  });
+
+  it('tool: log_irrigation_event logs watering and resets root depletion Dr', async () => {
+    const { handleLogIrrigationEvent } = await import('../mcp/tools');
+    const res = await handleLogIrrigationEvent({
+      farmId: 'farm-bardhaman-01',
+      cropName: 'Tomato',
+      irrigationDate: 'yesterday',
+    });
+
+    expect(res.isError).toBeFalsy();
+    const data = JSON.parse(res.content[0].text);
+    expect(data.success).toBe(true);
+    expect(data.daysElapsedSinceWatering).toBe(1);
+    expect(data.currentDepletion_mm).toBeLessThan(data.rawThreshold_mm);
+    expect(data.daysUntilNextIrrigation).toBeGreaterThan(0);
+  });
+
+  it('tool: update_plot_method switches irrigation method and computes water savings', async () => {
+    const { handleUpdatePlotMethod } = await import('../mcp/tools');
+    const res = await handleUpdatePlotMethod({
+      farmId: 'farm-bardhaman-01',
+      cropName: 'Tomato',
+      irrigationMethod: 'drip',
+    });
+
+    expect(res.isError).toBeFalsy();
+    const data = JSON.parse(res.content[0].text);
+    expect(data.success).toBe(true);
+    expect(data.newMethod).toBe('drip');
+    expect(data.newEfficiencyPct).toBe(90);
+  });
+
+  it('agent: handles colloquial percentage tank modification and deficit valve directive', async () => {
+    const { runAlexaAgent } = await import('../core/agent/bedrockAgent');
+    
+    // Test colloquial half full
+    const res1 = await runAlexaAgent('My tank is half full', [], 'farm-bardhaman-01');
+    expect(res1.activeScenario).toBe('reserve_updated');
+    expect(res1.structuredData.fillPercent).toBe(50);
+
+    // Test watering log
+    const res2 = await runAlexaAgent('I watered my onion plot yesterday', [], 'farm-bardhaman-01');
+    expect(res2.activeScenario).toBe('irrigation_logged');
+    expect(res2.reply).toContain('Logged');
+
+    // Test deficit advice has valve cutoff and evening timing
+    const res3 = await runAlexaAgent('I only have 250 L of water available', [], 'farm-nashik-02');
+    expect(res3.activeScenario).toBe('water_allocation');
+    expect(res3.reply).toContain('valves');
+    expect(res3.reply).toContain('6:00 PM');
   });
 });

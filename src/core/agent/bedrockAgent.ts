@@ -14,6 +14,9 @@ import {
   handleCompareIrrigationMethods,
   handleSaveIrrigationPlan,
   handleGetSavedIrrigationPlan,
+  handleUpdateWaterReserve,
+  handleLogIrrigationEvent,
+  handleUpdatePlotMethod,
   resolveFarm,
 } from '../../mcp/tools';
 
@@ -35,7 +38,17 @@ export interface AgentExecutionResult {
   spokenReply: string;
   toolAudits: ToolAuditEntry[];
   structuredData?: any;
-  activeScenario?: 'water_allocation' | 'method_comparison' | 'plan_saved' | 'plot_status' | 'general';
+  activeScenario?: 
+    | 'reserve_updated' 
+    | 'irrigation_logged' 
+    | 'method_updated' 
+    | 'water_allocation' 
+    | 'method_comparison' 
+    | 'plan_saved' 
+    | 'plot_status' 
+    | 'general';
+  updatedFarm?: any;
+  newDecision?: any;
 }
 
 // Model & Region configuration (defaults to us-east-1 for Claude 3 Haiku, with cross-region failover)
@@ -176,6 +189,60 @@ const BEDROCK_TOOLS: BedrockTool[] = [
       },
     },
   },
+  {
+    toolSpec: {
+      name: 'update_water_reserve',
+      description: 'Updates water tank capacity, available Liters, or fill percentage with deficit recalculation.',
+      inputSchema: {
+        json: {
+          type: 'object',
+          properties: {
+            farmId: { type: 'string', description: 'The farm ID' },
+            fillPercent: { type: 'number', description: 'Fill percentage (0 to 100)' },
+            availableLiters: { type: 'number', description: 'Available volume in Liters' },
+            totalCapacityLiters: { type: 'number', description: 'Tank total capacity in Liters' },
+          },
+          required: ['farmId'],
+        },
+      },
+    },
+  },
+  {
+    toolSpec: {
+      name: 'log_irrigation_event',
+      description: 'Logs that a specific crop or plot was irrigated on a date, resetting root-zone depletion.',
+      inputSchema: {
+        json: {
+          type: 'object',
+          properties: {
+            farmId: { type: 'string', description: 'The farm ID' },
+            cropName: { type: 'string', description: 'Crop name (e.g. Onion, Tomato, Wheat)' },
+            plotId: { type: 'string', description: 'Plot ID' },
+            irrigationDate: { type: 'string', description: 'Date (YYYY-MM-DD, today, yesterday)' },
+          },
+          required: ['farmId'],
+        },
+      },
+    },
+  },
+  {
+    toolSpec: {
+      name: 'update_plot_method',
+      description: 'Switches the irrigation method of a plot (drip 90%, sprinkler 75%, surface_flood 60%).',
+      inputSchema: {
+        json: {
+          type: 'object',
+          properties: {
+            farmId: { type: 'string', description: 'The farm ID' },
+            cropName: { type: 'string', description: 'Crop name' },
+            plotId: { type: 'string', description: 'Plot ID' },
+            irrigationMethod: { type: 'string', enum: ['drip', 'sprinkler', 'surface_flood'] },
+          },
+          required: ['farmId', 'irrigationMethod'],
+        },
+      },
+    },
+  },
 ];
 
 const SYSTEM_PROMPT = `You are Alexa+, the AI Agricultural & Irrigation Advisor for FieldGuard.
@@ -184,10 +251,12 @@ You assist Indian farmers in managing crop water requirements, root-zone moistur
 RULES:
 1. NEVER hallucinate or guess water requirements, depletion numbers, or pump runtime. Always call MCP tools.
 2. When the farmer asks what to water with a limited budget (e.g. 800 Litres), call 'allocate_limited_water'.
-3. When the farmer asks about changing irrigation methods (e.g. Drip vs Flood), call 'compare_irrigation_methods'.
-4. When the farmer asks to save or confirm a plan, call 'save_irrigation_plan'.
-5. Always answer in concise, clear, farmer-friendly language. Provide exact numbers in Liters and pump minutes.
-6. When speaking in Hindi, use warm, respectful tone suitable for rural farmers.`;
+3. When the farmer mentions their tank is X% full or has X Liters, call 'update_water_reserve'.
+4. When the farmer says they watered a plot (yesterday, today, or a date), call 'log_irrigation_event'.
+5. When the farmer asks about changing irrigation methods (e.g. Drip vs Flood), call 'compare_irrigation_methods' or 'update_plot_method'.
+6. When the farmer asks to save or confirm a plan, call 'save_irrigation_plan'.
+7. In deficit conditions, always instruct the farmer to shut lateral valves to deferred plots and irrigate during cool hours (after 6 PM or before 7 AM).
+8. When speaking in Hindi, use warm, respectful tone suitable for rural farmers.`;
 
 /**
  * Executes a tool by name and records audit telemetry.
@@ -220,6 +289,15 @@ async function executeMcpTool(name: string, args: any): Promise<{ result: any; a
       break;
     case 'get_saved_irrigation_plan':
       rawResponse = await handleGetSavedIrrigationPlan(args);
+      break;
+    case 'update_water_reserve':
+      rawResponse = await handleUpdateWaterReserve(args);
+      break;
+    case 'log_irrigation_event':
+      rawResponse = await handleLogIrrigationEvent(args);
+      break;
+    case 'update_plot_method':
+      rawResponse = await handleUpdatePlotMethod(args);
       break;
     default:
       rawResponse = { isError: true, content: [{ type: 'text', text: `Unknown tool ${name}` }] };
@@ -296,7 +374,173 @@ async function runDeterministicFallback(
     }
   }
 
-  // 1. Water Allocation Scenario ("I have 800 Litres", "how to water with 500L", "budget")
+  // Colloquial fraction and percentage mapping
+  const FRACTION_PERCENT_MAP: Record<string, number> = {
+    empty: 0,
+    खाली: 0,
+    খালি: 0,
+    quarter: 25,
+    'one fourth': 25,
+    'one fourths': 25,
+    '1/4': 25,
+    'एक चौथाई': 25,
+    'one third': 33,
+    '1/3': 33,
+    'एक तिहाई': 33,
+    half: 50,
+    '1/2': 50,
+    आधा: 50,
+    आधी: 50,
+    অর্ধেক: 50,
+    'two thirds': 66,
+    '2/3': 66,
+    'दो तिहाई': 66,
+    'three quarters': 75,
+    'three fourths': 75,
+    '3/4': 75,
+    'तीन चौथाई': 75,
+    पौनी: 75,
+    full: 100,
+    'completely full': 100,
+    पूरा: 100,
+    पूरी: 100,
+    পুরো: 100,
+    ভরা: 100,
+  };
+
+  // 1. Voice Water Tank & Level Modification ("tank is half full", "tank at 60%", "tank has 2000L", "टंकी आधी भरी है")
+  const isTankUpdate = 
+    (query.includes('tank') || query.includes('sump') || query.includes('टंकी') || query.includes('ট্যাঙ্ক') || query.includes('reservoir') || query.includes('reserve')) &&
+    (query.includes('%') || query.includes('percent') || query.includes('full') || query.includes('empty') || query.includes('half') || query.includes('quarter') || query.includes('आधा') || query.includes('आधी') || query.includes('खाली') || query.includes('भर') || query.includes('set') || query.includes('update') || query.includes('level') || query.includes('filled'));
+
+  if (isTankUpdate) {
+    let fillPct: number | undefined = undefined;
+    let availL: number | undefined = undefined;
+
+    const pctMatch = query.match(/(\d+)\s*%/);
+    if (pctMatch) {
+      fillPct = Math.min(100, Math.max(0, parseInt(pctMatch[1], 10)));
+    } else {
+      for (const [kw, val] of Object.entries(FRACTION_PERCENT_MAP)) {
+        if (query.includes(kw)) {
+          fillPct = val;
+          break;
+        }
+      }
+    }
+
+    const ltrMatch = query.match(/(\d+)\s*(l|litres|liters|लीटर|লিটার)/i);
+    if (ltrMatch && fillPct === undefined) {
+      availL = parseInt(ltrMatch[1], 10);
+    }
+
+    if (fillPct !== undefined || availL !== undefined) {
+      const { result, audit } = await executeMcpTool('update_water_reserve', {
+        farmId,
+        fillPercent: fillPct,
+        availableLiters: availL,
+      });
+      toolAudits.push(audit);
+
+      const reply = language === 'hi'
+        ? `अपडेट किया गया! आपकी पानी की टंकी ${result.availableLiters.toLocaleString()} लीटर (${result.fillPercent}%) पर सेट है। ${
+            result.isDeficit 
+              ? `चेतावनी: पानी की कमी है। केवल ${result.newDecision.plots[0]?.cropName || 'प्राथमिक फसल'} के वाल्व खोलें और बाकी खेतों के वाल्व बंद रखें। धूप में वाष्पीकरण से बचने के लिए शाम 6 बजे के बाद या सुबह 7 बजे से पहले सिंचाई करें।`
+              : `आज सभी फसलों के लिए पर्याप्त पानी उपलब्ध है।`
+          }`
+        : `Updated! Your water tank is set to ${result.availableLiters.toLocaleString()} L (${result.fillPercent}%). ${
+            result.isDeficit
+              ? `Deficit Active: Direct all ${result.availableLiters.toLocaleString()} L to ${result.newDecision.plots[0]?.cropName || 'primary crop'} and keep other lateral valves shut. Irrigate after 6:00 PM or before 7:00 AM to eliminate solar evaporation.`
+              : `You have adequate water to satisfy all crop requirements today.`
+          }`;
+
+      return {
+        reply,
+        spokenReply: reply,
+        toolAudits,
+        structuredData: result,
+        activeScenario: 'reserve_updated',
+        updatedFarm: result.updatedFarm,
+        newDecision: result.newDecision,
+      };
+    }
+  }
+
+  // 2. Voice Past Irrigation Logging ("I watered onion yesterday", "I irrigated tomato on oct 10th", "मैंने प्याज में पानी दिया")
+  const isIrrigationLog = 
+    (query.includes('watered') || query.includes('irrigated') || query.includes('पानी दिया') || query.includes('সেচ দিয়েছি')) && 
+    !query.includes('should') && !query.includes('when') && !query.includes('how') && !query.includes('compare');
+
+  if (isIrrigationLog) {
+    let dateStr = 'today';
+    if (query.includes('yesterday') || query.includes('कल')) {
+      dateStr = 'yesterday';
+    } else {
+      const dateMatch = query.match(/(\d{4}-\d{2}-\d{2})/) || query.match(/(oct|october|nov|november|dec|december)\s+(\d{1,2})/i);
+      if (dateMatch) {
+        if (dateMatch[1] && dateMatch[1].includes('-')) {
+          dateStr = dateMatch[1];
+        } else if (dateMatch[1] && dateMatch[2]) {
+          const m = dateMatch[1].toLowerCase().startsWith('oct') ? '10' : dateMatch[1].toLowerCase().startsWith('nov') ? '11' : '12';
+          const d = dateMatch[2].padStart(2, '0');
+          dateStr = `2026-${m}-${d}`;
+        }
+      }
+    }
+
+    const { result, audit } = await executeMcpTool('log_irrigation_event', {
+      farmId,
+      cropName: detectedCrop,
+      irrigationDate: dateStr,
+    });
+    toolAudits.push(audit);
+
+    const reply = language === 'hi'
+      ? `दर्ज किया गया! आपके ${result.cropName} के खेत में ${result.lastIrrigationDate} को सिंचाई दर्ज की गई है। जड़ों में नमी की कमी अब केवल ${result.currentDepletion_mm} मिमी है (तनाव सीमा: ${result.rawThreshold_mm} मिमी)। अगली सिंचाई लगभग ${result.daysUntilNextIrrigation} दिन बाद आवश्यक होगी।`
+      : `Logged! Recorded irrigation for your ${result.cropName} plot on ${result.lastIrrigationDate}. Root moisture deficit reset to ${result.currentDepletion_mm} mm (stress limit: ${result.rawThreshold_mm} mm). Next scheduled watering in ~${result.daysUntilNextIrrigation} days.`;
+
+    return {
+      reply,
+      spokenReply: reply,
+      toolAudits,
+      structuredData: result,
+      activeScenario: 'irrigation_logged',
+      updatedFarm: result.updatedFarm,
+      newDecision: result.newDecision,
+    };
+  }
+
+  // 3. Voice Plot Irrigation Method Switch ("switch tomato to drip", "installed drip on onion", "change to flood")
+  const isMethodSwitch = 
+    (query.includes('switch') || query.includes('change') || query.includes('installed') || query.includes('convert') || query.includes('बदल') || query.includes('लगा दी')) &&
+    (query.includes('drip') || query.includes('flood') || query.includes('sprinkler')) &&
+    !query.includes('compare') && !query.includes('vs') && !query.includes('what if');
+
+  if (isMethodSwitch) {
+    const targetMethod = query.includes('drip') ? 'drip' : query.includes('sprinkler') ? 'sprinkler' : 'surface_flood';
+    const { result, audit } = await executeMcpTool('update_plot_method', {
+      farmId,
+      cropName: detectedCrop,
+      irrigationMethod: targetMethod,
+    });
+    toolAudits.push(audit);
+
+    const reply = language === 'hi'
+      ? `सफलतापूर्वक बदला गया! आपके ${result.cropName} के खेत में अब ${result.newMethod} सिंचाई प्रणाली (${result.newEfficiencyPct}% दक्षता) सेट कर दी गई है। ${result.waterSavedPct > 0 ? `इससे प्रति चक्र ${result.waterSavedPct}% पानी की बचत होगी।` : ''}`
+      : `Updated! Your ${result.cropName} plot is now configured for ${result.newMethod} (${result.newEfficiencyPct}% efficiency). ${result.waterSavedPct > 0 ? `Saves ${result.waterSavedPct}% water per cycle.` : ''}`;
+
+    return {
+      reply,
+      spokenReply: reply,
+      toolAudits,
+      structuredData: result,
+      activeScenario: 'method_updated',
+      updatedFarm: result.updatedFarm,
+      newDecision: result.newDecision,
+    };
+  }
+
+  // 4. Water Allocation Scenario ("I have 800 Litres", "how to water with 500L", "budget")
   const budgetMatch = query.match(/(\d+)\s*(l|litres|liters|लीटर|লিটার)/i) || query.match(/(have|budget|tank|water)\s*(\d+)/i);
   if (budgetMatch || query.includes('allocate') || query.includes('budget') || query.includes('which plot') || query.includes('first')) {
     let budget = 800;
@@ -317,13 +561,19 @@ async function runDeterministicFallback(
     const allocatedL = alloc?.allocated_liters || budget;
     const pumpMins = alloc?.pumpRuntimeMinutes || Math.round(budget / 100);
 
+    const directiveText = alloc?.unmetDemand_liters > 0 || (result.allocations && result.allocations.length > 1)
+      ? language === 'hi'
+        ? ` अन्य खेतों के वाल्व पूरी तरह बंद रखें ताकि पानी फैले नहीं। धूप में वाष्पीकरण से बचने के लिए शाम 6 बजे के बाद या सुबह 7 बजे से पहले सिंचाई करें।`
+        : ` Keep lateral valves to deferred plots shut so water is not diluted. Irrigate after 6:00 PM or before 7:00 AM to eliminate solar evaporation loss.`
+      : '';
+
     const reply = language === 'hi'
-      ? `आपके ${budget.toLocaleString()} लीटर पानी के लिए, मैंने ${cropName} की फसल को प्राथमिकता दी है क्योंकि इसकी जड़ों में नमी की कमी सबसे अधिक है। इसे ${allocatedL.toLocaleString()} लीटर पानी आवंटित किया गया है। पंप को लगभग ${pumpMins} मिनट चलाएं।`
-      : `With your ${budget.toLocaleString()} L water reserve, I prioritized your ${cropName} plot because it is nearest to drought stress. Allocating ${allocatedL.toLocaleString()} L will require running your pump for ${pumpMins} minutes.`;
+      ? `आपके ${budget.toLocaleString()} लीटर पानी के लिए, मैंने ${cropName} की फसल को प्राथमिकता दी है क्योंकि इसकी जड़ों में नमी की कमी सबसे अधिक है। इसे ${allocatedL.toLocaleString()} लीटर पानी आवंटित किया गया है। पंप को लगभग ${pumpMins} मिनट चलाएं।${directiveText}`
+      : `With your ${budget.toLocaleString()} L water reserve, I prioritized your ${cropName} plot because it is nearest to drought stress. Allocating ${allocatedL.toLocaleString()} L will require running your pump for ${pumpMins} minutes.${directiveText}`;
 
     const spokenReply = language === 'hi'
-      ? `आपके ${budget} लीटर पानी में से, ${cropName} को ${allocatedL} लीटर दीजिए। पंप ${pumpMins} मिनट चलाएं।`
-      : `With ${budget} liters available, give ${allocatedL} liters to your ${cropName} plot. Run your pump for ${pumpMins} minutes.`;
+      ? `आपके ${budget} लीटर पानी में से, ${cropName} को ${allocatedL} लीटर दीजिए। पंप ${pumpMins} मिनट चलाएं।${directiveText}`
+      : `With ${budget} liters available, give ${allocatedL} liters to your ${cropName} plot. Run your pump for ${pumpMins} minutes.${directiveText}`;
 
     return {
       reply,
@@ -334,7 +584,7 @@ async function runDeterministicFallback(
     };
   }
 
-  // 2. Irrigation Method Comparison ("switch to drip", "compare flood vs drip", "what if drip", "what about onion")
+  // 5. Irrigation Method Comparison ("switch to drip", "compare flood vs drip", "what if drip", "what about onion")
   if (query.includes('drip') || query.includes('flood') || query.includes('sprinkler') || query.includes('compare') || query.includes('efficiency') || detectedCrop) {
     const { result, audit } = await executeMcpTool('compare_irrigation_methods', {
       farmId,

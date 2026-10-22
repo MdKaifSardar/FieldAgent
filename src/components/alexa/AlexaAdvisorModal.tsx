@@ -38,6 +38,7 @@ interface AlexaAdvisorModalProps {
   farmId: string;
   farmName?: string;
   initialPrompt?: string;
+  onFarmStateModified?: (updatedFarm: any, newDecision: any) => void;
 }
 
 export function AlexaAdvisorModal({
@@ -46,6 +47,7 @@ export function AlexaAdvisorModal({
   farmId,
   farmName = 'Your Farm',
   initialPrompt,
+  onFarmStateModified,
 }: AlexaAdvisorModalProps) {
   const { language } = useLanguage();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -228,6 +230,10 @@ export function AlexaAdvisorModal({
 
         setMessages(prev => [...prev, alexaMsg]);
         speakText(alexaMsg.spokenText || alexaMsg.text);
+
+        if (data.updatedFarm || data.newDecision) {
+          onFarmStateModified?.(data.updatedFarm, data.newDecision);
+        }
       } else {
         const errorMsg: ChatMessage = {
           id: `alexa-err-${Date.now()}`,
@@ -512,6 +518,103 @@ export function AlexaAdvisorModal({
                       )}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Water Tank Level Updated Card */}
+              {msg.structuredData && msg.activeScenario === 'reserve_updated' && (
+                <div className="mt-2.5 w-full max-w-[88%] sm:max-w-[84%] p-3.5 rounded-xl bg-slate-800/95 border border-cyan-500/40 text-cyan-200 text-xs space-y-2.5 shadow-md">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-white flex items-center gap-1.5 uppercase text-cyan-300">
+                      <Droplets className="w-4 h-4 text-cyan-400" />
+                      Tank Level Updated
+                    </span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                      msg.structuredData.isDeficit ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-cyan-500/20 text-cyan-300'
+                    }`}>
+                      {msg.structuredData.fillPercent}% FULL
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-slate-900/90 border border-slate-700/60 space-y-1.5">
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span>Available Reserve:</span>
+                      <span className="font-bold font-mono text-cyan-300">
+                        {msg.structuredData.availableLiters?.toLocaleString()} L / {msg.structuredData.totalCapacityLiters?.toLocaleString()} L
+                      </span>
+                    </div>
+                    {/* Progress Bar */}
+                    <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          msg.structuredData.isDeficit ? 'bg-gradient-to-r from-amber-500 to-red-500' : 'bg-gradient-to-r from-cyan-500 to-blue-500'
+                        }`}
+                        style={{ width: `${Math.min(100, Math.max(5, msg.structuredData.fillPercent || 0))}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {msg.structuredData.advisoryDirective && (
+                    <div className="p-2 rounded-lg bg-cyan-950/40 border border-cyan-800/40 text-[11px] text-cyan-300 italic">
+                      💡 {msg.structuredData.advisoryDirective}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Irrigation Event Logged Card */}
+              {msg.structuredData && msg.activeScenario === 'irrigation_logged' && (
+                <div className="mt-2.5 w-full max-w-[88%] sm:max-w-[84%] p-3.5 rounded-xl bg-emerald-950/50 border border-emerald-500/40 text-emerald-200 text-xs space-y-2 shadow-md">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-white flex items-center gap-1.5 uppercase text-emerald-300">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      Irrigation Event Recorded
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-emerald-800/60 text-[10px] font-mono text-white">
+                      {msg.structuredData.lastIrrigationDate}
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-slate-900/80 border border-emerald-800/40 space-y-1.5">
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span>Plot / Crop:</span>
+                      <span className="font-bold text-white">🌾 {msg.structuredData.cropName}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span>Current Root Depletion (Dr):</span>
+                      <span className="font-mono text-emerald-300 font-bold">{msg.structuredData.currentDepletion_mm} mm (Threshold: {msg.structuredData.rawThreshold_mm} mm)</span>
+                    </div>
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span>Next Scheduled Irrigation:</span>
+                      <span className="font-semibold text-cyan-300">in ~{msg.structuredData.daysUntilNextIrrigation} days</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Irrigation Method Updated Card */}
+              {msg.structuredData && msg.activeScenario === 'method_updated' && (
+                <div className="mt-2.5 w-full max-w-[88%] sm:max-w-[84%] p-3.5 rounded-xl bg-slate-800/95 border border-indigo-500/40 text-indigo-200 text-xs space-y-2 shadow-md">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-white flex items-center gap-1.5 uppercase text-indigo-300">
+                      <Sliders className="w-4 h-4 text-indigo-400" />
+                      Method Configured
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono font-bold uppercase">
+                      {msg.structuredData.newMethod} ({msg.structuredData.newEfficiencyPct}%)
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-slate-900/80 border border-indigo-800/40 flex items-center justify-between text-slate-300">
+                    <span>🌾 {msg.structuredData.cropName}</span>
+                    {msg.structuredData.waterSavedPct > 0 ? (
+                      <span className="font-bold text-emerald-400 font-mono">
+                        💧 Saves {msg.structuredData.waterSavedPct}% Water / cycle
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">Baseline configuration</span>
+                    )}
+                  </div>
                 </div>
               )}
 

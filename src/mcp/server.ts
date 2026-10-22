@@ -16,6 +16,12 @@ import {
   handleSaveIrrigationPlan,
   getSavedIrrigationPlanSchema,
   handleGetSavedIrrigationPlan,
+  updateWaterReserveSchema,
+  handleUpdateWaterReserve,
+  logIrrigationEventSchema,
+  handleLogIrrigationEvent,
+  updatePlotMethodSchema,
+  handleUpdatePlotMethod,
 } from './tools';
 
 /**
@@ -90,6 +96,30 @@ export function createFieldGuardMcpServer(): McpServer {
     'Retrieves the latest confirmed irrigation plan saved for a farm from Amazon DynamoDB.',
     getSavedIrrigationPlanSchema,
     handleGetSavedIrrigationPlan
+  );
+
+  // 9. Tool: update_water_reserve
+  server.tool(
+    'update_water_reserve',
+    'Updates farm water tank capacity, available Liters, or fill percentage (with deficit recalculation).',
+    updateWaterReserveSchema,
+    handleUpdateWaterReserve
+  );
+
+  // 10. Tool: log_irrigation_event
+  server.tool(
+    'log_irrigation_event',
+    'Logs that a specific crop or plot was irrigated on a date, resetting root-zone depletion Dr.',
+    logIrrigationEventSchema,
+    handleLogIrrigationEvent
+  );
+
+  // 11. Tool: update_plot_method
+  server.tool(
+    'update_plot_method',
+    'Switches the irrigation method of a plot between drip (90%), sprinkler (75%), and flood (60%).',
+    updatePlotMethodSchema,
+    handleUpdatePlotMethod
   );
 
   return server;

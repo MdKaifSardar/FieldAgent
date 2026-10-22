@@ -604,6 +604,31 @@ function FieldGuardApp() {
         farmId={currentFarm?.id || 'farm-bardhaman-01'}
         farmName={currentFarm?.farmName || 'Your Farm'}
         initialPrompt={alexaInitialPrompt}
+        onFarmStateModified={(updatedFarm, newDecision) => {
+          if (updatedFarm) {
+            setCurrentFarm(updatedFarm);
+            currentFarmRef.current = updatedFarm;
+            if (updatedFarm.reserve?.currentAvailable_liters !== undefined) {
+              setInteractiveTankLiters(updatedFarm.reserve.currentAvailable_liters);
+            }
+            if (typeof window !== 'undefined') {
+              try {
+                const saved = localStorage.getItem('fieldguard_user_parcels');
+                if (saved) {
+                  const parcels = JSON.parse(saved) as FarmProfile[];
+                  const idx = parcels.findIndex(p => p.id === updatedFarm.id);
+                  if (idx >= 0) {
+                    parcels[idx] = updatedFarm;
+                    localStorage.setItem('fieldguard_user_parcels', JSON.stringify(parcels));
+                  }
+                }
+              } catch (e) {}
+            }
+          }
+          if (newDecision) {
+            setDecision(newDecision);
+          }
+        }}
       />
     </div>
   );

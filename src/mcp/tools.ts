@@ -2,7 +2,8 @@ import { z } from 'zod';
 import { 
   getFarmProfileFromDynamo, 
   getFarmsByUserId, 
-  logDecisionToDynamo 
+  logDecisionToDynamo,
+  saveFarmProfileToDynamo,
 } from '../adapters/dynamoDbAdapter';
 import { fetchLiveWeatherForecast } from '../adapters/openMeteoAdapter';
 import { runFeasibilityPlanner } from '../core/feasibilityPlanner';
@@ -10,6 +11,9 @@ import { PRESET_1_RAIN_AVOIDANCE, PRESET_2_RESOURCE_DEFICIT } from '../core/demo
 import { FarmProfile, IRRIGATION_EFFICIENCIES, IrrigationMethod } from '../types/farm';
 import { DailyWeatherForecast } from '../types/weather';
 import { DecisionResponse } from '../types/decision';
+
+// Runtime store for active / modified farm profiles
+export const farmRuntimeStore = new Map<string, FarmProfile>();
 
 // Default presets lookup map
 const PRESET_FARMS: Record<string, FarmProfile> = {
@@ -23,21 +27,35 @@ const PRESET_FARMS: Record<string, FarmProfile> = {
  * Resolves a farm profile from DynamoDB, falling back to built-in presets.
  */
 export async function resolveFarm(farmId: string): Promise<FarmProfile | null> {
-  // Check presets first for speed if matched
+  // Check active runtime cache first
+  if (farmRuntimeStore.has(farmId)) {
+    return farmRuntimeStore.get(farmId)!;
+  }
+
+  // Check presets
   if (PRESET_FARMS[farmId]) {
-    return PRESET_FARMS[farmId];
+    const cloned: FarmProfile = JSON.parse(JSON.stringify(PRESET_FARMS[farmId]));
+    farmRuntimeStore.set(farmId, cloned);
+    return cloned;
   }
   // Check DynamoDB
   const farm = await getFarmProfileFromDynamo(farmId);
-  if (farm) return farm;
+  if (farm) {
+    farmRuntimeStore.set(farmId, farm);
+    return farm;
+  }
 
   // Partial match fallback (e.g. "bardhaman" -> PRESET_1)
   const lower = farmId.toLowerCase();
   if (lower.includes('bardhaman') || lower.includes('tomato')) {
-    return PRESET_1_RAIN_AVOIDANCE.farm;
+    const cloned: FarmProfile = JSON.parse(JSON.stringify(PRESET_1_RAIN_AVOIDANCE.farm));
+    farmRuntimeStore.set(farmId, cloned);
+    return cloned;
   }
   if (lower.includes('nashik') || lower.includes('spinach')) {
-    return PRESET_2_RESOURCE_DEFICIT.farm;
+    const cloned: FarmProfile = JSON.parse(JSON.stringify(PRESET_2_RESOURCE_DEFICIT.farm));
+    farmRuntimeStore.set(farmId, cloned);
+    return cloned;
   }
 
   return null;
@@ -618,6 +636,255 @@ export async function handleGetSavedIrrigationPlan(args: { farmId: string }) {
     farmId: args.farmId,
     farmName,
     activePlan,
+  };
+
+  return {
+    content: [
+      {
+        type: 'text' as const,
+        text: JSON.stringify(result, null, 2),
+      },
+    ],
+  };
+}
+
+export const updateWaterReserveSchema = {
+  farmId: z.string().describe('The unique identifier of the farm'),
+  fillPercent: z.number().min(0).max(100).optional().describe('Tank fill percentage (0 to 100%)'),
+  availableLiters: z.number().optional().describe('Direct available water volume in Liters'),
+  totalCapacityLiters: z.number().optional().describe('Total capacity of the tank in Liters'),
+};
+
+export async function handleUpdateWaterReserve(args: {
+  farmId: string;
+  fillPercent?: number;
+  availableLiters?: number;
+  totalCapacityLiters?: number;
+}) {
+  const farm = await resolveFarm(args.farmId);
+  if (!farm) {
+    return {
+      isError: true,
+      content: [{ type: 'text' as const, text: `Farm "${args.farmId}" not found.` }],
+    };
+  }
+
+  const totalCap = args.totalCapacityLiters || farm.reserve.totalCapacity_liters || 4000;
+  let available = farm.reserve.currentAvailable_liters;
+
+  if (args.fillPercent !== undefined) {
+    available = Math.round((totalCap * Math.max(0, Math.min(100, args.fillPercent))) / 100);
+  } else if (args.availableLiters !== undefined) {
+    available = Math.max(0, Math.round(args.availableLiters));
+  }
+
+  const percent = totalCap > 0 ? Math.round((available / totalCap) * 100) : 0;
+
+  farm.reserve = {
+    ...farm.reserve,
+    totalCapacity_liters: totalCap,
+    currentAvailable_liters: available,
+  };
+
+  farmRuntimeStore.set(farm.id, farm);
+  await saveFarmProfileToDynamo(farm);
+
+  const forecast = await resolveForecast(farm.location.latitude, farm.location.longitude);
+  const decision = runFeasibilityPlanner({
+    plots: farm.plots,
+    awc_mm_per_m: farm.soil.awc_mm_per_m,
+    reserve: farm.reserve,
+    forecast,
+  });
+
+  const isDeficit = available < decision.totalFarmDemand_liters;
+  const shortfall = isDeficit ? decision.totalFarmDemand_liters - available : 0;
+
+  const directive = isDeficit
+    ? `Direct available ${available.toLocaleString()} L exclusively to your most urgent plot (${decision.plots[0]?.cropName || 'primary crop'}). Keep lateral valves to other plots firmly shut so water does not dissipate. Irrigate after 6:00 PM or before 7:00 AM to eliminate solar evaporation loss.`
+    : `Tank reserve of ${available.toLocaleString()} L is fully adequate to satisfy total farm demand of ${decision.totalFarmDemand_liters.toLocaleString()} L.`;
+
+  const result = {
+    success: true,
+    farmId: farm.id,
+    farmName: farm.farmName,
+    availableLiters: available,
+    totalCapacityLiters: totalCap,
+    fillPercent: percent,
+    isDeficit,
+    totalDemand_liters: decision.totalFarmDemand_liters,
+    shortfall_liters: shortfall,
+    primaryAction: decision.primaryAction,
+    advisoryDirective: directive,
+    updatedFarm: farm,
+    newDecision: decision,
+  };
+
+  return {
+    content: [
+      {
+        type: 'text' as const,
+        text: JSON.stringify(result, null, 2),
+      },
+    ],
+  };
+}
+
+export const logIrrigationEventSchema = {
+  farmId: z.string().describe('The unique identifier of the farm'),
+  cropName: z.string().optional().describe('Name of the crop watered (e.g. "Onion", "Tomato", "Wheat")'),
+  plotId: z.string().optional().describe('Specific plot ID watered'),
+  irrigationDate: z.string().optional().describe('Date when irrigation occurred (YYYY-MM-DD, "today", or "yesterday")'),
+  waterDepth_mm: z.number().optional().describe('Water depth applied in mm'),
+};
+
+export async function handleLogIrrigationEvent(args: {
+  farmId: string;
+  cropName?: string;
+  plotId?: string;
+  irrigationDate?: string;
+  waterDepth_mm?: number;
+}) {
+  const farm = await resolveFarm(args.farmId);
+  if (!farm || !farm.plots || farm.plots.length === 0) {
+    return {
+      isError: true,
+      content: [{ type: 'text' as const, text: `Farm "${args.farmId}" not found or has no plots.` }],
+    };
+  }
+
+  let targetPlot = farm.plots[0];
+  if (args.plotId) {
+    const found = farm.plots.find(p => p.id === args.plotId);
+    if (found) targetPlot = found;
+  } else if (args.cropName) {
+    const search = args.cropName.toLowerCase().trim();
+    const found = farm.plots.find(p => p.cropName.toLowerCase().includes(search));
+    if (found) targetPlot = found;
+  }
+
+  // Parse date
+  let resolvedDate = new Date().toISOString().split('T')[0];
+  const dateInput = (args.irrigationDate || 'today').toLowerCase().trim();
+  if (dateInput === 'yesterday') {
+    resolvedDate = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  } else if (dateInput !== 'today' && !isNaN(new Date(dateInput).getTime())) {
+    resolvedDate = new Date(dateInput).toISOString().split('T')[0];
+  }
+
+  targetPlot.lastIrrigationDate = resolvedDate;
+
+  // Calculate calendar days elapsed and forward soil moisture balance
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const past = new Date(resolvedDate);
+  past.setHours(0, 0, 0, 0);
+  const daysElapsed = Math.max(0, Math.round((now.getTime() - past.getTime()) / 86400000));
+  const dailyEtc = (targetPlot.cropCoefficient_Kc || 1.05) * 4.1;
+  const newDr = Math.min(targetPlot.taw_mm || 50, Math.round(daysElapsed * dailyEtc * 10) / 10);
+  targetPlot.currentDepletion_mm = newDr;
+
+  farmRuntimeStore.set(farm.id, farm);
+  await saveFarmProfileToDynamo(farm);
+
+  const forecast = await resolveForecast(farm.location.latitude, farm.location.longitude);
+  const decision = runFeasibilityPlanner({
+    plots: farm.plots,
+    awc_mm_per_m: farm.soil.awc_mm_per_m,
+    reserve: farm.reserve,
+    forecast,
+  });
+
+  const raw = targetPlot.raw_mm || 25;
+  const daysToNext = dailyEtc > 0 ? Math.max(1, Math.round((raw - newDr) / dailyEtc)) : 3;
+
+  const result = {
+    success: true,
+    farmId: farm.id,
+    plotId: targetPlot.id,
+    cropName: targetPlot.cropName,
+    lastIrrigationDate: resolvedDate,
+    daysElapsedSinceWatering: daysElapsed,
+    currentDepletion_mm: newDr,
+    rawThreshold_mm: raw,
+    daysUntilNextIrrigation: daysToNext,
+    recommendation: `Irrigation recorded for ${targetPlot.cropName} on ${resolvedDate}. Root depletion reset to ${newDr} mm. Next scheduled watering in ~${daysToNext} days.`,
+    updatedFarm: farm,
+    newDecision: decision,
+  };
+
+  return {
+    content: [
+      {
+        type: 'text' as const,
+        text: JSON.stringify(result, null, 2),
+      },
+    ],
+  };
+}
+
+export const updatePlotMethodSchema = {
+  farmId: z.string().describe('The unique identifier of the farm'),
+  cropName: z.string().optional().describe('Name of the crop (e.g. "Tomato", "Onion")'),
+  plotId: z.string().optional().describe('Specific plot ID'),
+  irrigationMethod: z.enum(['drip', 'sprinkler', 'surface_flood']).describe('New irrigation method'),
+};
+
+export async function handleUpdatePlotMethod(args: {
+  farmId: string;
+  cropName?: string;
+  plotId?: string;
+  irrigationMethod: 'drip' | 'sprinkler' | 'surface_flood';
+}) {
+  const farm = await resolveFarm(args.farmId);
+  if (!farm || !farm.plots || farm.plots.length === 0) {
+    return {
+      isError: true,
+      content: [{ type: 'text' as const, text: `Farm "${args.farmId}" not found or has no plots.` }],
+    };
+  }
+
+  let targetPlot = farm.plots[0];
+  if (args.plotId) {
+    const found = farm.plots.find(p => p.id === args.plotId);
+    if (found) targetPlot = found;
+  } else if (args.cropName) {
+    const search = args.cropName.toLowerCase().trim();
+    const found = farm.plots.find(p => p.cropName.toLowerCase().includes(search));
+    if (found) targetPlot = found;
+  }
+
+  const previousMethod = targetPlot.irrigationMethod || 'surface_flood';
+  targetPlot.irrigationMethod = args.irrigationMethod;
+
+  farmRuntimeStore.set(farm.id, farm);
+  await saveFarmProfileToDynamo(farm);
+
+  const forecast = await resolveForecast(farm.location.latitude, farm.location.longitude);
+  const decision = runFeasibilityPlanner({
+    plots: farm.plots,
+    awc_mm_per_m: farm.soil.awc_mm_per_m,
+    reserve: farm.reserve,
+    forecast,
+  });
+
+  const oldEff = IRRIGATION_EFFICIENCIES[previousMethod as IrrigationMethod] || 0.60;
+  const newEff = IRRIGATION_EFFICIENCIES[args.irrigationMethod] || 0.90;
+  const waterSavedPct = newEff > oldEff ? Math.round((1 - (oldEff / newEff)) * 100) : 0;
+
+  const result = {
+    success: true,
+    farmId: farm.id,
+    plotId: targetPlot.id,
+    cropName: targetPlot.cropName,
+    previousMethod,
+    newMethod: args.irrigationMethod,
+    newEfficiencyPct: Math.round(newEff * 100),
+    waterSavedPct,
+    totalFarmDemand_liters: decision.totalFarmDemand_liters,
+    recommendation: `Switched ${targetPlot.cropName} to ${args.irrigationMethod} (${Math.round(newEff * 100)}% efficiency). ${waterSavedPct > 0 ? `Saves ${waterSavedPct}% water per cycle.` : ''}`,
+    updatedFarm: farm,
+    newDecision: decision,
   };
 
   return {
