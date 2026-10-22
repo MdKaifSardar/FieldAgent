@@ -112,7 +112,7 @@ function RegisterPageContent() {
         try {
           const parsed = JSON.parse(saved) as AuthSession;
           if (isSessionValid(parsed)) {
-            router.replace('/');
+            router.replace('/fields');
             return;
           }
         } catch (e) {}
@@ -287,7 +287,7 @@ function RegisterPageContent() {
         }
 
         playVoicePrompt(SPEECH_SCRIPTS.success[language], language);
-        router.replace('/');
+        router.replace('/fields');
       } else {
         setErrorMsg(result.error || 'Invalid 6-digit OTP code. Please re-enter.');
       }

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { useLanguage } from '../common/LanguageContext';
 import { useTheme } from '../common/ThemeContext';
 import { LanguageSelector } from '../common/LanguageSelector';
@@ -20,9 +21,9 @@ import {
   Sparkles
 } from 'lucide-react';
 
-interface ConsoleHeaderProps {
-  currentView: 'profile' | 'fields' | 'advisory' | 'register-field' | 'edit-field';
-  onNavigate: (view: 'profile' | 'fields' | 'advisory' | 'register-field' | 'edit-field') => void;
+export interface ConsoleHeaderProps {
+  currentView?: 'profile' | 'fields' | 'advisory' | 'register-field' | 'edit-field';
+  onNavigate?: (view: 'profile' | 'fields' | 'advisory' | 'register-field' | 'edit-field') => void;
   activeParcel: FarmProfile | null;
   parcels: FarmProfile[];
   onSelectParcel: (parcelId: string) => void;
@@ -43,8 +44,25 @@ export function ConsoleHeader({
   onToggleMobileSidebar,
   onOpenAlexaModal,
 }: ConsoleHeaderProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
+
+  const activeView = currentView || (
+    pathname === '/profile' ? 'profile' :
+    pathname === '/fields/new' ? 'register-field' :
+    pathname?.endsWith('/edit') ? 'edit-field' :
+    pathname?.startsWith('/fields/') ? 'advisory' :
+    pathname === '/fields' ? 'fields' : 'profile'
+  );
+
+  const handleNav = (view: 'profile' | 'fields' | 'advisory' | 'register-field' | 'edit-field', path: string) => {
+    if (onNavigate) {
+      onNavigate(view);
+    }
+    router.push(path);
+  };
 
   return (
     <header className="sticky top-0 z-30 h-16 shrink-0 min-h-[64px] bg-white/95 dark:bg-[#0A1C2A]/95 backdrop-blur-md border-b border-[#E1E8DE] dark:border-[#16364D] px-3 sm:px-6 flex items-center justify-between transition-colors">
@@ -66,13 +84,13 @@ export function ConsoleHeader({
             <img src="/icon.png" alt="FieldGuard" className="w-full h-full object-contain" />
           </div>
           <span className="font-bold text-sm text-slate-900 dark:text-[#F0F9FF] truncate font-['Outfit']">
-            {currentView === 'profile' 
+            {activeView === 'profile' 
               ? 'FieldGuard' 
-              : currentView === 'fields' 
+              : activeView === 'fields' 
               ? t.myFieldsDirectory 
-              : currentView === 'register-field'
+              : activeView === 'register-field'
               ? t.registerNewField
-              : currentView === 'edit-field'
+              : activeView === 'edit-field'
               ? t.editFieldTitle
               : activeParcel ? localizeFieldTitle(activeParcel.farmName, language) : t.fieldAdvisor}
           </span>
@@ -82,7 +100,7 @@ export function ConsoleHeader({
         <nav aria-label="Breadcrumb" className="hidden md:flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-[#94A3B8]">
           <button
             type="button"
-            onClick={() => onNavigate('profile')}
+            onClick={() => handleNav('profile', '/profile')}
             className="hover:text-sky-600 dark:hover:text-[#38BDF8] font-bold text-slate-800 dark:text-[#F0F9FF] flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer"
           >
             <span>FieldGuard</span>
@@ -90,23 +108,23 @@ export function ConsoleHeader({
 
           <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-[#1E4765] shrink-0" />
 
-          {currentView === 'profile' && (
+          {activeView === 'profile' && (
             <span className="font-semibold text-slate-900 dark:text-[#38BDF8] truncate">
               {t.profileOverview}
             </span>
           )}
 
-          {currentView === 'fields' && (
+          {activeView === 'fields' && (
             <span className="font-semibold text-slate-900 dark:text-[#38BDF8] truncate">
               {t.myFieldsDirectory}
             </span>
           )}
 
-          {currentView === 'advisory' && (
+          {activeView === 'advisory' && (
             <>
               <button
                 type="button"
-                onClick={() => onNavigate('fields')}
+                onClick={() => handleNav('fields', '/fields')}
                 className="hover:text-sky-600 dark:hover:text-[#38BDF8] transition-colors shrink-0 cursor-pointer"
               >
                 {t.fieldsCountSuffix}
@@ -118,11 +136,11 @@ export function ConsoleHeader({
             </>
           )}
 
-          {currentView === 'register-field' && (
+          {activeView === 'register-field' && (
             <>
               <button
                 type="button"
-                onClick={() => onNavigate('fields')}
+                onClick={() => handleNav('fields', '/fields')}
                 className="hover:text-sky-600 dark:hover:text-[#38BDF8] transition-colors shrink-0 cursor-pointer"
               >
                 {t.fieldsCountSuffix}
@@ -134,11 +152,11 @@ export function ConsoleHeader({
             </>
           )}
 
-          {currentView === 'edit-field' && (
+          {activeView === 'edit-field' && (
             <>
               <button
                 type="button"
-                onClick={() => onNavigate('fields')}
+                onClick={() => handleNav('fields', '/fields')}
                 className="hover:text-sky-600 dark:hover:text-[#38BDF8] transition-colors shrink-0 cursor-pointer"
               >
                 {t.fieldsCountSuffix}
@@ -146,7 +164,7 @@ export function ConsoleHeader({
               <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-[#1E4765] shrink-0" />
               <button
                 type="button"
-                onClick={() => onNavigate('advisory')}
+                onClick={() => handleNav('advisory', activeParcel ? `/fields/${activeParcel.id}` : '/fields')}
                 className="hover:text-sky-600 dark:hover:text-[#38BDF8] transition-colors shrink-0 cursor-pointer truncate max-w-[140px]"
               >
                 {activeParcel ? localizeFieldTitle(activeParcel.farmName, language) : t.fieldAdvisor}
@@ -198,7 +216,7 @@ export function ConsoleHeader({
               if (typeof window !== 'undefined' && window.innerWidth < 768) {
                 onToggleMobileSidebar();
               } else {
-                onNavigate('profile');
+                handleNav('profile', '/profile');
               }
             }}
             className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-[#112B3E] transition-colors text-left cursor-pointer"

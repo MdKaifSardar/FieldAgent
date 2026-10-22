@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { useLanguage } from '../common/LanguageContext';
 import { useTheme } from '../common/ThemeContext';
 import { LanguageSelector } from '../common/LanguageSelector';
@@ -23,13 +24,13 @@ import {
   CheckCircle2
 } from 'lucide-react';
 
-interface ConsoleSidebarProps {
-  currentView: 'profile' | 'fields' | 'advisory' | 'register-field' | 'edit-field';
-  onNavigate: (view: 'profile' | 'fields' | 'advisory' | 'register-field' | 'edit-field') => void;
+export interface ConsoleSidebarProps {
+  currentView?: 'profile' | 'fields' | 'advisory' | 'register-field' | 'edit-field';
+  onNavigate?: (view: 'profile' | 'fields' | 'advisory' | 'register-field' | 'edit-field') => void;
   parcels: FarmProfile[];
   activeParcel: FarmProfile | null;
   onSelectParcel: (parcelId: string) => void;
-  onOpenNewParcelWizard: () => void;
+  onOpenNewParcelWizard?: () => void;
   isMobileOpen: boolean;
   onCloseMobile: () => void;
   authSession?: AuthSession | null;
@@ -48,10 +49,27 @@ export function ConsoleSidebar({
   authSession,
   onSignOut,
 }: ConsoleSidebarProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const { language, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [isFieldsAccordionOpen, setIsFieldsAccordionOpen] = useState<boolean>(true);
+
+  const activeView = currentView || (
+    pathname === '/profile' ? 'profile' :
+    pathname === '/fields/new' ? 'register-field' :
+    pathname?.endsWith('/edit') ? 'edit-field' :
+    pathname?.startsWith('/fields/') ? 'advisory' :
+    pathname === '/fields' ? 'fields' : 'profile'
+  );
+
+  const handleNav = (view: 'profile' | 'fields' | 'advisory' | 'register-field' | 'edit-field', path: string) => {
+    if (onNavigate) {
+      onNavigate(view);
+    }
+    router.push(path);
+  };
 
   const tOverview = t.profileOverview;
   const tFields = t.myFieldsDirectory;
@@ -117,9 +135,9 @@ export function ConsoleSidebar({
               {isCollapsed ? (
                 <button
                   type="button"
-                  onClick={() => onNavigate('profile')}
+                  onClick={() => handleNav('profile', '/profile')}
                   className={`w-10 h-10 mx-auto flex items-center justify-center rounded-lg border transition-all cursor-pointer ${
-                    currentView === 'profile'
+                    activeView === 'profile'
                       ? 'bg-sky-500/15 text-sky-600 dark:text-[#38BDF8] border-sky-500/40 font-bold'
                       : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#112B3E]'
                   }`}
@@ -130,9 +148,9 @@ export function ConsoleSidebar({
               ) : (
                 <button
                   type="button"
-                  onClick={() => onNavigate('profile')}
+                  onClick={() => handleNav('profile', '/profile')}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                    currentView === 'profile'
+                    activeView === 'profile'
                       ? 'bg-sky-500/15 text-sky-700 dark:text-[#38BDF8] border-sky-500/40 font-bold'
                       : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#112B3E]'
                   }`}
@@ -147,9 +165,9 @@ export function ConsoleSidebar({
               {isCollapsed ? (
                 <button
                   type="button"
-                  onClick={() => onNavigate('fields')}
+                  onClick={() => handleNav('fields', '/fields')}
                   className={`w-10 h-10 mx-auto flex items-center justify-center rounded-lg border transition-all cursor-pointer ${
-                    currentView === 'fields' || currentView === 'advisory'
+                    activeView === 'fields' || activeView === 'advisory'
                       ? 'bg-sky-500/15 text-sky-600 dark:text-[#38BDF8] border-sky-500/40 font-bold'
                       : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#112B3E]'
                   }`}
@@ -161,14 +179,14 @@ export function ConsoleSidebar({
                 <div>
                   <div
                     className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${
-                      currentView === 'fields'
+                      activeView === 'fields'
                         ? 'bg-sky-500/15 text-sky-700 dark:text-[#38BDF8] border-sky-500/40 font-bold'
                         : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#112B3E]'
                     }`}
                   >
                     <button
                       type="button"
-                      onClick={() => onNavigate('fields')}
+                      onClick={() => handleNav('fields', '/fields')}
                       className="flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer"
                       title={tFields}
                     >
@@ -204,14 +222,14 @@ export function ConsoleSidebar({
                   {isFieldsAccordionOpen && parcels.length > 0 && (
                     <div className="mt-1 pl-4 pr-1 space-y-0.5 border-l border-slate-200 dark:border-[#16364D] ml-5">
                       {parcels.map((farm) => {
-                        const isActive = activeParcel?.id === farm.id && currentView === 'advisory';
+                        const isActive = activeParcel?.id === farm.id && activeView === 'advisory';
                         return (
                           <button
                             key={farm.id}
                             type="button"
                             onClick={() => {
                               onSelectParcel(farm.id);
-                              onNavigate('advisory');
+                              handleNav('advisory', `/fields/${farm.id}`);
                             }}
                             className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-[11px] transition-all cursor-pointer text-left border ${
                               isActive
@@ -237,7 +255,10 @@ export function ConsoleSidebar({
                 {isCollapsed ? (
                   <button
                     type="button"
-                    onClick={onOpenNewParcelWizard}
+                    onClick={() => {
+                      if (onOpenNewParcelWizard) onOpenNewParcelWizard();
+                      router.push('/fields/new');
+                    }}
                     className="w-10 h-10 mx-auto rounded-lg flex items-center justify-center bg-sky-600 hover:bg-sky-500 text-white shadow-xs transition-all cursor-pointer"
                     title={t.registerNewField}
                   >
@@ -246,7 +267,10 @@ export function ConsoleSidebar({
                 ) : (
                   <button
                     type="button"
-                    onClick={onOpenNewParcelWizard}
+                    onClick={() => {
+                      if (onOpenNewParcelWizard) onOpenNewParcelWizard();
+                      router.push('/fields/new');
+                    }}
                     className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-bold text-xs bg-sky-600 hover:bg-sky-500 text-white shadow-xs transition-all cursor-pointer"
                   >
                     <Plus className="w-4 h-4" />
@@ -367,11 +391,11 @@ export function ConsoleSidebar({
                   <button
                     type="button"
                     onClick={() => {
-                      onNavigate('profile');
+                      handleNav('profile', '/profile');
                       onCloseMobile();
                     }}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-semibold transition-all cursor-pointer ${
-                      currentView === 'profile'
+                      activeView === 'profile'
                         ? 'bg-sky-500/15 text-sky-700 dark:text-[#38BDF8] font-bold border border-sky-500/30'
                         : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#112B3E]'
                     }`}
@@ -383,11 +407,11 @@ export function ConsoleSidebar({
                   <button
                     type="button"
                     onClick={() => {
-                      onNavigate('fields');
+                      handleNav('fields', '/fields');
                       onCloseMobile();
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-semibold transition-all cursor-pointer ${
-                      currentView === 'fields'
+                      activeView === 'fields'
                         ? 'bg-sky-500/15 text-sky-700 dark:text-[#38BDF8] font-bold border border-sky-500/30'
                         : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#112B3E]'
                     }`}
@@ -405,7 +429,7 @@ export function ConsoleSidebar({
                   {parcels.length > 0 && (
                     <div className="pl-4 pr-1 space-y-1 border-l border-slate-200 dark:border-[#16364D] ml-5 my-1.5">
                       {parcels.map((farm) => {
-                        const isActive = activeParcel?.id === farm.id && currentView === 'advisory';
+                        const isActive = activeParcel?.id === farm.id && activeView === 'advisory';
                         const localizedName = localizeFieldTitle(farm.farmName, language);
                         return (
                           <button
@@ -413,7 +437,7 @@ export function ConsoleSidebar({
                             type="button"
                             onClick={() => {
                               onSelectParcel(farm.id);
-                              onNavigate('advisory');
+                              handleNav('advisory', `/fields/${farm.id}`);
                               onCloseMobile();
                             }}
                             className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-[11px] transition-all cursor-pointer text-left ${
@@ -439,7 +463,8 @@ export function ConsoleSidebar({
                 <button
                   type="button"
                   onClick={() => {
-                    onOpenNewParcelWizard();
+                    if (onOpenNewParcelWizard) onOpenNewParcelWizard();
+                    router.push('/fields/new');
                     onCloseMobile();
                   }}
                   className="w-full flex items-center justify-center gap-2 py-2 rounded-lg font-bold text-xs bg-sky-600 text-white shadow-xs cursor-pointer"

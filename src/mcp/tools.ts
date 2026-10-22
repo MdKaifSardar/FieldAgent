@@ -667,23 +667,31 @@ export async function handleLogIrrigationEvent(args: {
     if (found) targetPlot = found;
   }
 
-  // Parse date
-  let resolvedDate = new Date().toISOString().split('T')[0];
+  // Parse date safely across local timezones
+  const formatYMD = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const today = new Date();
+  let resolvedDate = formatYMD(today);
   const dateInput = (args.irrigationDate || 'today').toLowerCase().trim();
   if (dateInput === 'yesterday') {
-    resolvedDate = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    resolvedDate = formatYMD(new Date(today.getTime() - 86400000));
   } else if (dateInput !== 'today' && !isNaN(new Date(dateInput).getTime())) {
-    resolvedDate = new Date(dateInput).toISOString().split('T')[0];
+    resolvedDate = formatYMD(new Date(dateInput));
   }
 
   targetPlot.lastIrrigationDate = resolvedDate;
 
-  // Calculate calendar days elapsed and forward soil moisture balance
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const past = new Date(resolvedDate);
-  past.setHours(0, 0, 0, 0);
-  const daysElapsed = Math.max(0, Math.round((now.getTime() - past.getTime()) / 86400000));
+  // Calculate calendar days elapsed safely without UTC/local discrepancy
+  const [ny, nm, nd] = formatYMD(today).split('-').map(Number);
+  const [py, pm, pd] = resolvedDate.split('-').map(Number);
+  const nowMs = Date.UTC(ny, nm - 1, nd);
+  const pastMs = Date.UTC(py, pm - 1, pd);
+  const daysElapsed = Math.max(0, Math.round((nowMs - pastMs) / 86400000));
   const dailyEtc = (targetPlot.cropCoefficient_Kc || 1.05) * 4.1;
   const taw = (farm.soil.awc_mm_per_m || 150) * (targetPlot.rootDepth_m || 0.6);
   const raw = Math.round(taw * (targetPlot.depletionFraction_p || 0.45));

@@ -62,7 +62,7 @@ function LoginPageContent() {
         try {
           const parsed = JSON.parse(saved) as AuthSession;
           if (isSessionValid(parsed)) {
-            router.replace('/');
+            router.replace('/fields');
             return;
           }
         } catch (e) {}
@@ -168,14 +168,14 @@ function LoginPageContent() {
       if (authMethod === 'email') {
         const res = await verifyEmailOtpCode(email.trim(), otpCode.trim());
         if (res.success && res.session) {
-          router.replace('/');
+          router.replace('/fields');
         } else {
           setErrorMsg(res.error || 'Invalid OTP code. Please check and try again.');
         }
       } else {
         const res = await verifyPhoneOtpCode(phone.trim(), otpCode.trim());
         if (res.success && res.session) {
-          router.replace('/');
+          router.replace('/fields');
         } else {
           setErrorMsg(res.error || 'Invalid OTP code. Please check and try again.');
         }

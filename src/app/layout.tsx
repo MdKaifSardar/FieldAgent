@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { Providers } from '../components/common/Providers';
 
 export const metadata: Metadata = {
   title: 'FieldGuard — Weather-Aware Irrigation Decision Support',
@@ -22,7 +23,9 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased selection:bg-emerald-500 selection:text-white" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
