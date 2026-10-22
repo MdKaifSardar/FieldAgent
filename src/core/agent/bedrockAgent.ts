@@ -388,8 +388,8 @@ async function runDeterministicFallback(
     };
   }
 
-  // 4. View Saved Plan ("show saved plan", "what was my plan", "retrieve")
-  if (query.includes('saved plan') || query.includes('previous plan') || query.includes('retrieve')) {
+  // 4. View Saved Plan ("display plan", "show plan", "view plan", "saved plan", "retrieve")
+  if (query.includes('display') || query.includes('show plan') || query.includes('view plan') || query.includes('saved plan') || query.includes('previous plan') || query.includes('my plan') || query.includes('retrieve') || query.includes('योजना दिखा')) {
     const { result, audit } = await executeMcpTool('get_saved_irrigation_plan', { farmId });
     toolAudits.push(audit);
 
