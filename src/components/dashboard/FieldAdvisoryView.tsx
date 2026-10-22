@@ -50,6 +50,7 @@ interface FieldAdvisoryViewProps {
   onRainSliderChange: (val: number) => void;
   interactiveTankLiters: number;
   onTankSliderChange: (val: number) => void;
+  onLogIrrigation?: (plotId: string) => void;
 }
 
 export function FieldAdvisoryView({
@@ -70,6 +71,7 @@ export function FieldAdvisoryView({
   onRainSliderChange,
   interactiveTankLiters,
   onTankSliderChange,
+  onLogIrrigation,
 }: FieldAdvisoryViewProps) {
   const { language, t } = useLanguage();
   const [activeTab, setActiveTab] = useState<AdvisoryTab>('advisory');
@@ -294,6 +296,8 @@ export function FieldAdvisoryView({
                 availableReserve_liters={decision.availableWater_liters}
                 waterShortfall_liters={decision.waterShortfall_liters}
                 plots={decision.plots}
+                waterAllocation={decision.waterAllocation}
+                onLogIrrigation={onLogIrrigation}
               />
             </div>
           )}

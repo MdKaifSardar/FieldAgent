@@ -36,6 +36,7 @@ export interface CropBlock {
   currentDepletion_mm: number; // Current soil water deficit Dr in mm
   irrigationMethod: IrrigationMethod;
   lastIrrigationDate?: string;
+  lastCalculationDate?: string;
 }
 
 export type StorageTier = 'sintex_tank' | 'custom_sump' | 'borewell_hours';

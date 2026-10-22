@@ -127,3 +127,100 @@ export function calculateHoursToStress(
 
   return Math.round(hours * 10) / 10;
 }
+
+/**
+ * Computes initial or updated soil water depletion Dr (mm) from the last irrigation date.
+ * Assumes soil was at Field Capacity (Dr = 0 mm) on lastIrrigationDate.
+ * Clamps elapsed days >= 0 and final depletion between 0 and TAW.
+ */
+export function computeBaselineDepletionFromDate(params: {
+  awc_mm_per_m: number;
+  rootDepth_m: number;
+  cropCoefficient_Kc: number;
+  dailyEt0_mm: number;
+  lastIrrigationDate: string; // YYYY-MM-DD
+  todayDate?: string; // YYYY-MM-DD
+}): {
+  currentDepletion_mm: number;
+  elapsedDays: number;
+  taw_mm: number;
+  raw_mm: number;
+  dailyEtc_mm: number;
+} {
+  const { awc_mm_per_m, rootDepth_m, cropCoefficient_Kc, dailyEt0_mm, lastIrrigationDate } = params;
+  const todayStr = params.todayDate || new Date().toISOString().split('T')[0];
+
+  const taw_mm = calculateTaw(awc_mm_per_m, rootDepth_m);
+  const raw_mm = calculateRaw(0.45, taw_mm);
+  const dailyEtc_mm = calculateEtc(Math.max(1.0, dailyEt0_mm), cropCoefficient_Kc);
+
+  const lastTime = new Date(lastIrrigationDate + 'T00:00:00').getTime();
+  const todayTime = new Date(todayStr + 'T00:00:00').getTime();
+
+  let elapsedDays = 0;
+  if (!isNaN(lastTime) && !isNaN(todayTime)) {
+    elapsedDays = Math.max(0, Math.floor((todayTime - lastTime) / 86400000));
+  }
+
+  const accumulatedDeficit = elapsedDays * dailyEtc_mm;
+  const currentDepletion_mm = Math.round(Math.min(taw_mm, Math.max(0, accumulatedDeficit)) * 10) / 10;
+
+  return {
+    currentDepletion_mm,
+    elapsedDays,
+    taw_mm,
+    raw_mm,
+    dailyEtc_mm,
+  };
+}
+
+/**
+ * Daily catch-up simulator:
+ * Steps forward the soil-water balance for each elapsed day between lastCalculationDate and todayDate.
+ * Integrates daily rain infiltration and daily ETc, with physical clamping at [0, TAW].
+ */
+export function advanceSoilWaterBalanceToDate(params: {
+  currentDepletion_mm: number;
+  taw_mm: number;
+  raw_mm: number;
+  dailyEtc_mm: number;
+  dailyRain_mm: number;
+  lastCalculationDate: string; // YYYY-MM-DD
+  todayDate?: string; // YYYY-MM-DD
+}): {
+  newDepletion_mm: number;
+  elapsedDays: number;
+  isStressed: boolean;
+} {
+  const { currentDepletion_mm, taw_mm, raw_mm, dailyEtc_mm, dailyRain_mm, lastCalculationDate } = params;
+  const todayStr = params.todayDate || new Date().toISOString().split('T')[0];
+
+  const lastTime = new Date(lastCalculationDate + 'T00:00:00').getTime();
+  const todayTime = new Date(todayStr + 'T00:00:00').getTime();
+
+  let elapsedDays = 0;
+  if (!isNaN(lastTime) && !isNaN(todayTime)) {
+    elapsedDays = Math.max(0, Math.floor((todayTime - lastTime) / 86400000));
+  }
+
+  if (elapsedDays <= 0) {
+    return {
+      newDepletion_mm: currentDepletion_mm,
+      elapsedDays: 0,
+      isStressed: currentDepletion_mm >= raw_mm,
+    };
+  }
+
+  let dr = currentDepletion_mm;
+  for (let i = 0; i < elapsedDays; i++) {
+    const step = updateDailySoilWaterBalance(dr, dailyRain_mm, 0, dailyEtc_mm, taw_mm, raw_mm);
+    dr = step.nextDepletion_mm;
+  }
+
+  return {
+    newDepletion_mm: Math.round(dr * 10) / 10,
+    elapsedDays,
+    isStressed: dr >= raw_mm,
+  };
+}
+
