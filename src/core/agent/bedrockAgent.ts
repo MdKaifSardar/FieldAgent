@@ -358,8 +358,39 @@ async function runDeterministicFallback(
     };
   }
 
-  // 3. Save Plan Scenario ("save this plan", "confirm", "record")
-  if (query.includes('save') || query.includes('confirm') || query.includes('सुरक्षित') || query.includes('সংরক্ষণ')) {
+  // 3. View Saved Plan ("show me my saved irrigation plan", "display plan", "show plan", "view plan", "retrieve", "my plan")
+  const isViewSavedPlan =
+    query.includes('show') ||
+    query.includes('display') ||
+    query.includes('view') ||
+    query.includes('retrieve') ||
+    query.includes('what is') ||
+    query.includes('what was') ||
+    query.includes('saved plan') ||
+    query.includes('previous plan') ||
+    query.includes('my plan') ||
+    query.includes('योजना दिखा') ||
+    query.includes('দেখ');
+
+  if (isViewSavedPlan && (query.includes('plan') || query.includes('योजना') || query.includes('পরিকল্পনা') || query.includes('saved'))) {
+    const { result, audit } = await executeMcpTool('get_saved_irrigation_plan', { farmId });
+    toolAudits.push(audit);
+
+    const reply = language === 'hi'
+      ? `आपकी सहेजी गई योजना (${result.activePlan.planId}): कुल ${result.activePlan.totalCommittedLiters.toLocaleString()} लीटर पानी आवंटित है। स्थिति: पुष्टि की गई।`
+      : `Here is your saved irrigation plan (${result.activePlan.planId}) for ${result.farmName}: ${result.activePlan.totalCommittedLiters.toLocaleString()} L allocated using ${result.activePlan.strategy}.`;
+
+    return {
+      reply,
+      spokenReply: reply,
+      toolAudits,
+      structuredData: result,
+      activeScenario: 'plan_saved',
+    };
+  }
+
+  // 4. Save Plan Scenario (Imperative: "save this plan", "confirm", "record")
+  if (query.includes('save') || query.includes('confirm') || query.includes('सुरक्षित') || query.includes('সংরক্ষণ') || query.includes('record')) {
     const { result, audit } = await executeMcpTool('save_irrigation_plan', {
       farmId,
       planName: `Alexa+ Confirmed Plan (${farm?.farmName || farmId})`,
@@ -378,24 +409,6 @@ async function runDeterministicFallback(
     const reply = language === 'hi'
       ? `आपकी सिंचाई योजना सफलतापूर्वक सुरक्षित कर दी गई है! प्लान आईडी: ${result.planId} (DynamoDB में दर्ज)।`
       : `Your irrigation plan has been confirmed and saved to Amazon DynamoDB! Plan ID: ${result.planId}.`;
-
-    return {
-      reply,
-      spokenReply: reply,
-      toolAudits,
-      structuredData: result,
-      activeScenario: 'plan_saved',
-    };
-  }
-
-  // 4. View Saved Plan ("display plan", "show plan", "view plan", "saved plan", "retrieve")
-  if (query.includes('display') || query.includes('show plan') || query.includes('view plan') || query.includes('saved plan') || query.includes('previous plan') || query.includes('my plan') || query.includes('retrieve') || query.includes('योजना दिखा')) {
-    const { result, audit } = await executeMcpTool('get_saved_irrigation_plan', { farmId });
-    toolAudits.push(audit);
-
-    const reply = language === 'hi'
-      ? `आपकी सहेजी गई योजना: कुल ${result.activePlan.totalCommittedLiters} लीटर ड्रिप सिंचाई के लिए आवंटित है। स्थिति: पुष्टि की गई।`
-      : `Here is your saved irrigation plan for ${result.farmName}: ${result.activePlan.totalCommittedLiters} L allocated using ${result.activePlan.strategy}.`;
 
     return {
       reply,

@@ -471,6 +471,17 @@ export const saveIrrigationPlanSchema = {
   notes: z.string().optional().describe('Farmer or agent notes'),
 };
 
+// Cache of saved plans per farm
+const savedPlansStore = new Map<string, {
+  planId: string;
+  farmId: string;
+  planName?: string;
+  allocatedPlots: any[];
+  totalAllocatedLiters: number;
+  notes?: string;
+  savedAt: string;
+}>();
+
 export async function handleSaveIrrigationPlan(args: {
   farmId: string;
   planName?: string;
@@ -480,6 +491,17 @@ export async function handleSaveIrrigationPlan(args: {
 }) {
   const planId = `plan-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
   const timestamp = new Date().toISOString();
+
+  // Save in memory store so it can be retrieved immediately
+  savedPlansStore.set(args.farmId, {
+    planId,
+    farmId: args.farmId,
+    planName: args.planName,
+    allocatedPlots: args.allocatedPlots,
+    totalAllocatedLiters: args.totalAllocatedLiters,
+    notes: args.notes,
+    savedAt: timestamp,
+  });
 
   // Construct a standard DecisionResponse to persist into DynamoDB
   const decisionLog: DecisionResponse = {
@@ -560,25 +582,42 @@ export const getSavedIrrigationPlanSchema = {
 export async function handleGetSavedIrrigationPlan(args: { farmId: string }) {
   const farm = await resolveFarm(args.farmId);
   const farmName = farm?.farmName || args.farmId;
+  const lastSaved = savedPlansStore.get(args.farmId);
 
-  // Provide a structured record of the latest active plan
+  const activePlan = lastSaved ? {
+    planId: lastSaved.planId,
+    createdAt: lastSaved.savedAt,
+    status: 'CONFIRMED',
+    totalCommittedLiters: lastSaved.totalAllocatedLiters,
+    strategy: lastSaved.planName || 'Drip Deficit Irrigation',
+    allocatedPlots: lastSaved.allocatedPlots.map(p => ({
+      plotId: p.plotId,
+      cropName: p.cropName,
+      allocatedLiters: p.allocated_liters ?? p.allocatedLiters ?? 800,
+      pumpMinutes: p.pumpMinutes || 10,
+      irrigationMethod: p.irrigationMethod || 'drip',
+    })),
+    notes: lastSaved.notes || 'Plan saved through Alexa+ Field Advisor.',
+  } : {
+    planId: `plan-active-${args.farmId}`,
+    createdAt: new Date().toISOString(),
+    status: 'CONFIRMED',
+    totalCommittedLiters: farm?.reserve.currentAvailable_liters || 800,
+    strategy: 'Drip Deficit Irrigation',
+    allocatedPlots: (farm?.plots || []).map(p => ({
+      plotId: p.id,
+      cropName: p.cropName,
+      allocatedLiters: Math.round((farm?.reserve.currentAvailable_liters || 800) / (farm?.plots.length || 1)),
+      pumpMinutes: 10,
+      irrigationMethod: p.irrigationMethod || 'drip',
+    })),
+    notes: 'Plan saved through Alexa+ Field Advisor.',
+  };
+
   const result = {
     farmId: args.farmId,
     farmName,
-    activePlan: {
-      planId: `plan-active-${args.farmId}`,
-      createdAt: new Date().toISOString(),
-      status: 'CONFIRMED',
-      totalCommittedLiters: farm?.reserve.currentAvailable_liters || 800,
-      strategy: 'Drip Deficit Irrigation',
-      allocatedPlots: (farm?.plots || []).map(p => ({
-        plotId: p.id,
-        cropName: p.cropName,
-        allocatedLiters: Math.round((farm?.reserve.currentAvailable_liters || 800) / (farm?.plots.length || 1)),
-        irrigationMethod: p.irrigationMethod || 'drip',
-      })),
-      notes: 'Plan saved through Alexa+ Field Advisor.',
-    },
+    activePlan,
   };
 
   return {
