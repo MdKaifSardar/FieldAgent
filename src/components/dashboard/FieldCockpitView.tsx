@@ -40,6 +40,7 @@ interface FieldCockpitViewProps {
   onRainSliderChange: (val: number) => void;
   interactiveTankLiters: number;
   onTankSliderChange: (val: number) => void;
+  onLogIrrigation?: (plotId: string) => void;
 }
 
 export function FieldCockpitView({
@@ -60,6 +61,7 @@ export function FieldCockpitView({
   onRainSliderChange,
   interactiveTankLiters,
   onTankSliderChange,
+  onLogIrrigation,
 }: FieldCockpitViewProps) {
   const { language } = useLanguage();
 
@@ -267,6 +269,8 @@ export function FieldCockpitView({
               availableReserve_liters={decision.availableWater_liters}
               waterShortfall_liters={decision.waterShortfall_liters}
               plots={decision.plots}
+              waterAllocation={decision.waterAllocation}
+              onLogIrrigation={onLogIrrigation}
             />
           </div>
 

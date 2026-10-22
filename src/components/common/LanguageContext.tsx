@@ -256,6 +256,14 @@ export interface Translations {
   decommissionParcel: string;
   decommissionWarning: string;
   confirmDecommission: string;
+  lastIrrigationPrompt: string;
+  lastWateredToday: string;
+  lastWatered3Days: string;
+  lastWatered5Days: string;
+  customDate: string;
+  wateredTodayBtn: string;
+  lastWateredLabel: string;
+  daysAgo: string;
 }
 
 const DICTIONARY: Record<SupportedLanguage, Translations> = {
@@ -511,6 +519,14 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     decommissionParcel: 'Decommission / Delete Parcel',
     decommissionWarning: 'This will permanently remove this parcel and its historical advisory records. This action cannot be undone.',
     confirmDecommission: 'Permanently Delete Parcel',
+    lastIrrigationPrompt: 'When was this plot last watered?',
+    lastWateredToday: 'Today / Yesterday',
+    lastWatered3Days: '3 Days Ago',
+    lastWatered5Days: '5 Days Ago (Default)',
+    customDate: 'Custom Date',
+    wateredTodayBtn: 'Watered Today',
+    lastWateredLabel: 'Last watered',
+    daysAgo: 'days ago',
   },
   hi: {
     appName: 'फील्डगार्ड (FieldGuard)',
@@ -764,6 +780,14 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     decommissionParcel: 'खेत पार्सल हटाएं / निष्क्रिय करें',
     decommissionWarning: 'यह इस खेत और उसके सभी ऐतिहासिक मौसम रिकॉर्ड को स्थायी रूप से हटा देगा। यह क्रिया वापस नहीं ली जा सकती।',
     confirmDecommission: 'खेत को स्थायी रूप से हटाएं',
+    lastIrrigationPrompt: 'इस खेत में आखिरी बार सिंचाई कब की गई थी?',
+    lastWateredToday: 'आज / कल',
+    lastWatered3Days: '3 दिन पहले',
+    lastWatered5Days: '5 दिन पहले (डिफ़ॉल्ट)',
+    customDate: 'कस्टम तारीख',
+    wateredTodayBtn: 'आज पानी दिया',
+    lastWateredLabel: 'पिछली सिंचाई',
+    daysAgo: 'दिन पहले',
   },
   bn: {
     appName: 'ফিল্ডগার্ড (FieldGuard)',
@@ -1017,6 +1041,14 @@ const DICTIONARY: Record<SupportedLanguage, Translations> = {
     decommissionParcel: 'জমি নিষ্ক্রিয় / মুছে ফেলুন',
     decommissionWarning: 'এটি স্থায়ীভাবে আপনার অ্যাকাউন্ট থেকে এই জমি এবং ঐতিহাসিক আবহাওয়া রেকর্ড মুছে দেবে। এই কাজটি ফেরানো যাবে না।',
     confirmDecommission: 'স্থায়ীভাবে জমি মুছে ফেলুন',
+    lastIrrigationPrompt: 'এই জমিতে শেষ কবে জল সেচ দেওয়া হয়েছিল?',
+    lastWateredToday: 'আজ / গতকাল',
+    lastWatered3Days: '৩ দিন আগে',
+    lastWatered5Days: '৫ দিন আগে (ডিফল্ট)',
+    customDate: 'নির্দিষ্ট তারিখ',
+    wateredTodayBtn: 'আজ জল দিয়েছি',
+    lastWateredLabel: 'শেষ সেচ',
+    daysAgo: 'দিন আগে',
   },
 };
 

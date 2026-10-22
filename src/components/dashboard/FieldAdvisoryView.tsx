@@ -52,6 +52,7 @@ interface FieldAdvisoryViewProps {
   interactiveTankLiters: number;
   onTankSliderChange: (val: number) => void;
   onOpenAlexaModal?: (initialPrompt?: string) => void;
+  onLogIrrigation?: (plotId: string) => void;
 }
 
 export function FieldAdvisoryView({
@@ -73,6 +74,7 @@ export function FieldAdvisoryView({
   interactiveTankLiters,
   onTankSliderChange,
   onOpenAlexaModal,
+  onLogIrrigation,
 }: FieldAdvisoryViewProps) {
   const { language, t } = useLanguage();
   const [activeTab, setActiveTab] = useState<AdvisoryTab>('advisory');
@@ -313,6 +315,8 @@ export function FieldAdvisoryView({
                 availableReserve_liters={decision.availableWater_liters}
                 waterShortfall_liters={decision.waterShortfall_liters}
                 plots={decision.plots}
+                waterAllocation={decision.waterAllocation}
+                onLogIrrigation={onLogIrrigation}
               />
             </div>
           )}

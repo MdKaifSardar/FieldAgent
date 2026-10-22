@@ -11,7 +11,7 @@ import {
   localizeActionWindow,
   localizeConfidenceReason
 } from '../utils/agriculturalLocalization';
-import { CloudRain, AlertOctagon, CheckCircle2, Clock, ShieldCheck, Database } from 'lucide-react';
+import { CloudRain, AlertOctagon, CheckCircle2, Clock, ShieldCheck, Database, Sun, Wind } from 'lucide-react';
 
 interface DecisionCardProps {
   decision: DecisionResponse;
@@ -101,8 +101,22 @@ export function DecisionCard({ decision }: DecisionCardProps) {
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
               <span>{t.confidence}: {localizeConfidence(decision.confidence, language)}</span>
             </div>
+
+            {decision.timingWindow && (
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-white dark:bg-[#0A1C2A] border border-[#E1E8DE] dark:border-[#16364D] text-slate-600 dark:text-slate-300 shadow-2xs">
+                <Sun className={`w-3.5 h-3.5 ${decision.timingWindow.evaporativeRisk === 'HIGH' ? 'text-amber-500' : 'text-emerald-500'}`} />
+                <span>Loss Risk: {decision.timingWindow.evaporativeRisk}</span>
+              </div>
+            )}
           </div>
         </div>
+
+        {decision.timingWindow?.windWarning && (
+          <div className="mb-3 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-2">
+            <Wind className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span>{decision.timingWindow.windWarning}</span>
+          </div>
+        )}
 
         {/* Primary Action Explanation */}
         <p className="text-base sm:text-lg text-slate-800 dark:text-[#F0F9FF] leading-relaxed font-medium mb-3.5">
