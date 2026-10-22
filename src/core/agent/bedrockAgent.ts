@@ -374,44 +374,60 @@ async function runDeterministicFallback(
     }
   }
 
-  // Colloquial fraction and percentage mapping
+  // Colloquial fraction and percentage mapping (English, Hindi, Bengali, and Hinglish)
   const FRACTION_PERCENT_MAP: Record<string, number> = {
     empty: 0,
     खाली: 0,
+    khali: 0,
     খালি: 0,
     quarter: 25,
     'one fourth': 25,
     'one fourths': 25,
     '1/4': 25,
     'एक चौथाई': 25,
+    'ek chauthai': 25,
     'one third': 33,
     '1/3': 33,
     'एक तिहाई': 33,
+    'ek tihai': 33,
     half: 50,
     '1/2': 50,
     आधा: 50,
     आधी: 50,
+    aadha: 50,
+    aadhi: 50,
+    adha: 50,
     অর্ধেক: 50,
     'two thirds': 66,
     '2/3': 66,
     'दो तिहाई': 66,
+    'do tihai': 66,
     'three quarters': 75,
     'three fourths': 75,
     '3/4': 75,
     'तीन चौथाई': 75,
+    'teen chauthai': 75,
     पौनी: 75,
+    paun: 75,
+    pauna: 75,
     full: 100,
     'completely full': 100,
     पूरा: 100,
     पूरी: 100,
+    pura: 100,
+    puri: 100,
+    bhara: 100,
+    bhari: 100,
+    भरा: 100,
+    भरी: 100,
     পুরো: 100,
     ভরা: 100,
   };
 
-  // 1. Voice Water Tank & Level Modification ("tank is half full", "tank at 60%", "tank has 2000L", "टंकी आधी भरी है")
+  // 1. Voice Water Tank & Level Modification ("tank is half full", "tank at 60%", "tank has 2000L", "टंकी आधी भरी है", "mera tank aadha bhara hai")
   const isTankUpdate = 
-    (query.includes('tank') || query.includes('sump') || query.includes('टंकी') || query.includes('ট্যাঙ্ক') || query.includes('reservoir') || query.includes('reserve')) &&
-    (query.includes('%') || query.includes('percent') || query.includes('full') || query.includes('empty') || query.includes('half') || query.includes('quarter') || query.includes('आधा') || query.includes('आधी') || query.includes('खाली') || query.includes('भर') || query.includes('set') || query.includes('update') || query.includes('level') || query.includes('filled'));
+    (query.includes('tank') || query.includes('tanki') || query.includes('sump') || query.includes('टंकी') || query.includes('टैंक') || query.includes('ট্যাঙ্ক') || query.includes('reservoir') || query.includes('reserve')) &&
+    (query.includes('%') || query.includes('percent') || query.includes('full') || query.includes('empty') || query.includes('half') || query.includes('quarter') || query.includes('आधा') || query.includes('आधी') || query.includes('aadha') || query.includes('adha') || query.includes('aadhi') || query.includes('खाली') || query.includes('khali') || query.includes('भर') || query.includes('bhara') || query.includes('bhari') || query.includes('pura') || query.includes('set') || query.includes('update') || query.includes('level') || query.includes('filled'));
 
   if (isTankUpdate) {
     let fillPct: number | undefined = undefined;
