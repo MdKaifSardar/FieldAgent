@@ -1,12 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFarm } from '@/context/FarmContext';
 import { RegisterFieldWorkspaceView } from '@/components/dashboard/RegisterFieldWorkspaceView';
 import { FarmProfile } from '@/types/farm';
 
-export default function NewFieldPage() {
+function NewFieldContent() {
   const router = useRouter();
   const { parcels, saveParcel } = useFarm();
 
@@ -28,5 +28,13 @@ export default function NewFieldPage() {
       onCancel={handleCancel}
       onSubmit={handleSubmit}
     />
+  );
+}
+
+export default function NewFieldPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-sm opacity-60">Loading registration wizard...</div>}>
+      <NewFieldContent />
+    </Suspense>
   );
 }

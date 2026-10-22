@@ -1,11 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFarm } from '@/context/FarmContext';
 import { ProfileOverviewView } from '@/components/dashboard/ProfileOverviewView';
 
-export default function ProfilePage() {
+function ProfileContent() {
   const router = useRouter();
   const { authSession, parcels, activeParcel, selectParcel } = useFarm();
 
@@ -32,5 +32,13 @@ export default function ProfilePage() {
       }}
       onOpenNewParcelWizard={() => router.push('/fields/new')}
     />
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-sm opacity-60">Loading profile...</div>}>
+      <ProfileContent />
+    </Suspense>
   );
 }

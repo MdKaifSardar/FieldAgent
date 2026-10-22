@@ -1,12 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFarm } from '@/context/FarmContext';
 import { FieldsDirectoryView } from '@/components/dashboard/FieldsDirectoryView';
 import { FarmProfile } from '@/types/farm';
 
-export default function FieldsPage() {
+function FieldsContent() {
   const router = useRouter();
   const { parcels, activeParcelId, selectParcel, deleteParcel } = useFarm();
 
@@ -38,5 +38,13 @@ export default function FieldsPage() {
       onEditParcel={handleEditParcel}
       onDeleteParcel={(parcelId) => deleteParcel(parcelId)}
     />
+  );
+}
+
+export default function FieldsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-sm opacity-60">Loading fields directory...</div>}>
+      <FieldsContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { ConsoleHeader } from './ConsoleHeader';
 import { ConsoleSidebar } from './ConsoleSidebar';
 import { FarmProfile } from '../../types/farm';
@@ -36,33 +36,37 @@ export function ConsoleLayout(props: ConsoleLayoutProps) {
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#F6F8F5] dark:bg-[#06131D] text-[#121C15] dark:text-[#F0F9FF] flex transition-colors duration-200">
       {/* 1. Left Persistent Sidebar (Fixed in place, non-scrolling rail) */}
-      <ConsoleSidebar
-        currentView={props.currentView}
-        onNavigate={props.onNavigate}
-        parcels={parcels}
-        activeParcel={activeParcel}
-        onSelectParcel={onSelectParcel}
-        onOpenNewParcelWizard={props.onOpenNewParcelWizard}
-        isMobileOpen={isMobileSidebarOpen}
-        onCloseMobile={() => setIsMobileSidebarOpen(false)}
-        authSession={authSession}
-        onSignOut={onSignOut}
-      />
+      <Suspense fallback={<aside className="hidden md:flex w-64 h-screen border-r border-[#E1E8DE] dark:border-[#16364D] bg-white dark:bg-[#0A1C2A]" />}>
+        <ConsoleSidebar
+          currentView={props.currentView}
+          onNavigate={props.onNavigate}
+          parcels={parcels}
+          activeParcel={activeParcel}
+          onSelectParcel={onSelectParcel}
+          onOpenNewParcelWizard={props.onOpenNewParcelWizard}
+          isMobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+          authSession={authSession}
+          onSignOut={onSignOut}
+        />
+      </Suspense>
 
       {/* 2. Main Workspace Canvas: Dedicated Smooth Scroll Area */}
       <div className="flex-1 h-screen flex flex-col min-w-0 overflow-y-auto">
         {/* Universal Top Console Bar (Sticky) */}
-        <ConsoleHeader
-          currentView={props.currentView}
-          onNavigate={props.onNavigate}
-          activeParcel={activeParcel}
-          parcels={parcels}
-          onSelectParcel={onSelectParcel}
-          authSession={authSession}
-          onSignOut={onSignOut}
-          onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-          onOpenAlexaModal={onOpenAlexaModal}
-        />
+        <Suspense fallback={<header className="sticky top-0 z-30 h-16 shrink-0 bg-white dark:bg-[#0A1C2A] border-b border-[#E1E8DE] dark:border-[#16364D]" />}>
+          <ConsoleHeader
+            currentView={props.currentView}
+            onNavigate={props.onNavigate}
+            activeParcel={activeParcel}
+            parcels={parcels}
+            onSelectParcel={onSelectParcel}
+            authSession={authSession}
+            onSignOut={onSignOut}
+            onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+            onOpenAlexaModal={onOpenAlexaModal}
+          />
+        </Suspense>
 
         {/* Viewport Workspace */}
         <main className="flex-1 px-3 sm:px-6 lg:px-8 py-5 max-w-7xl w-full mx-auto pb-12">
@@ -84,14 +88,16 @@ export function ConsoleLayout(props: ConsoleLayoutProps) {
       </button>
 
       {/* Alexa+ Simulated Field Advisor Modal */}
-      <AlexaAdvisorModal
-        isOpen={farmCtx.isAlexaModalOpen}
-        onClose={farmCtx.closeAlexaModal}
-        farmId={activeParcel?.id || 'farm-bardhaman-01'}
-        farmName={activeParcel?.farmName || 'Your Farm'}
-        initialPrompt={farmCtx.alexaInitialPrompt}
-        onFarmStateModified={farmCtx.onFarmStateModified}
-      />
+      <Suspense fallback={null}>
+        <AlexaAdvisorModal
+          isOpen={farmCtx.isAlexaModalOpen}
+          onClose={farmCtx.closeAlexaModal}
+          farmId={activeParcel?.id || 'farm-bardhaman-01'}
+          farmName={activeParcel?.farmName || 'Your Farm'}
+          initialPrompt={farmCtx.alexaInitialPrompt}
+          onFarmStateModified={farmCtx.onFarmStateModified}
+        />
+      </Suspense>
     </div>
   );
 }
