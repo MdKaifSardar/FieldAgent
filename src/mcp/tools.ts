@@ -349,7 +349,18 @@ export async function handleCompareIrrigationMethods(args: { farmId: string; plo
     };
   }
 
-  const netWaterLiters = Math.round(targetPlot.currentDepletion_mm * targetPlot.area_sq_meters);
+  // If current depletion is negligible (e.g. plot was watered today, Dr < 5mm),
+  // compare against a standard root-zone replenishment cycle (RAW = p * TAW) so the farmer sees real per-cycle savings.
+  const awc = farm.soil.awc_mm_per_m || 140;
+  const rootDepth = targetPlot.rootDepth_m || 0.6;
+  const p = targetPlot.depletionFraction_p || 0.45;
+  const standardCycleDepth_mm = Math.round(awc * rootDepth * p * 10) / 10; // e.g. 37.8 mm
+
+  const effectiveDepth_mm = (targetPlot.currentDepletion_mm && targetPlot.currentDepletion_mm >= 5)
+    ? targetPlot.currentDepletion_mm
+    : (standardCycleDepth_mm > 0 ? standardCycleDepth_mm : 35.0);
+
+  const netWaterLiters = Math.max(1000, Math.round(effectiveDepth_mm * targetPlot.area_sq_meters));
   const flowRateLph = farm.reserve.knownFlowRate_liters_per_hr || 5000;
   const pumpHp = farm.reserve.pumpPower_hp || 5;
 
@@ -374,9 +385,12 @@ export async function handleCompareIrrigationMethods(args: { farmId: string; plo
 
   const floodData = comparison.find(c => c.method === 'surface_flood')!;
   const dripData = comparison.find(c => c.method === 'drip')!;
-  const waterSavedLiters = floodData.grossWaterRequired_liters - dripData.grossWaterRequired_liters;
-  const pumpHoursSaved = Math.round((floodData.pumpHoursRequired - dripData.pumpHoursRequired) * 10) / 10;
-  const costSavedInr = floodData.operationalCost_inr - dripData.operationalCost_inr;
+  const waterSavedLiters = Math.max(0, floodData.grossWaterRequired_liters - dripData.grossWaterRequired_liters);
+  const pumpHoursSaved = Math.max(0, Math.round((floodData.pumpHoursRequired - dripData.pumpHoursRequired) * 10) / 10);
+  const costSavedInr = Math.max(0, floodData.operationalCost_inr - dripData.operationalCost_inr);
+  const waterSavedPct = floodData.grossWaterRequired_liters > 0
+    ? Math.round((waterSavedLiters / floodData.grossWaterRequired_liters) * 100)
+    : 33;
 
   const result = {
     plotId: targetPlot.id,
@@ -385,11 +399,11 @@ export async function handleCompareIrrigationMethods(args: { farmId: string; plo
     comparisonTable: comparison,
     savingsWithDripVsFlood: {
       waterSavedLiters,
-      waterSavedPct: Math.round((waterSavedLiters / floodData.grossWaterRequired_liters) * 100),
+      waterSavedPct,
       pumpHoursSaved,
       costSavedInr,
     },
-    recommendation: `Switching from Flood to Drip saves ${waterSavedLiters.toLocaleString()} L of water (${Math.round((waterSavedLiters / floodData.grossWaterRequired_liters) * 100)}% reduction) and ${pumpHoursSaved} hours of pump runtime.`,
+    recommendation: `Switching from Flood (60% eff) to Drip (90% eff) saves ${waterSavedLiters.toLocaleString()} L of water per irrigation cycle (${waterSavedPct}% reduction) and avoids ${pumpHoursSaved} hours of pump runtime.`,
   };
 
   return {

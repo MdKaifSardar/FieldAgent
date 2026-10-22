@@ -302,9 +302,10 @@ async function runDeterministicFallback(
     toolAudits.push(audit);
 
     const savings = result.savingsWithDripVsFlood;
+    const pct = savings.waterSavedPct ?? 33;
     const reply = language === 'hi'
-      ? `पारंपरिक नाली (Flood) के बजाय ड्रिप (Drip) सिंचाई अपनाने से आप ${savings.waterSavedLiters.toLocaleString()} लीटर पानी (${savings.waterSavedPct}% की बचत) और ${savings.pumpHoursSaved} घंटे पंप का समय बचा सकते हैं।`
-      : `Switching from Flood to Drip irrigation saves ${savings.waterSavedLiters.toLocaleString()} L of water (${savings.waterSavedPct}% reduction) and saves ${savings.pumpHoursSaved} hours of pump electricity runtime.`;
+      ? `पारंपरिक नाली (Flood) के बजाय ड्रिप (Drip) सिंचाई अपनाने से आप प्रति सिंचाई चक्र ${savings.waterSavedLiters.toLocaleString()} लीटर पानी (${pct}% की बचत) और ${savings.pumpHoursSaved} घंटे पंप का समय बचा सकते हैं।`
+      : `Switching from Flood to Drip irrigation saves ${savings.waterSavedLiters.toLocaleString()} L of water per cycle (${pct}% reduction) and saves ${savings.pumpHoursSaved} hours of pump electricity runtime.`;
 
     return {
       reply,
