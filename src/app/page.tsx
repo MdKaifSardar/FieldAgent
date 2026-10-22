@@ -607,7 +607,6 @@ function FieldGuardApp() {
         onFarmStateModified={(updatedFarm, newDecision) => {
           if (updatedFarm) {
             setCurrentFarm(updatedFarm);
-            currentFarmRef.current = updatedFarm;
             if (updatedFarm.reserve?.currentAvailable_liters !== undefined) {
               setInteractiveTankLiters(updatedFarm.reserve.currentAvailable_liters);
             }

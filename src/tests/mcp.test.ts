@@ -5,13 +5,11 @@ import {
   handleGetPlotWaterStatus,
   handleAllocateLimitedWater,
   handleCompareIrrigationMethods,
-  handleSaveIrrigationPlan,
-  handleGetSavedIrrigationPlan,
 } from '../mcp/tools';
 import { createFieldGuardMcpServer } from '../mcp/server';
 
 describe('FieldGuard MCP Server & Tool Handlers', () => {
-  it('initializes the MCP server with all 8 agronomic tools', () => {
+  it('initializes the MCP server with all 9 agronomic tools', () => {
     const server = createFieldGuardMcpServer();
     expect(server).toBeDefined();
     expect(server.server).toBeDefined();
@@ -85,29 +83,6 @@ describe('FieldGuard MCP Server & Tool Handlers', () => {
     // Drip must require fewer gross liters than Flood
     expect(drip.grossWaterRequired_liters).toBeLessThan(flood.grossWaterRequired_liters);
     expect(data.savingsWithDripVsFlood.waterSavedLiters).toBeGreaterThan(0);
-  });
-
-  it('tool: save_irrigation_plan and get_saved_irrigation_plan persist and retrieve', async () => {
-    const saveRes = await handleSaveIrrigationPlan({
-      farmId: 'farm-bardhaman-01',
-      planName: 'Test 800L Drip Plan',
-      allocatedPlots: [
-        { plotId: 'plot-tomato-01', cropName: 'Tomato', allocated_liters: 800, irrigationMethod: 'drip' },
-      ],
-      totalAllocatedLiters: 800,
-      notes: 'Automated unit test execution',
-    });
-
-    expect(saveRes.content).toHaveLength(1);
-    const saved = JSON.parse(saveRes.content[0].text);
-    expect(saved.success).toBe(true);
-    expect(saved.planId).toBeDefined();
-
-    const getRes = await handleGetSavedIrrigationPlan({ farmId: 'farm-bardhaman-01' });
-    expect(getRes.content).toHaveLength(1);
-    const retrieved = JSON.parse(getRes.content[0].text);
-    expect(retrieved.farmId).toBe('farm-bardhaman-01');
-    expect(retrieved.activePlan).toBeDefined();
   });
 
   it('tool: update_water_reserve updates tank level and recalculates deficit', async () => {

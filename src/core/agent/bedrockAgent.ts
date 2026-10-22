@@ -12,8 +12,6 @@ import {
   handleGetPlotWaterStatus,
   handleAllocateLimitedWater,
   handleCompareIrrigationMethods,
-  handleSaveIrrigationPlan,
-  handleGetSavedIrrigationPlan,
   handleUpdateWaterReserve,
   handleLogIrrigationEvent,
   handleUpdatePlotMethod,
@@ -48,7 +46,13 @@ export interface AgentExecutionResult {
     | 'method_comparison' 
     | 'plan_saved' 
     | 'plot_status' 
-    | 'general';
+    | 'general'
+    | 'out_of_scope'
+    | 'clarification_needed'
+    | 'parcel_and_weather'
+    | 'weather_context'
+    | 'farm_context'
+    | string;
   updatedFarm?: any;
   newDecision?: any;
 }
@@ -175,40 +179,6 @@ const BEDROCK_TOOLS: BedrockTool[] = [
   },
   {
     toolSpec: {
-      name: 'save_irrigation_plan',
-      description: 'Persists an explicitly confirmed irrigation plan to Amazon DynamoDB.',
-      inputSchema: {
-        json: {
-          type: 'object',
-          properties: {
-            farmId: { type: 'string', description: 'The farm ID' },
-            planName: { type: 'string', description: 'Plan name' },
-            allocatedPlots: { type: 'array', items: { type: 'object' } },
-            totalAllocatedLiters: { type: 'number' },
-            notes: { type: 'string' },
-          },
-          required: ['farmId', 'allocatedPlots', 'totalAllocatedLiters'],
-        },
-      },
-    },
-  },
-  {
-    toolSpec: {
-      name: 'get_saved_irrigation_plan',
-      description: 'Retrieves previously saved irrigation plan for a farm.',
-      inputSchema: {
-        json: {
-          type: 'object',
-          properties: {
-            farmId: { type: 'string', description: 'The farm ID' },
-          },
-          required: ['farmId'],
-        },
-      },
-    },
-  },
-  {
-    toolSpec: {
       name: 'update_water_reserve',
       description: 'Updates water tank capacity, available Liters, or fill percentage with deficit recalculation.',
       inputSchema: {
@@ -272,13 +242,12 @@ RULES:
 3. When the farmer mentions their tank is X% full or has X Liters, call 'update_water_reserve'.
 4. When the farmer says they watered a plot (yesterday, today, or a date), call 'log_irrigation_event'.
 5. When the farmer asks about changing irrigation methods (e.g. Drip vs Flood), call 'compare_irrigation_methods' or 'update_plot_method'.
-6. When the farmer asks to save or confirm a plan, call 'save_irrigation_plan'.
-7. In deficit conditions, always instruct the farmer to shut lateral valves to deferred plots and irrigate during cool hours (after 6 PM or before 7 AM).
-8. When the farmer asks about their parcel, land size, crops, soil, or pump rating, call 'get_farm_context'.
-9. When the farmer asks about weather, rain probability, temperature, or humidity, call 'get_weather_context'.
-10. When the farmer asks for a complete overview or summary of their farm and weather, invoke BOTH 'get_farm_context' and 'get_weather_context' in parallel.
-11. When speaking in Hindi, use warm, respectful tone suitable for rural farmers.
-12. STRICT SCOPE GUARDRAIL: You are exclusively an agricultural irrigation and crop-water advisor. If the user asks about out-of-scope topics (e.g. sports, entertainment, cryptocurrency, programming, medical advice, politics), politely decline and redirect them back to farm irrigation.`;
+6. In deficit conditions, always instruct the farmer to shut lateral valves to deferred plots and irrigate during cool hours (after 6 PM or before 7 AM).
+7. When the farmer asks about their parcel, land size, crops, soil, or pump rating, call 'get_farm_context'.
+8. When the farmer asks about weather, rain probability, temperature, or humidity, call 'get_weather_context'.
+9. When the farmer asks for a complete overview or summary of their farm and weather, invoke BOTH 'get_farm_context' and 'get_weather_context' in parallel.
+10. When speaking in Hindi, use warm, respectful tone suitable for rural farmers.
+11. STRICT SCOPE GUARDRAIL: You are exclusively an agricultural irrigation and crop-water advisor. If the user asks about out-of-scope topics (e.g. sports, entertainment, cryptocurrency, programming, medical advice, politics), politely decline and redirect them back to farm irrigation.`;
 
 /**
  * Executes a tool by name and records audit telemetry.
@@ -305,12 +274,6 @@ async function executeMcpTool(name: string, args: any): Promise<{ result: any; a
       break;
     case 'compare_irrigation_methods':
       rawResponse = await handleCompareIrrigationMethods(args);
-      break;
-    case 'save_irrigation_plan':
-      rawResponse = await handleSaveIrrigationPlan(args);
-      break;
-    case 'get_saved_irrigation_plan':
-      rawResponse = await handleGetSavedIrrigationPlan(args);
       break;
     case 'update_water_reserve':
       rawResponse = await handleUpdateWaterReserve(args);
@@ -475,7 +438,7 @@ async function runDeterministicFallback(
   // 1. Voice Water Tank & Level Modification ("tank is half full", "tank at 60%", "tank has 2000L", "टंकी आधी भरी है", "mera tank aadha bhara hai")
   const isTankUpdate = 
     (query.includes('tank') || query.includes('tanki') || query.includes('sump') || query.includes('टंकी') || query.includes('टैंक') || query.includes('ট্যাঙ্ক') || query.includes('reservoir') || query.includes('reserve')) &&
-    (query.includes('%') || query.includes('percent') || query.includes('full') || query.includes('empty') || query.includes('half') || query.includes('quarter') || query.includes('आधा') || query.includes('आधी') || query.includes('aadha') || query.includes('adha') || query.includes('aadhi') || query.includes('खाली') || query.includes('khali') || query.includes('भर') || query.includes('bhara') || query.includes('bhari') || query.includes('pura') || query.includes('set') || query.includes('update') || query.includes('level') || query.includes('filled'));
+    (query.includes('%') || query.includes('percent') || query.includes('full') || query.includes('empty') || query.includes('half') || query.includes('quarter') || query.includes('आधा') || query.includes('आधी') || query.includes('aadha') || query.includes('adha') || query.includes('aadhi') || query.includes('खाली') || query.includes('khali') || query.includes('भर') || query.includes('bhara') || query.includes('bhari') || query.includes('pura') || query.includes('set') || query.includes('update') || query.includes('level') || query.includes('filled') || query.includes('put') || query.includes('added') || query.includes('poured') || query.includes('dala') || query.includes('dala'));
 
   if (isTankUpdate) {
     let fillPct: number | undefined = undefined;
@@ -506,13 +469,19 @@ async function runDeterministicFallback(
       });
       toolAudits.push(audit);
 
+      const overflowMsg = result.wasOverCapacity
+        ? (language === 'hi' 
+            ? ` (ध्यान दें: यह मात्रा टंकी की क्षमता ${result.totalCapacityLiters.toLocaleString()} लीटर से अधिक थी, इसलिए इसे 100% पर सीमित किया गया है।)` 
+            : ` (Note: Entered volume exceeded physical tank capacity of ${result.totalCapacityLiters.toLocaleString()} L; capped at 100% full.)`)
+        : '';
+
       const reply = language === 'hi'
-        ? `अपडेट किया गया! आपकी पानी की टंकी ${result.availableLiters.toLocaleString()} लीटर (${result.fillPercent}%) पर सेट है। ${
+        ? `अपडेट किया गया! आपकी पानी की टंकी ${result.availableLiters.toLocaleString()} लीटर (${result.fillPercent}%) पर सेट है।${overflowMsg} ${
             result.isDeficit 
               ? `चेतावनी: पानी की कमी है। केवल ${result.newDecision.plots[0]?.cropName || 'प्राथमिक फसल'} के वाल्व खोलें और बाकी खेतों के वाल्व बंद रखें। धूप में वाष्पीकरण से बचने के लिए शाम 6 बजे के बाद या सुबह 7 बजे से पहले सिंचाई करें।`
               : `आज सभी फसलों के लिए पर्याप्त पानी उपलब्ध है।`
           }`
-        : `Updated! Your water tank is set to ${result.availableLiters.toLocaleString()} L (${result.fillPercent}%). ${
+        : `Updated! Your water tank is set to ${result.availableLiters.toLocaleString()} L (${result.fillPercent}%).${overflowMsg} ${
             result.isDeficit
               ? `Deficit Active: Direct all ${result.availableLiters.toLocaleString()} L to ${result.newDecision.plots[0]?.cropName || 'primary crop'} and keep other lateral valves shut. Irrigate after 6:00 PM or before 7:00 AM to eliminate solar evaporation.`
               : `You have adequate water to satisfy all crop requirements today.`
@@ -703,68 +672,7 @@ async function runDeterministicFallback(
     };
   }
 
-  // 3. View Saved Plan ("show me my saved irrigation plan", "display plan", "show plan", "view plan", "retrieve", "my plan")
-  const isViewSavedPlan =
-    query.includes('show') ||
-    query.includes('display') ||
-    query.includes('view') ||
-    query.includes('retrieve') ||
-    query.includes('what is') ||
-    query.includes('what was') ||
-    query.includes('saved plan') ||
-    query.includes('previous plan') ||
-    query.includes('my plan') ||
-    query.includes('योजना दिखा') ||
-    query.includes('দেখ');
-
-  if (isViewSavedPlan && (query.includes('plan') || query.includes('योजना') || query.includes('পরিকল্পনা') || query.includes('saved'))) {
-    const { result, audit } = await executeMcpTool('get_saved_irrigation_plan', { farmId });
-    toolAudits.push(audit);
-
-    const reply = language === 'hi'
-      ? `आपकी सहेजी गई योजना (${result.activePlan.planId}): कुल ${result.activePlan.totalCommittedLiters.toLocaleString()} लीटर पानी आवंटित है। स्थिति: पुष्टि की गई।`
-      : `Here is your saved irrigation plan (${result.activePlan.planId}) for ${result.farmName}: ${result.activePlan.totalCommittedLiters.toLocaleString()} L allocated using ${result.activePlan.strategy}.`;
-
-    return {
-      reply,
-      spokenReply: reply,
-      toolAudits,
-      structuredData: result,
-      activeScenario: 'plan_saved',
-    };
-  }
-
-  // 4. Save Plan Scenario (Imperative: "save this plan", "confirm", "record")
-  if (query.includes('save') || query.includes('confirm') || query.includes('सुरक्षित') || query.includes('সংরক্ষণ') || query.includes('record')) {
-    const { result, audit } = await executeMcpTool('save_irrigation_plan', {
-      farmId,
-      planName: `Alexa+ Confirmed Plan (${farm?.farmName || farmId})`,
-      allocatedPlots: (farm?.plots || []).map(p => ({
-        plotId: p.id,
-        cropName: p.cropName,
-        allocated_liters: 800,
-        pumpMinutes: 10,
-        irrigationMethod: p.irrigationMethod || 'drip',
-      })),
-      totalAllocatedLiters: 800,
-      notes: 'Plan confirmed via Alexa+ Voice Assistant.',
-    });
-    toolAudits.push(audit);
-
-    const reply = language === 'hi'
-      ? `आपकी सिंचाई योजना सफलतापूर्वक सुरक्षित कर दी गई है! प्लान आईडी: ${result.planId} (DynamoDB में दर्ज)।`
-      : `Your irrigation plan has been confirmed and saved to Amazon DynamoDB! Plan ID: ${result.planId}.`;
-
-    return {
-      reply,
-      spokenReply: reply,
-      toolAudits,
-      structuredData: result,
-      activeScenario: 'plan_saved',
-    };
-  }
-
-  // 5. Combined Farm Parcel + Weather Overview ("tell me about my entire parcel and weather", "farm and weather report", "overview")
+  // 3. Combined Farm Parcel + Weather Overview ("tell me about my entire parcel and weather", "farm and weather report", "overview")
   const isCombinedOverview =
     (query.includes('weather') || query.includes('मौसम') || query.includes('আবহাওয়া')) &&
     (query.includes('farm') || query.includes('parcel') || query.includes('खेत') || query.includes('जमीन') || query.includes('জমি') || query.includes('overview') || query.includes('summary') || query.includes('report'));
@@ -988,10 +896,10 @@ export async function runAlexaAgent(
         for (let i = 0; i < toolExecutions.length; i++) {
           accumulatedAudits.push(toolExecutions[i].audit);
           latestStructuredData = toolExecutions[i].result;
-          const tName = toolUseBlocks[i].toolUse.name;
+          const block = (toolUseBlocks as any[])[i];
+          const tName = block?.toolUse?.name;
           if (tName === 'allocate_limited_water') activeScenario = 'water_allocation';
           else if (tName === 'compare_irrigation_methods') activeScenario = 'method_comparison';
-          else if (tName === 'save_irrigation_plan') activeScenario = 'plan_saved';
           else if (tName === 'update_water_reserve') activeScenario = 'reserve_updated';
           else if (tName === 'log_irrigation_event') activeScenario = 'irrigation_logged';
           else if (tName === 'update_plot_method') activeScenario = 'method_updated';
@@ -1000,7 +908,7 @@ export async function runAlexaAgent(
         }
 
         // Check if both farm and weather were invoked together in parallel
-        const calledNames = toolUseBlocks.map((b: any) => b.toolUse.name);
+        const calledNames = (toolUseBlocks as any[]).map((b: any) => b?.toolUse?.name);
         if (calledNames.includes('get_farm_context') && calledNames.includes('get_weather_context')) {
           activeScenario = 'parcel_and_weather';
           latestStructuredData = {

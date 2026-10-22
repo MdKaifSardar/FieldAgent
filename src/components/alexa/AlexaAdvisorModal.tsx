@@ -103,8 +103,8 @@ export function AlexaAdvisorModal({
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       const welcomeText = language === 'hi'
-        ? `नमस्ते! मैं आपका Alexa+ कृषि सलाहकार हूँ। आप मुझसे पानी के बजट (उदा. "मेरे पास 800 लीटर पानी है"), ड्रिप सिंचाई की तुलना, या योजना सहेजने के बारे में पूछ सकते हैं।`
-        : `Hello! I am your Alexa+ Field Advisor. Ask me about your water budget (e.g. "I have 800 Litres of water"), comparing Drip vs Flood irrigation, or saving an allocation plan.`;
+        ? `नमस्ते! मैं आपका Alexa+ कृषि सलाहकार हूँ। आप मुझसे पानी के बजट (उदा. "मेरे पास 800 लीटर पानी है"), ड्रिप बनाम फ्लड सिंचाई की तुलना, या मौसम और खेत की स्थिति के बारे में पूछ सकते हैं।`
+        : `Hello! I am your Alexa+ Field Advisor. Ask me about your water budget (e.g. "I have 800 Litres of water"), comparing Drip vs Flood irrigation, or checking weather and soil status.`;
 
       setMessages([
         {
@@ -260,10 +260,6 @@ export function AlexaAdvisorModal({
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleSavePlanClick = () => {
-    handleSendQuery(language === 'hi' ? 'यह योजना सुरक्षित करें' : 'Save this plan for my farm');
   };
 
   if (!isOpen) return null;
@@ -424,21 +420,6 @@ export function AlexaAdvisorModal({
                       </div>
                     ))}
                   </div>
-
-                  {/* 1-Click Save Plan Button */}
-                  <div className="pt-1 flex items-center justify-between">
-                    <span className="text-[11px] text-slate-400 italic">
-                      Ready to execute this recommendation?
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleSavePlanClick}
-                      className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all flex items-center gap-1.5 shadow-md cursor-pointer text-xs"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Confirm & Save Plan</span>
-                    </button>
-                  </div>
                 </div>
               )}
 
@@ -479,51 +460,6 @@ export function AlexaAdvisorModal({
                       {msg.structuredData.savingsWithDripVsFlood.waterSavedLiters.toLocaleString()} L ({msg.structuredData.savingsWithDripVsFlood.waterSavedPct}%)
                     </span>
                   </div>
-                </div>
-              )}
-
-              {/* Plan Saved / Retrieved Banner Card */}
-              {msg.structuredData && msg.activeScenario === 'plan_saved' && (
-                <div className="mt-2.5 w-full max-w-[88%] sm:max-w-[84%] p-3.5 rounded-xl bg-emerald-950/50 border border-emerald-500/40 text-emerald-200 text-xs space-y-2.5 shadow-md">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                      <div>
-                        <span className="font-bold text-white block">
-                          {msg.structuredData.activePlan ? 'Active Irrigation Plan' : 'Plan Persisted to Amazon DynamoDB'}
-                        </span>
-                        <span className="text-[10px] text-emerald-300 font-mono">
-                          ID: {msg.structuredData.activePlan?.planId || msg.structuredData.planId}
-                        </span>
-                      </div>
-                    </div>
-                    <span className="px-2 py-0.5 rounded bg-emerald-800/60 text-[10px] font-mono text-white">
-                      {msg.structuredData.activePlan?.status || 'CONFIRMED'}
-                    </span>
-                  </div>
-
-                  {msg.structuredData.activePlan && (
-                    <div className="p-2.5 rounded-lg bg-slate-900/80 border border-emerald-800/40 space-y-2">
-                      <div className="flex items-center justify-between text-slate-300">
-                        <span>Committed Volume:</span>
-                        <span className="font-bold font-mono text-cyan-300">{msg.structuredData.activePlan.totalCommittedLiters.toLocaleString()} L</span>
-                      </div>
-                      <div className="flex items-center justify-between text-slate-300">
-                        <span>Strategy:</span>
-                        <span className="font-semibold text-emerald-300">{msg.structuredData.activePlan.strategy}</span>
-                      </div>
-                      {msg.structuredData.activePlan.allocatedPlots && (
-                        <div className="border-t border-slate-800 pt-1.5 space-y-1">
-                          {msg.structuredData.activePlan.allocatedPlots.map((p: any) => (
-                            <div key={p.plotId} className="flex items-center justify-between text-[11px] text-slate-400">
-                              <span>🌾 {p.cropName} ({p.irrigationMethod || 'drip'})</span>
-                              <span className="font-mono text-white">{p.allocatedLiters?.toLocaleString()} L</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -784,8 +720,8 @@ export function AlexaAdvisorModal({
             { label: '🌾 Parcel & Soil Details', query: 'Tell me about my parcel, crops, and soil' },
             { label: '💧 800L Water Budget', query: 'I have 800 Litres of water. Which plot should I irrigate first?' },
             { label: '🔄 Compare Drip vs Flood', query: 'What if I switch from Flood to Drip irrigation?' },
-            { label: '💾 Save Confirmed Plan', query: 'Save this irrigation plan for my farm' },
-            { label: '📋 View Saved Plan', query: 'Show me my saved irrigation plan' },
+            { label: '🚰 Tank 80% Full', query: 'My water tank is 80% full' },
+            { label: '🚿 Log Watering', query: 'I watered tomato yesterday' },
           ].map((chip, idx) => (
             <button
               key={idx}

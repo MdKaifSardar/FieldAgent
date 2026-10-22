@@ -62,8 +62,9 @@ export async function GET(req: Request) {
         'get_plot_water_status',
         'allocate_limited_water',
         'compare_irrigation_methods',
-        'save_irrigation_plan',
-        'get_saved_irrigation_plan',
+        'update_water_reserve',
+        'log_irrigation_event',
+        'update_plot_method',
       ],
       status: 'ONLINE',
     });

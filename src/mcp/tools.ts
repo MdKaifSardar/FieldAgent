@@ -94,18 +94,36 @@ export async function resolveFarm(farmId: string): Promise<FarmProfile | null> {
   return null;
 }
 
+interface WeatherCacheEntry {
+  forecast: DailyWeatherForecast;
+  expiresAt: number;
+}
+const weatherCache = new Map<string, WeatherCacheEntry>();
+const WEATHER_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
 /**
- * Resolves live or realistic forecast for a location.
+ * Resolves live or realistic forecast for a location with in-memory caching.
  */
 async function resolveForecast(lat: number, lon: number): Promise<DailyWeatherForecast> {
+  const cacheKey = `${lat.toFixed(3)},${lon.toFixed(3)}`;
+  const cached = weatherCache.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.forecast;
+  }
+
   try {
     const res = await fetchLiveWeatherForecast(lat, lon);
     if (res && res.forecast) {
+      weatherCache.set(cacheKey, {
+        forecast: res.forecast,
+        expiresAt: Date.now() + WEATHER_CACHE_TTL_MS,
+      });
       return res.forecast;
     }
   } catch (err) {
     console.warn('Weather fetch failed in MCP tool, using safe baseline:', err);
   }
+
   return {
     date: new Date().toISOString().split('T')[0],
     rainfall_mm: 0,
@@ -524,179 +542,6 @@ export async function handleCompareIrrigationMethods(args: { farmId: string; plo
   };
 }
 
-export const saveIrrigationPlanSchema = {
-  farmId: z.string().describe('The unique identifier of the farm'),
-  planName: z.string().optional().describe('Descriptive name of the plan (e.g. "800L Drip Rationing Plan")'),
-  allocatedPlots: z.array(z.object({
-    plotId: z.string(),
-    cropName: z.string(),
-    allocated_liters: z.number(),
-    pumpMinutes: z.number().optional(),
-    irrigationMethod: z.string().optional(),
-  })).describe('List of plots and water allocations'),
-  totalAllocatedLiters: z.number().describe('Total volume of water committed in Liters'),
-  notes: z.string().optional().describe('Farmer or agent notes'),
-};
-
-// Cache of saved plans per farm
-const savedPlansStore = new Map<string, {
-  planId: string;
-  farmId: string;
-  planName?: string;
-  allocatedPlots: any[];
-  totalAllocatedLiters: number;
-  notes?: string;
-  savedAt: string;
-}>();
-
-export async function handleSaveIrrigationPlan(args: {
-  farmId: string;
-  planName?: string;
-  allocatedPlots: any[];
-  totalAllocatedLiters: number;
-  notes?: string;
-}) {
-  const planId = `plan-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-  const timestamp = new Date().toISOString();
-
-  // Save in memory store so it can be retrieved immediately
-  savedPlansStore.set(args.farmId, {
-    planId,
-    farmId: args.farmId,
-    planName: args.planName,
-    allocatedPlots: args.allocatedPlots,
-    totalAllocatedLiters: args.totalAllocatedLiters,
-    notes: args.notes,
-    savedAt: timestamp,
-  });
-
-  // Construct a standard DecisionResponse to persist into DynamoDB
-  const decisionLog: DecisionResponse = {
-    decision: 'IRRIGATE_NOW',
-    primaryAction: args.planName || `Custom plan: ${args.totalAllocatedLiters} L allocated across ${args.allocatedPlots.length} plots`,
-    actionWindow: 'Execute today',
-    confidence: 'HIGH',
-    confidenceReason: args.notes || 'Farmer explicitly confirmed and saved this allocation plan.',
-    totalFarmDemand_liters: args.totalAllocatedLiters,
-    netFarmDemand_liters: args.totalAllocatedLiters,
-    availableWater_liters: args.totalAllocatedLiters,
-    waterShortfall_liters: 0,
-    plots: args.allocatedPlots.map(p => ({
-      plotId: p.plotId,
-      cropName: p.cropName,
-      taw_mm: 50,
-      raw_mm: 25,
-      currentDepletion_mm: 20,
-      dailyEtc_mm: 4.5,
-      effectiveRain_mm: 0,
-      runoffOrPercolation_mm: 0,
-      projectedDepletionTomorrow_mm: 24.5,
-      hoursToCriticalStress: 24,
-      waterNeeded_liters: p.allocated_liters,
-      grossWaterNeeded_liters: p.allocated_liters,
-      irrigationMethod: (p.irrigationMethod || 'drip') as IrrigationMethod,
-      irrigationEfficiency: 0.90,
-      urgencyLevel: 'moderate',
-    })),
-    environmentalLedger: {
-      deferredIrrigationDepth_mm: 0,
-      deferredVolume_liters: 0,
-      pumpingHoursSaved: 0,
-      electricitySaved_kwh: 0,
-      carbonOffset_kg_co2: 0,
-      estimatedCostSaved_inr: 0,
-      transparencyNote: 'Explicitly confirmed plan recorded to DynamoDB.',
-    },
-    advisoryText: {
-      english: `Saved irrigation plan: ${args.totalAllocatedLiters} L allocated.`,
-      hindi: `सिंचाई योजना सहेजी गई: ${args.totalAllocatedLiters} लीटर आवंटित।`,
-      bengali: `সেচ পরিকল্পনা সংরক্ষিত: ${args.totalAllocatedLiters} লিটার বরাদ্দ।`,
-    },
-    metadata: {
-      calculationTimestamp: timestamp,
-      engineVersion: 'FieldGuard-AlexaPlus-MCP-v1.0',
-      weatherDataTimestamp: timestamp,
-      isDemoPreset: false,
-    },
-  };
-
-  const persistResult = await logDecisionToDynamo(args.farmId, decisionLog);
-
-  const result = {
-    success: true,
-    planId,
-    farmId: args.farmId,
-    totalAllocatedLiters: args.totalAllocatedLiters,
-    storage: persistResult.storage,
-    savedAt: timestamp,
-    message: `Irrigation plan "${args.planName || planId}" successfully recorded to ${persistResult.storage}.`,
-  };
-
-  return {
-    content: [
-      {
-        type: 'text' as const,
-        text: JSON.stringify(result, null, 2),
-      },
-    ],
-  };
-}
-
-export const getSavedIrrigationPlanSchema = {
-  farmId: z.string().describe('The unique identifier of the farm to retrieve saved plans for'),
-};
-
-export async function handleGetSavedIrrigationPlan(args: { farmId: string }) {
-  const farm = await resolveFarm(args.farmId);
-  const farmName = farm?.farmName || args.farmId;
-  const lastSaved = savedPlansStore.get(args.farmId);
-
-  const activePlan = lastSaved ? {
-    planId: lastSaved.planId,
-    createdAt: lastSaved.savedAt,
-    status: 'CONFIRMED',
-    totalCommittedLiters: lastSaved.totalAllocatedLiters,
-    strategy: lastSaved.planName || 'Drip Deficit Irrigation',
-    allocatedPlots: lastSaved.allocatedPlots.map(p => ({
-      plotId: p.plotId,
-      cropName: p.cropName,
-      allocatedLiters: p.allocated_liters ?? p.allocatedLiters ?? 800,
-      pumpMinutes: p.pumpMinutes || 10,
-      irrigationMethod: p.irrigationMethod || 'drip',
-    })),
-    notes: lastSaved.notes || 'Plan saved through Alexa+ Field Advisor.',
-  } : {
-    planId: `plan-active-${args.farmId}`,
-    createdAt: new Date().toISOString(),
-    status: 'CONFIRMED',
-    totalCommittedLiters: farm?.reserve.currentAvailable_liters || 800,
-    strategy: 'Drip Deficit Irrigation',
-    allocatedPlots: (farm?.plots || []).map(p => ({
-      plotId: p.id,
-      cropName: p.cropName,
-      allocatedLiters: Math.round((farm?.reserve.currentAvailable_liters || 800) / (farm?.plots.length || 1)),
-      pumpMinutes: 10,
-      irrigationMethod: p.irrigationMethod || 'drip',
-    })),
-    notes: 'Plan saved through Alexa+ Field Advisor.',
-  };
-
-  const result = {
-    farmId: args.farmId,
-    farmName,
-    activePlan,
-  };
-
-  return {
-    content: [
-      {
-        type: 'text' as const,
-        text: JSON.stringify(result, null, 2),
-      },
-    ],
-  };
-}
-
 export const updateWaterReserveSchema = {
   farmId: z.string().describe('The unique identifier of the farm'),
   fillPercent: z.number().min(0).max(100).optional().describe('Tank fill percentage (0 to 100%)'),
@@ -721,10 +566,15 @@ export async function handleUpdateWaterReserve(args: {
   const totalCap = args.totalCapacityLiters || farm.reserve.totalCapacity_liters || 4000;
   let available = farm.reserve.currentAvailable_liters;
 
+  let wasOverCapacity = false;
   if (args.fillPercent !== undefined) {
     available = Math.round((totalCap * Math.max(0, Math.min(100, args.fillPercent))) / 100);
   } else if (args.availableLiters !== undefined) {
-    available = Math.max(0, Math.round(args.availableLiters));
+    const rawVal = Math.round(args.availableLiters);
+    if (rawVal > totalCap) {
+      wasOverCapacity = true;
+    }
+    available = Math.max(0, Math.min(totalCap, rawVal));
   }
 
   const percent = totalCap > 0 ? Math.round((available / totalCap) * 100) : 0;
@@ -749,9 +599,13 @@ export async function handleUpdateWaterReserve(args: {
   const isDeficit = available < decision.totalFarmDemand_liters;
   const shortfall = isDeficit ? decision.totalFarmDemand_liters - available : 0;
 
-  const directive = isDeficit
+  const overflowNote = wasOverCapacity
+    ? ` Note: Entered volume exceeded physical tank capacity (${totalCap.toLocaleString()} L); reserve capped at 100% full.`
+    : '';
+
+  const directive = (isDeficit
     ? `Direct available ${available.toLocaleString()} L exclusively to your most urgent plot (${decision.plots[0]?.cropName || 'primary crop'}). Keep lateral valves to other plots firmly shut so water does not dissipate. Irrigate after 6:00 PM or before 7:00 AM to eliminate solar evaporation loss.`
-    : `Tank reserve of ${available.toLocaleString()} L is fully adequate to satisfy total farm demand of ${decision.totalFarmDemand_liters.toLocaleString()} L.`;
+    : `Tank reserve of ${available.toLocaleString()} L is fully adequate to satisfy total farm demand of ${decision.totalFarmDemand_liters.toLocaleString()} L.`) + overflowNote;
 
   const result = {
     success: true,
@@ -760,6 +614,7 @@ export async function handleUpdateWaterReserve(args: {
     availableLiters: available,
     totalCapacityLiters: totalCap,
     fillPercent: percent,
+    wasOverCapacity,
     isDeficit,
     totalDemand_liters: decision.totalFarmDemand_liters,
     shortfall_liters: shortfall,
@@ -830,7 +685,9 @@ export async function handleLogIrrigationEvent(args: {
   past.setHours(0, 0, 0, 0);
   const daysElapsed = Math.max(0, Math.round((now.getTime() - past.getTime()) / 86400000));
   const dailyEtc = (targetPlot.cropCoefficient_Kc || 1.05) * 4.1;
-  const newDr = Math.min(targetPlot.taw_mm || 50, Math.round(daysElapsed * dailyEtc * 10) / 10);
+  const taw = (farm.soil.awc_mm_per_m || 150) * (targetPlot.rootDepth_m || 0.6);
+  const raw = Math.round(taw * (targetPlot.depletionFraction_p || 0.45));
+  const newDr = Math.min(taw, Math.round(daysElapsed * dailyEtc * 10) / 10);
   targetPlot.currentDepletion_mm = newDr;
 
   farmRuntimeStore.set(farm.id, farm);
@@ -844,7 +701,6 @@ export async function handleLogIrrigationEvent(args: {
     forecast,
   });
 
-  const raw = targetPlot.raw_mm || 25;
   const daysToNext = dailyEtc > 0 ? Math.max(1, Math.round((raw - newDr) / dailyEtc)) : 3;
 
   const result = {
