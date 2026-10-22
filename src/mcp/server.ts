@@ -53,7 +53,7 @@ export function createFieldGuardMcpServer(): McpServer {
   // 3. Tool: get_weather_context
   server.tool(
     'get_weather_context',
-    'Fetches hyper-local live weather (ET0, rainfall, temperature, humidity) from Open-Meteo for given coordinates.',
+    'Fetches hyper-local live weather (ET0, rainfall, temperature, humidity, wind) from Open-Meteo for a farm or coordinates.',
     getWeatherContextSchema,
     handleGetWeatherContext
   );

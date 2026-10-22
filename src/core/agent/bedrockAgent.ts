@@ -107,6 +107,22 @@ const BEDROCK_TOOLS: BedrockTool[] = [
   },
   {
     toolSpec: {
+      name: 'get_weather_context',
+      description: 'Fetches hyper-local live weather (ET0, rainfall mm, rain probability, temperature, humidity, wind) for a farm.',
+      inputSchema: {
+        json: {
+          type: 'object',
+          properties: {
+            farmId: { type: 'string', description: 'The farm ID to auto-resolve coordinates' },
+            latitude: { type: 'number', description: 'Optional field latitude' },
+            longitude: { type: 'number', description: 'Optional field longitude' },
+          },
+        },
+      },
+    },
+  },
+  {
+    toolSpec: {
       name: 'get_plot_water_status',
       description: 'Calculates FAO-56 depletion (Dr), RAW, and hours to drought stress.',
       inputSchema: {
@@ -256,7 +272,10 @@ RULES:
 5. When the farmer asks about changing irrigation methods (e.g. Drip vs Flood), call 'compare_irrigation_methods' or 'update_plot_method'.
 6. When the farmer asks to save or confirm a plan, call 'save_irrigation_plan'.
 7. In deficit conditions, always instruct the farmer to shut lateral valves to deferred plots and irrigate during cool hours (after 6 PM or before 7 AM).
-8. When speaking in Hindi, use warm, respectful tone suitable for rural farmers.`;
+8. When the farmer asks about their parcel, land size, crops, soil, or pump rating, call 'get_farm_context'.
+9. When the farmer asks about weather, rain probability, temperature, or humidity, call 'get_weather_context'.
+10. When the farmer asks for a complete overview or summary of their farm and weather, invoke BOTH 'get_farm_context' and 'get_weather_context' in parallel.
+11. When speaking in Hindi, use warm, respectful tone suitable for rural farmers.`;
 
 /**
  * Executes a tool by name and records audit telemetry.
@@ -685,7 +704,139 @@ async function runDeterministicFallback(
     };
   }
 
-  // 5. Default: Plot Water Status & Weather
+  // 5. Combined Farm Parcel + Weather Overview ("tell me about my entire parcel and weather", "farm and weather report", "overview")
+  const isCombinedOverview =
+    (query.includes('weather') || query.includes('मौसम') || query.includes('আবহাওয়া')) &&
+    (query.includes('farm') || query.includes('parcel') || query.includes('खेत') || query.includes('जमीन') || query.includes('জমি') || query.includes('overview') || query.includes('summary') || query.includes('report'));
+
+  if (isCombinedOverview || query.includes('entire parcel') || query.includes('farm overview') || query.includes('complete report') || query.includes('सब कुछ')) {
+    const [farmRes, weatherRes] = await Promise.all([
+      executeMcpTool('get_farm_context', { farmId }),
+      executeMcpTool('get_weather_context', { farmId }),
+    ]);
+    toolAudits.push(farmRes.audit, weatherRes.audit);
+
+    const f = farmRes.result;
+    const w = weatherRes.result;
+    const rainWarning = w.rainfall_mm >= 5 || w.precipitation_probability_pct >= 60
+      ? (language === 'hi'
+          ? ` ध्यान दें: ${w.precipitation_probability_pct}% संभावना के साथ ${w.rainfall_mm} मिमी बारिश का अनुमान है, इसलिए सिंचाई स्थगित करें।`
+          : ` Rain Alert: ${w.rainfall_mm} mm rain forecast (${w.precipitation_probability_pct}% probability), so consider deferring irrigation.`)
+      : '';
+
+    const totalBigha = f.plots.reduce((acc: number, p: any) => acc + (p.areaValue || 0), 0);
+    const reply = language === 'hi'
+      ? `${f.farmName} (${f.location.district || 'खेत'}): कुल क्षेत्रफल ${totalBigha} बीघा, दोमट मिट्टी (AWC: ${f.soil.awc_mm_per_m} मिमी/मी)। पानी भंडारण: ${f.reserve.currentAvailable_liters.toLocaleString()} / ${f.reserve.totalCapacity_liters.toLocaleString()} लीटर उपलब्ध, ${f.reserve.pumpPower_hp} HP पंप। मौसम: तापमान ${w.temp_max_c}°C, नमी ${w.relative_humidity_pct}%, वाष्पीकरण दर ${w.reference_et0_mm} मिमी/दिन।${rainWarning}`
+      : `Overview for ${f.farmName} (${f.location.district || 'Farm'}): Total land ${totalBigha} Bigha with ${f.soil.texture} soil (AWC: ${f.soil.awc_mm_per_m} mm/m). Water Reserve: ${f.reserve.currentAvailable_liters.toLocaleString()} / ${f.reserve.totalCapacity_liters.toLocaleString()} L available with a ${f.reserve.pumpPower_hp} HP pump. Weather today: ${w.temp_max_c}°C, humidity ${w.relative_humidity_pct}%, atmospheric demand ET0 is ${w.reference_et0_mm} mm/day.${rainWarning}`;
+
+    return {
+      reply,
+      spokenReply: reply,
+      toolAudits,
+      structuredData: { farm: f, weather: w },
+      activeScenario: 'parcel_and_weather',
+    };
+  }
+
+  // 6. Weather Query ("what is the weather today?", "will it rain?", "temperature", "forecast", "मौसम कैसा है?", "बारिश होगी क्या?")
+  const isWeatherQuery =
+    query.includes('weather') ||
+    query.includes('rain') ||
+    query.includes('rainfall') ||
+    query.includes('forecast') ||
+    query.includes('temperature') ||
+    query.includes('temp') ||
+    query.includes('humidity') ||
+    query.includes('wind') ||
+    query.includes('et0') ||
+    query.includes('evaporat') ||
+    query.includes('मौसम') ||
+    query.includes('बारिश') ||
+    query.includes('तापमान') ||
+    query.includes('हवा') ||
+    query.includes('আবহাওয়া') ||
+    query.includes('বৃষ্টি');
+
+  if (isWeatherQuery) {
+    const { result, audit } = await executeMcpTool('get_weather_context', { farmId });
+    toolAudits.push(audit);
+
+    const rainMsg = result.rainfall_mm > 0 || result.precipitation_probability_pct > 30
+      ? (language === 'hi'
+          ? `बारिश का अनुमान: ${result.precipitation_probability_pct}% संभावना के साथ ${result.rainfall_mm} मिमी बारिश संभव है।`
+          : `Rain forecast: ${result.rainfall_mm} mm expected with ${result.precipitation_probability_pct}% probability.`)
+      : (language === 'hi'
+          ? `बारिश की कोई संभावना नहीं है (केवल ${result.precipitation_probability_pct}%)।`
+          : `Zero significant rain expected (${result.precipitation_probability_pct}% chance).`);
+
+    const reply = language === 'hi'
+      ? `मौसम रिपोर्ट (${result.date}): अधिकतम तापमान ${result.temp_max_c}°C, न्यूनतम ${result.temp_min_c}°C, सापेक्ष आर्द्रता ${result.relative_humidity_pct}%, और वाष्पीकरण दर (ET0) ${result.reference_et0_mm} मिमी/दिन है। ${rainMsg}`
+      : `Weather update for ${result.date}: High of ${result.temp_max_c}°C, low of ${result.temp_min_c}°C, humidity ${result.relative_humidity_pct}%, and atmospheric evaporation demand (ET0) is ${result.reference_et0_mm} mm/day. ${rainMsg}`;
+
+    return {
+      reply,
+      spokenReply: reply,
+      toolAudits,
+      structuredData: result,
+      activeScenario: 'weather_context',
+    };
+  }
+
+  // 7. Parcel & Farm Infrastructure Query ("tell me about my parcel", "what crops do I have?", "what is my soil?", "pump horsepower", "खेत की जानकारी")
+  const isParcelQuery =
+    query.includes('parcel') ||
+    query.includes('farm') ||
+    query.includes('land') ||
+    query.includes('soil') ||
+    query.includes('pump') ||
+    query.includes('area') ||
+    query.includes('bigha') ||
+    query.includes('acre') ||
+    query.includes('खेत') ||
+    query.includes('मिट्टी') ||
+    query.includes('पंप') ||
+    query.includes('जमीन') ||
+    query.includes('জমি') ||
+    query.includes('মাটি') ||
+    (query.includes('crop') && (query.includes('what') || query.includes('list') || query.includes('have') || query.includes('growing')));
+
+  if (isParcelQuery) {
+    const { result, audit } = await executeMcpTool('get_farm_context', { farmId });
+    toolAudits.push(audit);
+
+    let specificReply: string | null = null;
+    if (query.includes('pump') || query.includes('पंप')) {
+      specificReply = language === 'hi'
+        ? `आपके खेत में ${result.reserve.pumpPower_hp} HP का पंप लगा है, जो लगभग ${result.reserve.knownFlowRate_liters_per_hr?.toLocaleString() || '6,000'} लीटर प्रति घंटा पानी देता है।`
+        : `Your farm is equipped with a ${result.reserve.pumpPower_hp} HP pump delivering approximately ${result.reserve.knownFlowRate_liters_per_hr?.toLocaleString() || '6,000'} Litres per hour.`;
+    } else if (query.includes('soil') || query.includes('मिट्टी') || query.includes('মাটি')) {
+      specificReply = language === 'hi'
+        ? `आपके खेत की मिट्टी ${result.soil.texture} (दोमट) प्रकार की है, जिसकी उपलब्ध जल धारण क्षमता (AWC) ${result.soil.awc_mm_per_m} मिमी प्रति मीटर है।`
+        : `Your farm soil texture is ${result.soil.texture} with an Available Water Capacity (AWC) of ${result.soil.awc_mm_per_m} mm per meter.`;
+    } else if (query.includes('land') || query.includes('area') || query.includes('size') || query.includes('bigha') || query.includes('acre') || query.includes('जमीन')) {
+      const totalBigha = result.plots.reduce((acc: number, p: any) => acc + (p.areaValue || 0), 0);
+      const totalSqM = result.plots.reduce((acc: number, p: any) => acc + (p.area_sq_meters || 0), 0);
+      specificReply = language === 'hi'
+        ? `आपके पार्सल का कुल क्षेत्रफल ${totalBigha} बीघा (${totalSqM.toLocaleString()} वर्ग मीटर) है।`
+        : `Your parcel total area is ${totalBigha} Bigha (${totalSqM.toLocaleString()} m²).`;
+    }
+
+    const plotSummary = result.plots.map((p: any) => `${p.cropName} (${p.variety || 'Standard'}, ${p.areaValue || 1} ${p.areaUnit || 'bigha'}, ${p.irrigationMethod || 'drip'})`).join(', ');
+
+    const reply = specificReply || (language === 'hi'
+      ? `${result.farmName} (${result.location.displayName}): कुल क्षेत्रफल ${result.plots.reduce((acc: number, p: any) => acc + (p.areaValue || 0), 0)} बीघा, मिट्टी: ${result.soil.texture} (AWC ${result.soil.awc_mm_per_m} मिमी/मी)। पानी भंडारण: ${result.reserve.currentAvailable_liters.toLocaleString()} / ${result.reserve.totalCapacity_liters.toLocaleString()} लीटर। फसलें: ${plotSummary}।`
+      : `Parcel Profile for ${result.farmName} (${result.location.displayName}): Soil texture is ${result.soil.texture} (AWC: ${result.soil.awc_mm_per_m} mm/m). Storage: ${result.reserve.currentAvailable_liters.toLocaleString()} / ${result.reserve.totalCapacity_liters.toLocaleString()} L in ${result.reserve.storageType} with ${result.reserve.pumpPower_hp} HP pump. Plots: ${plotSummary}.`);
+
+    return {
+      reply,
+      spokenReply: reply,
+      toolAudits,
+      structuredData: result,
+      activeScenario: 'farm_context',
+    };
+  }
+
+  // 8. Default: Plot Water Status & Weather
   const { result: statusResult, audit: statusAudit } = await executeMcpTool('get_plot_water_status', { farmId });
   toolAudits.push(statusAudit);
 
@@ -705,7 +856,7 @@ async function runDeterministicFallback(
 
 /**
  * Main Agent Execution Loop.
- * Tries Amazon Bedrock Converse API with toolConfig; falls back cleanly to deterministic MCP router.
+ * Tries Amazon Bedrock Converse API with toolConfig; supports parallel multi-tool calling; falls back cleanly to deterministic MCP router.
  */
 export async function runAlexaAgent(
   userQuery: string,
@@ -728,77 +879,88 @@ export async function runAlexaAgent(
         },
       ];
 
-      const command = new ConverseCommand({
-        modelId: BEDROCK_MODEL_ID,
-        system: [{ text: SYSTEM_PROMPT }],
-        messages,
-        toolConfig: {
-          tools: BEDROCK_TOOLS,
-        },
-        inferenceConfig: {
-          temperature: 0.1,
-          maxTokens: 500,
-        },
-      });
+      const currentMessages: BedrockMessage[] = [...messages];
+      let turns = 0;
+      const maxTurns = 3;
+      const accumulatedAudits: ToolAuditEntry[] = [];
+      let latestStructuredData: any = null;
+      let activeScenario: string = 'plot_status';
 
-      const response = await bedrock.send(command);
-      const message = response.output?.message;
-      const toolUseBlock = message?.content?.find((c: any) => c.toolUse);
-
-      if (toolUseBlock && toolUseBlock.toolUse) {
-        const { name, input, toolUseId } = toolUseBlock.toolUse;
-        const { result, audit } = await executeMcpTool(name!, input);
-
-        // Send tool result back to Bedrock for final natural language synthesis
-        const followUpMessages: BedrockMessage[] = [
-          ...messages,
-          {
-            role: 'assistant',
-            content: message?.content || [],
-          },
-          {
-            role: 'user',
-            content: [
-              {
-                toolResult: {
-                  toolUseId: toolUseId!,
-                  content: [{ json: result }],
-                },
-              },
-            ],
-          },
-        ];
-
-        const followUpCommand = new ConverseCommand({
+      while (turns < maxTurns) {
+        turns++;
+        const command = new ConverseCommand({
           modelId: BEDROCK_MODEL_ID,
           system: [{ text: SYSTEM_PROMPT }],
-          messages: followUpMessages,
-          inferenceConfig: { temperature: 0.2, maxTokens: 400 },
+          messages: currentMessages,
+          toolConfig: {
+            tools: BEDROCK_TOOLS,
+          },
+          inferenceConfig: {
+            temperature: 0.1,
+            maxTokens: 600,
+          },
         });
 
-        const followUpResponse = await bedrock.send(followUpCommand);
-        const finalContent = followUpResponse.output?.message?.content?.[0];
-        const replyText = (finalContent as any)?.text || JSON.stringify(result);
+        const response = await bedrock.send(command);
+        const message = response.output?.message;
+        const toolUseBlocks = message?.content?.filter((c: any) => c.toolUse) || [];
 
-        return {
-          reply: replyText,
-          spokenReply: replyText,
-          toolAudits: [audit],
-          structuredData: result,
-          activeScenario: name === 'allocate_limited_water' ? 'water_allocation' :
-                          name === 'compare_irrigation_methods' ? 'method_comparison' :
-                          name === 'save_irrigation_plan' ? 'plan_saved' : 'plot_status',
-        };
-      }
+        // If no tool was requested, return final text
+        if (toolUseBlocks.length === 0) {
+          const textBlock = message?.content?.find((c: any) => c.text);
+          const replyText = (textBlock as any)?.text || (latestStructuredData ? JSON.stringify(latestStructuredData) : 'Execution complete.');
+          return {
+            reply: replyText,
+            spokenReply: replyText,
+            toolAudits: accumulatedAudits,
+            structuredData: latestStructuredData,
+            activeScenario,
+          };
+        }
 
-      // If no tool call was needed, return model text directly
-      const textBlock = message?.content?.find((c: any) => c.text);
-      if (textBlock && (textBlock as any).text) {
-        return {
-          reply: (textBlock as any).text,
-          spokenReply: (textBlock as any).text,
-          toolAudits: [],
-        };
+        // Execute all requested tools in parallel!
+        const toolExecutions = await Promise.all(
+          toolUseBlocks.map((b: any) => executeMcpTool(b.toolUse.name, b.toolUse.input))
+        );
+
+        for (let i = 0; i < toolExecutions.length; i++) {
+          accumulatedAudits.push(toolExecutions[i].audit);
+          latestStructuredData = toolExecutions[i].result;
+          const tName = toolUseBlocks[i].toolUse.name;
+          if (tName === 'allocate_limited_water') activeScenario = 'water_allocation';
+          else if (tName === 'compare_irrigation_methods') activeScenario = 'method_comparison';
+          else if (tName === 'save_irrigation_plan') activeScenario = 'plan_saved';
+          else if (tName === 'update_water_reserve') activeScenario = 'reserve_updated';
+          else if (tName === 'log_irrigation_event') activeScenario = 'irrigation_logged';
+          else if (tName === 'update_plot_method') activeScenario = 'method_updated';
+          else if (tName === 'get_weather_context') activeScenario = 'weather_context';
+          else if (tName === 'get_farm_context') activeScenario = 'farm_context';
+        }
+
+        // Check if both farm and weather were invoked together in parallel
+        const calledNames = toolUseBlocks.map((b: any) => b.toolUse.name);
+        if (calledNames.includes('get_farm_context') && calledNames.includes('get_weather_context')) {
+          activeScenario = 'parcel_and_weather';
+          latestStructuredData = {
+            farm: toolExecutions.find((_, idx) => calledNames[idx] === 'get_farm_context')?.result,
+            weather: toolExecutions.find((_, idx) => calledNames[idx] === 'get_weather_context')?.result,
+          };
+        }
+
+        currentMessages.push({
+          role: 'assistant',
+          content: message?.content || [],
+        });
+
+        currentMessages.push({
+          role: 'user',
+          content: toolUseBlocks.map((b: any, idx: number) => ({
+            toolResult: {
+              toolUseId: b.toolUse.toolUseId,
+              content: [{ json: toolExecutions[idx].result }],
+            },
+          })),
+        });
       }
     } catch (bedrockErr: any) {
       console.warn('Bedrock Converse execution failed, switching to resilient fallback router:', bedrockErr?.message);

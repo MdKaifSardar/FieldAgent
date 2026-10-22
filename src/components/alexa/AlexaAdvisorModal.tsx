@@ -16,7 +16,13 @@ import {
   Sliders,
   ChevronRight,
   Database,
-  ArrowRight
+  ArrowRight,
+  CloudRain,
+  Sun,
+  MapPin,
+  Thermometer,
+  Wind,
+  Layers
 } from 'lucide-react';
 import { useLanguage } from '../common/LanguageContext';
 import { ToolAuditEntry } from '../../core/agent/bedrockAgent';
@@ -618,6 +624,144 @@ export function AlexaAdvisorModal({
                 </div>
               )}
 
+              {/* Weather Forecast Card */}
+              {msg.structuredData && (msg.activeScenario === 'weather_context' || msg.activeScenario === 'parcel_and_weather') && (
+                <div className="mt-2.5 w-full max-w-[88%] sm:max-w-[84%] p-3.5 rounded-xl bg-slate-800/95 border border-sky-400/40 text-slate-200 text-xs space-y-2.5 shadow-md">
+                  {(() => {
+                    const w = msg.activeScenario === 'parcel_and_weather' ? msg.structuredData.weather : msg.structuredData;
+                    if (!w) return null;
+                    return (
+                      <>
+                        <div className="flex items-center justify-between border-b border-slate-700/80 pb-2">
+                          <span className="font-bold text-white flex items-center gap-1.5 uppercase text-sky-300">
+                            <CloudRain className="w-4 h-4 text-sky-400" />
+                            Live Weather & Evaporation Demand
+                          </span>
+                          <span className="px-2 py-0.5 rounded bg-sky-950/80 border border-sky-500/40 text-[10px] font-mono text-sky-300">
+                            {w.date}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                          <div className="p-2 rounded-lg bg-slate-900 border border-slate-700">
+                            <span className="text-[10px] text-slate-400 block flex items-center justify-center gap-1">
+                              <Thermometer className="w-3 h-3 text-amber-400" /> Temp
+                            </span>
+                            <span className="font-bold font-mono text-amber-300 text-sm">
+                              {w.temp_max_c}°C / {w.temp_min_c}°C
+                            </span>
+                          </div>
+
+                          <div className="p-2 rounded-lg bg-slate-900 border border-slate-700">
+                            <span className="text-[10px] text-slate-400 block flex items-center justify-center gap-1">
+                              <Droplets className="w-3 h-3 text-cyan-400" /> Humidity
+                            </span>
+                            <span className="font-bold font-mono text-cyan-300 text-sm">
+                              {w.relative_humidity_pct}%
+                            </span>
+                          </div>
+
+                          <div className="p-2 rounded-lg bg-slate-900 border border-slate-700">
+                            <span className="text-[10px] text-slate-400 block flex items-center justify-center gap-1">
+                              <Sun className="w-3 h-3 text-orange-400" /> ET₀ Demand
+                            </span>
+                            <span className="font-bold font-mono text-orange-300 text-sm">
+                              {w.reference_et0_mm} mm/day
+                            </span>
+                          </div>
+
+                          <div className="p-2 rounded-lg bg-slate-900 border border-slate-700">
+                            <span className="text-[10px] text-slate-400 block flex items-center justify-center gap-1">
+                              <CloudRain className="w-3 h-3 text-blue-400" /> Rain
+                            </span>
+                            <span className="font-bold font-mono text-blue-300 text-sm">
+                              {w.rainfall_mm} mm ({w.precipitation_probability_pct}%)
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Rain Probability Bar */}
+                        <div className="p-2 rounded-lg bg-slate-900/90 border border-slate-700/60 space-y-1">
+                          <div className="flex items-center justify-between text-[11px] text-slate-300">
+                            <span>Precipitation Likelihood:</span>
+                            <span className="font-bold text-sky-300 font-mono">{w.precipitation_probability_pct}%</span>
+                          </div>
+                          <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                w.precipitation_probability_pct >= 50 ? 'bg-gradient-to-r from-cyan-400 to-blue-500' : 'bg-slate-600'
+                              }`}
+                              style={{ width: `${w.precipitation_probability_pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Parcel Profile Card */}
+              {msg.structuredData && (msg.activeScenario === 'farm_context' || msg.activeScenario === 'parcel_and_weather') && (
+                <div className="mt-2.5 w-full max-w-[88%] sm:max-w-[84%] p-3.5 rounded-xl bg-slate-800/95 border border-emerald-500/40 text-slate-200 text-xs space-y-2.5 shadow-md">
+                  {(() => {
+                    const f = msg.activeScenario === 'parcel_and_weather' ? msg.structuredData.farm : msg.structuredData;
+                    if (!f) return null;
+                    return (
+                      <>
+                        <div className="flex items-center justify-between border-b border-slate-700/80 pb-2">
+                          <span className="font-bold text-white flex items-center gap-1.5 uppercase text-emerald-300">
+                            <Layers className="w-4 h-4 text-emerald-400" />
+                            Registered Parcel Profile
+                          </span>
+                          <span className="flex items-center gap-1 text-[11px] text-slate-400">
+                            <MapPin className="w-3 h-3 text-red-400" />
+                            {f.location?.district || f.location?.displayName}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="p-2 rounded-lg bg-slate-900/90 border border-slate-700 space-y-1">
+                            <span className="text-[10px] text-slate-400 uppercase font-semibold">Soil Profile</span>
+                            <div className="font-bold text-white capitalize">{f.soil?.texture} Soil</div>
+                            <div className="text-[11px] text-emerald-300 font-mono">AWC: {f.soil?.awc_mm_per_m} mm/m</div>
+                            <div className="text-[10px] text-slate-400">Infiltration: {f.soil?.infiltration_rate_mm_hr} mm/hr</div>
+                          </div>
+
+                          <div className="p-2 rounded-lg bg-slate-900/90 border border-slate-700 space-y-1">
+                            <span className="text-[10px] text-slate-400 uppercase font-semibold">Water Reserve</span>
+                            <div className="font-bold text-cyan-300 font-mono">
+                              {f.reserve?.currentAvailable_liters?.toLocaleString()} L
+                            </div>
+                            <div className="text-[10px] text-slate-400">Cap: {f.reserve?.totalCapacity_liters?.toLocaleString()} L ({f.reserve?.storageType})</div>
+                            <div className="text-[11px] text-amber-300 font-mono">Pump: {f.reserve?.pumpPower_hp} HP</div>
+                          </div>
+                        </div>
+
+                        {/* Plots Breakdown */}
+                        {f.plots && f.plots.length > 0 && (
+                          <div className="p-2 rounded-lg bg-slate-900/90 border border-slate-700 space-y-1.5">
+                            <span className="text-[10px] text-slate-400 uppercase font-semibold block">Cultivated Plots</span>
+                            {f.plots.map((p: any) => (
+                              <div key={p.id} className="flex items-center justify-between text-[11px] border-b border-slate-800 last:border-b-0 pb-1 last:pb-0">
+                                <div>
+                                  <span className="font-bold text-white">🌾 {p.cropName}</span>
+                                  <span className="text-slate-400 text-[10px] ml-1.5">({p.variety || 'Standard'}, {p.growthStage})</span>
+                                </div>
+                                <div className="text-right">
+                                  <span className="font-mono text-cyan-300 font-semibold">{p.areaValue} {p.areaUnit}</span>
+                                  <span className="text-[10px] text-slate-400 ml-1.5 uppercase">[{p.irrigationMethod}]</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+
               <span className="text-[10px] text-slate-500 mt-1 px-1">{msg.timestamp}</span>
             </div>
           ))}
@@ -636,6 +780,8 @@ export function AlexaAdvisorModal({
         {/* QUICK SUGGESTION CHIPS */}
         <div className="px-4 py-2 border-t border-slate-800 bg-slate-950/80 flex items-center gap-2 overflow-x-auto shrink-0">
           {[
+            { label: '⛅ Weather & Rain', query: 'What is the weather today and will it rain?' },
+            { label: '🌾 Parcel & Soil Details', query: 'Tell me about my parcel, crops, and soil' },
             { label: '💧 800L Water Budget', query: 'I have 800 Litres of water. Which plot should I irrigate first?' },
             { label: '🔄 Compare Drip vs Flood', query: 'What if I switch from Flood to Drip irrigation?' },
             { label: '💾 Save Confirmed Plan', query: 'Save this irrigation plan for my farm' },

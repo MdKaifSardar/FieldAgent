@@ -176,4 +176,33 @@ describe('FieldGuard MCP Server & Tool Handlers', () => {
     expect(res3.reply).toContain('valves');
     expect(res3.reply).toContain('6:00 PM');
   });
+
+  it('agent: handles weather, parcel, and combined multi-tool overview queries', async () => {
+    const { runAlexaAgent } = await import('../core/agent/bedrockAgent');
+
+    // 1. Weather query
+    const weatherRes = await runAlexaAgent('What is the weather today and will it rain?', [], 'farm-bardhaman-01');
+    expect(weatherRes.activeScenario).toBe('weather_context');
+    expect(weatherRes.structuredData.reference_et0_mm).toBeDefined();
+    expect(weatherRes.structuredData.temp_max_c).toBeDefined();
+    expect(weatherRes.reply).toContain('Weather update');
+
+    // 2. Specific Parcel query (pump)
+    const pumpRes = await runAlexaAgent('What is my pump horsepower?', [], 'farm-bardhaman-01');
+    expect(pumpRes.activeScenario).toBe('farm_context');
+    expect(pumpRes.reply).toContain('HP pump');
+
+    // 3. Specific Parcel query (soil)
+    const soilRes = await runAlexaAgent('What kind of soil do I have?', [], 'farm-bardhaman-01');
+    expect(soilRes.activeScenario).toBe('farm_context');
+    expect(soilRes.reply).toContain('soil');
+
+    // 4. Combined Overview query (Multi-tool invocation)
+    const combinedRes = await runAlexaAgent('Give me a complete overview of my farm and weather', [], 'farm-bardhaman-01');
+    expect(combinedRes.activeScenario).toBe('parcel_and_weather');
+    expect(combinedRes.toolAudits.length).toBe(2);
+    expect(combinedRes.structuredData.farm).toBeDefined();
+    expect(combinedRes.structuredData.weather).toBeDefined();
+    expect(combinedRes.reply).toContain('Overview for');
+  });
 });

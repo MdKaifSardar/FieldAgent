@@ -163,12 +163,28 @@ export async function handleGetFarmContext(args: { farmId: string }) {
 }
 
 export const getWeatherContextSchema = {
-  latitude: z.number().describe('Latitude of the field (e.g. 23.2324)'),
-  longitude: z.number().describe('Longitude of the field (e.g. 87.8615)'),
+  farmId: z.string().optional().describe('Optional unique identifier of the farm to auto-resolve coordinates'),
+  latitude: z.number().optional().describe('Latitude of the field (e.g. 23.2324)'),
+  longitude: z.number().optional().describe('Longitude of the field (e.g. 87.8615)'),
 };
 
-export async function handleGetWeatherContext(args: { latitude: number; longitude: number }) {
-  const forecast = await resolveForecast(args.latitude, args.longitude);
+export async function handleGetWeatherContext(args: { farmId?: string; latitude?: number; longitude?: number }) {
+  let lat = args.latitude;
+  let lon = args.longitude;
+
+  if ((lat === undefined || lon === undefined) && args.farmId) {
+    const farm = await resolveFarm(args.farmId);
+    if (farm) {
+      lat = farm.location.latitude;
+      lon = farm.location.longitude;
+    }
+  }
+
+  // Fallback to default coordinates if still undefined
+  const finalLat = lat ?? 23.2324;
+  const finalLon = lon ?? 87.8615;
+
+  const forecast = await resolveForecast(finalLat, finalLon);
   return {
     content: [
       {
