@@ -9,6 +9,7 @@ import { LanguageProvider } from '../components/common/LanguageContext';
 import { ThemeProvider } from '../components/common/ThemeContext';
 import { executePreset, DEMO_PRESETS } from '../core/demoPresets';
 import { runFeasibilityPlanner } from '../core/feasibilityPlanner';
+import { calculateTaw, calculateRaw, calculateEtc, advanceSoilWaterBalanceToDate } from '../core/fao56';
 import { fetchLiveWeatherForecast } from '../adapters/openMeteoAdapter';
 import { 
   saveFarmProfileToDynamo, 
@@ -83,11 +84,64 @@ function FieldGuardApp() {
         setWeatherErrorMessage(wRes.errorMessage);
       }
 
+      // Dynamic Soil Water Balance Catch-up:
+      // If days elapsed since last calculation/irrigation, advance the daily water balance
+      const todayStr = new Date().toISOString().split('T')[0];
+      let needsCatchup = false;
+      const caughtUpPlots = farm.plots.map((plot) => {
+        const lastDate = plot.lastCalculationDate || plot.lastIrrigationDate;
+        if (!lastDate) return plot;
+
+        const lastTime = new Date(lastDate + 'T00:00:00').getTime();
+        const todayTime = new Date(todayStr + 'T00:00:00').getTime();
+        const elapsedDays = Math.max(0, Math.floor((todayTime - lastTime) / 86400000));
+
+        if (elapsedDays > 0) {
+          needsCatchup = true;
+          const taw = calculateTaw(farm.soil.awc_mm_per_m, plot.rootDepth_m);
+          const raw = calculateRaw(plot.depletionFraction_p, taw);
+          const dailyEtc = calculateEtc(wRes.forecast.reference_et0_mm || 3.5, plot.cropCoefficient_Kc);
+          const dailyRain = wRes.forecast.rainfall_mm || 0;
+
+          const advanced = advanceSoilWaterBalanceToDate({
+            currentDepletion_mm: plot.currentDepletion_mm,
+            taw_mm: taw,
+            raw_mm: raw,
+            dailyEtc_mm: dailyEtc,
+            dailyRain_mm: dailyRain,
+            lastCalculationDate: lastDate,
+            todayDate: todayStr,
+          });
+
+          return {
+            ...plot,
+            currentDepletion_mm: advanced.newDepletion_mm,
+            lastCalculationDate: todayStr,
+          };
+        }
+        return plot;
+      });
+
+      let activeFarm = farm;
+      if (needsCatchup) {
+        activeFarm = {
+          ...farm,
+          plots: caughtUpPlots,
+          updatedAt: new Date().toISOString(),
+        };
+        setCurrentFarm(activeFarm);
+        setParcels((prev) => prev.map((p) => (p.id === activeFarm.id ? activeFarm : p)));
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('fieldguard_saved_farm', JSON.stringify(activeFarm));
+        }
+        saveFarmProfileToDynamo(activeFarm).catch(() => {});
+      }
+
       // 2. Run deterministic FAO-56 feasibility planner
       const planRes = runFeasibilityPlanner({
-        plots: farm.plots,
-        awc_mm_per_m: farm.soil.awc_mm_per_m,
-        reserve: farm.reserve,
+        plots: activeFarm.plots,
+        awc_mm_per_m: activeFarm.soil.awc_mm_per_m,
+        reserve: activeFarm.reserve,
         forecast: wRes.forecast,
         isDemoPreset: false,
       });
@@ -96,10 +150,10 @@ function FieldGuardApp() {
       setStorageStatus('aws_dynamodb');
 
       // 3. Log decision to Amazon DynamoDB in background (deduplicated)
-      const logKey = `${farm.id}:${planRes.decision}:${Math.round(planRes.totalFarmDemand_liters)}`;
+      const logKey = `${activeFarm.id}:${planRes.decision}:${Math.round(planRes.totalFarmDemand_liters)}`;
       if (lastLoggedDecisionKeyRef.current !== logKey) {
         lastLoggedDecisionKeyRef.current = logKey;
-        logDecisionToDynamo(farm.id, planRes).catch((e) => {
+        logDecisionToDynamo(activeFarm.id, planRes).catch((e) => {
           console.warn('Background DynamoDB logging notice:', e);
         });
       }
@@ -320,6 +374,46 @@ function FieldGuardApp() {
     }
   };
 
+  // 1-Click Interactive Irrigation Logger:
+  // When farmer taps [Watered Today], resets soil deficit Dr to 0.0 mm (Field Capacity),
+  // updates lastIrrigationDate and lastCalculationDate to today, persists to DynamoDB, and re-plans.
+  const handleLogIrrigation = (plotId: string) => {
+    if (!currentFarm) return;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const updatedPlots = currentFarm.plots.map((p) => {
+      if (p.id === plotId) {
+        return {
+          ...p,
+          currentDepletion_mm: 0.0,
+          lastIrrigationDate: todayStr,
+          lastCalculationDate: todayStr,
+        };
+      }
+      return p;
+    });
+
+    const updatedFarm: FarmProfile = {
+      ...currentFarm,
+      plots: updatedPlots,
+      updatedAt: new Date().toISOString(),
+    };
+
+    setCurrentFarm(updatedFarm);
+    const updatedParcels = parcels.map((p) => (p.id === updatedFarm.id ? updatedFarm : p));
+    setParcels(updatedParcels);
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('fieldguard_user_parcels', JSON.stringify(updatedParcels));
+      localStorage.setItem('fieldguard_saved_farm', JSON.stringify(updatedFarm));
+    }
+
+    saveFarmProfileToDynamo(updatedFarm).catch((err) => {
+      console.error('Failed to save irrigation log to DynamoDB:', err);
+    });
+
+    runLiveFarmPlanning(updatedFarm);
+  };
+
   // Developer Sandbox: Load a benchmark scenario
   const handleSelectDemoPreset = (presetId: string) => {
     setActivePresetId(presetId);
@@ -528,6 +622,7 @@ function FieldGuardApp() {
             onRainSliderChange={handleRainSliderChange}
             interactiveTankLiters={interactiveTankLiters}
             onTankSliderChange={handleTankSliderChange}
+            onLogIrrigation={handleLogIrrigation}
           />
         )}
 

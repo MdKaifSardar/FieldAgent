@@ -24,6 +24,7 @@ export interface PlotCalculationResult {
   irrigationEfficiency: number; // e.g. 0.90 for drip, 0.60 for flood
   urgencyLevel: 'low' | 'moderate' | 'critical';
   pumpRuntime_minutes: number; // Duration to run pump based on HP flow rate
+  lastIrrigationDate?: string;
 }
 
 export interface IrrigationTimingWindow {

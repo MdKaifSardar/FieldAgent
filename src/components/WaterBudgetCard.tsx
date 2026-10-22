@@ -4,7 +4,7 @@ import React from 'react';
 import { PlotCalculationResult } from '../types/decision';
 import { useLanguage } from './common/LanguageContext';
 import { localizeCrop, localizeIrrigationMethod } from '../utils/agriculturalLocalization';
-import { Database, Sprout, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Database, Sprout, AlertCircle, CheckCircle2, Droplets, Calendar } from 'lucide-react';
 
 interface WaterBudgetCardProps {
   totalDemand_liters: number;
@@ -13,6 +13,17 @@ interface WaterBudgetCardProps {
   waterShortfall_liters: number;
   plots: PlotCalculationResult[];
   waterAllocation?: import('../types/decision').WaterAllocationSummary;
+  onLogIrrigation?: (plotId: string) => void;
+}
+
+function getDaysAgo(dateStr?: string): { days: number; text: string } {
+  if (!dateStr) return { days: 0, text: 'Not recorded' };
+  const lastTime = new Date(dateStr + 'T00:00:00').getTime();
+  const todayTime = new Date(new Date().toISOString().split('T')[0] + 'T00:00:00').getTime();
+  const days = Math.max(0, Math.floor((todayTime - lastTime) / 86400000));
+  if (days === 0) return { days: 0, text: 'Today' };
+  if (days === 1) return { days: 1, text: 'Yesterday' };
+  return { days, text: `${days} days ago` };
 }
 
 export function WaterBudgetCard({
@@ -21,6 +32,7 @@ export function WaterBudgetCard({
   waterShortfall_liters,
   plots,
   waterAllocation,
+  onLogIrrigation,
 }: WaterBudgetCardProps) {
   const { language, t } = useLanguage();
   const isDeficit = waterShortfall_liters > 0;
@@ -107,6 +119,29 @@ export function WaterBudgetCard({
                       {isCritical ? <AlertCircle className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
                       {isCritical ? t.stressImminent : t.bufferSafe}
                     </span>
+                  </div>
+
+                  {/* Irrigation Status & One-Click Watered Today */}
+                  <div className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-slate-100/70 dark:bg-[#112B3E]/60 border border-slate-200/60 dark:border-[#16364D]/60 my-2">
+                    <div className="flex items-center gap-1.5 text-slate-600 dark:text-[#94A3B8]">
+                      <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span className="text-[11px]">
+                        {t.lastWateredLabel}: <strong className="text-slate-900 dark:text-[#F0F9FF] font-medium">{getDaysAgo(plot.lastIrrigationDate).text}</strong>
+                        {plot.lastIrrigationDate && <span className="text-[10px] text-slate-400 font-mono ml-1">({plot.lastIrrigationDate})</span>}
+                      </span>
+                    </div>
+
+                    {onLogIrrigation && (
+                      <button
+                        type="button"
+                        onClick={() => onLogIrrigation(plot.plotId)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-[#38BDF8] border border-sky-500/30 transition-all cursor-pointer shadow-2xs active:scale-95 hover:shadow-xs"
+                        title="Record irrigation today (resets root zone soil water deficit to 0 mm)"
+                      >
+                        <Droplets className="w-3 h-3 text-sky-500 shrink-0" />
+                        <span>{t.wateredTodayBtn}</span>
+                      </button>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 text-xs text-slate-500 dark:text-[#94A3B8] my-2">

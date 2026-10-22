@@ -39,9 +39,11 @@ import {
   Building2,
   Hash,
   Plus,
-  Trash2
+  Trash2,
+  Calendar
 } from 'lucide-react';
 import { LocationMapPicker } from '../map/LocationMapPicker';
+import { computeBaselineDepletionFromDate } from '../../core/fao56';
 
 interface StepperWizardProps {
   isOpen: boolean;
@@ -163,6 +165,7 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
     areaValue: number;
     areaUnit: AreaUnit;
     irrigationMethod: IrrigationMethod;
+    lastIrrigationDate?: string;
   }[]>([
     {
       id: 'plot-primary-01',
@@ -171,6 +174,7 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
       areaValue: initialFarm?.plots[0]?.areaValue || 1.5,
       areaUnit: initialFarm?.plots[0]?.areaUnit || 'bigha',
       irrigationMethod: initialFarm?.plots[0]?.irrigationMethod || 'drip',
+      lastIrrigationDate: initialFarm?.plots[0]?.lastIrrigationDate || new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0],
     },
   ]);
 
@@ -193,6 +197,7 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
             areaValue: p.areaValue,
             areaUnit: p.areaUnit,
             irrigationMethod: p.irrigationMethod,
+            lastIrrigationDate: p.lastIrrigationDate || new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0],
           }))
         );
       }
@@ -224,6 +229,7 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
         areaValue: 1.0,
         areaUnit: prev[0]?.areaUnit || 'bigha',
         irrigationMethod: 'drip',
+        lastIrrigationDate: new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0],
       },
     ]);
   };
@@ -241,6 +247,7 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
       areaValue: number;
       areaUnit: AreaUnit;
       irrigationMethod: IrrigationMethod;
+      lastIrrigationDate: string;
     }>
   ) => {
     setPlots((prev) => prev.map((p, i) => (i === index ? { ...p, ...updates } : p)));
@@ -375,12 +382,26 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
     }
 
     // Map each user configured plot section to a full CropBlock
+    const default5DaysAgo = new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+
     const mappedPlots: CropBlock[] = plots.map((p, idx) => {
       const { rootDepth_m, cropCoefficient_Kc, depletionFraction_p } = getCropAgronomicParams(
         p.cropName,
         p.growthStage
       );
       const area_sq_meters = normalizeAreaToSqMeters(p.areaValue, p.areaUnit);
+      const plotLastIrrigation = p.lastIrrigationDate || default5DaysAgo;
+
+      const baseline = computeBaselineDepletionFromDate({
+        awc_mm_per_m,
+        rootDepth_m,
+        cropCoefficient_Kc,
+        dailyEt0_mm: 3.5, // Reference baseline ET0
+        lastIrrigationDate: plotLastIrrigation,
+        todayDate: todayStr,
+      });
+
       return {
         id: p.id || `plot-${idx + 1}`,
         cropName: p.cropName,
@@ -391,9 +412,10 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
         rootDepth_m,
         cropCoefficient_Kc,
         depletionFraction_p,
-        currentDepletion_mm: 34.0, // Initial soil depletion baseline
+        currentDepletion_mm: baseline.currentDepletion_mm,
         irrigationMethod: p.irrigationMethod,
-        lastIrrigationDate: new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0],
+        lastIrrigationDate: plotLastIrrigation,
+        lastCalculationDate: todayStr,
       };
     });
 
@@ -956,6 +978,61 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                         >
                           <div>{t.flood}</div>
                         </button>
+                      </div>
+                    </div>
+
+                    {/* Baseline Irrigation Timeline Setup */}
+                    <div className="space-y-1.5 pt-1">
+                      <label className="text-[11px] font-semibold text-[#4D6653] dark:text-[#8FA894] uppercase tracking-wider flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-[#16A34A]" />
+                        <span>{t.lastIrrigationPrompt}</span>
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                        {[
+                          { daysAgo: 1, label: t.lastWateredToday },
+                          { daysAgo: 3, label: t.lastWatered3Days },
+                          { daysAgo: 5, label: t.lastWatered5Days },
+                        ].map((preset) => {
+                          const presetDate = new Date(Date.now() - preset.daysAgo * 86400000).toISOString().split('T')[0];
+                          const isSelected = plot.lastIrrigationDate === presetDate;
+
+                          return (
+                            <button
+                              key={preset.daysAgo}
+                              type="button"
+                              onClick={() => handleUpdatePlot(index, { lastIrrigationDate: presetDate })}
+                              className={`py-1.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center ${
+                                isSelected
+                                  ? 'bg-[#16A34A]/15 border-[#16A34A] text-[#16A34A] dark:text-[#4ADE80] shadow-xs'
+                                  : 'bg-[#F0F4ED] dark:bg-[#1B2720] border-[#E1E8DE] dark:border-[#2A3E31] text-[#4D6653] dark:text-[#8FA894] hover:border-[#16A34A]/40'
+                              }`}
+                            >
+                              {preset.label}
+                            </button>
+                          );
+                        })}
+
+                        {/* Custom Date Input */}
+                        <div className="relative">
+                          <input
+                            type="date"
+                            max={new Date().toISOString().split('T')[0]}
+                            value={plot.lastIrrigationDate || ''}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                handleUpdatePlot(index, { lastIrrigationDate: e.target.value });
+                              }
+                            }}
+                            className="w-full py-1.5 px-2 rounded-xl text-xs font-bold border bg-[#F0F4ED] dark:bg-[#1B2720] border-[#E1E8DE] dark:border-[#2A3E31] text-[#121C15] dark:text-[#F0F4F1] focus:outline-none focus:border-[#16A34A] text-center cursor-pointer"
+                            title={t.customDate}
+                          />
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-[#4D6653] dark:text-[#8FA894] flex items-center justify-between">
+                        <span>
+                          {t.lastWateredLabel}: <strong className="text-[#16A34A] dark:text-[#4ADE80] font-mono">{plot.lastIrrigationDate || '5 days ago'}</strong>
+                        </span>
+                        <span className="text-[9px] text-slate-400">Baseline soil deficit calculated dynamically</span>
                       </div>
                     </div>
                   </div>

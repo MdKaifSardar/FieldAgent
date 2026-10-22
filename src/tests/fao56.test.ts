@@ -5,7 +5,9 @@ import {
   calculateRaw, 
   calculateDailyEffectiveRain,
   updateDailySoilWaterBalance,
-  calculateHoursToStress 
+  calculateHoursToStress,
+  computeBaselineDepletionFromDate,
+  advanceSoilWaterBalanceToDate
 } from '../core/fao56';
 import { calculateEnvironmentalLedger } from '../core/environmentalLedger';
 import { 
@@ -407,4 +409,105 @@ describe('Environmental Ledger Energy Modes', () => {
     expect(ledger.transparencyNote).toContain('Estimated diesel savings');
   });
 });
+
+describe('Dynamic Irrigation Timeline & Daily Water Balance Catch-up', () => {
+  it('computes 0 mm depletion when plot was irrigated today', () => {
+    const res = computeBaselineDepletionFromDate({
+      awc_mm_per_m: 150,
+      rootDepth_m: 0.6,
+      cropCoefficient_Kc: 1.05,
+      dailyEt0_mm: 4.0,
+      lastIrrigationDate: '2026-10-22',
+      todayDate: '2026-10-22',
+    });
+
+    expect(res.elapsedDays).toBe(0);
+    expect(res.currentDepletion_mm).toBe(0);
+    expect(res.taw_mm).toBe(90);
+  });
+
+  it('safely clamps future dates to 0 mm depletion without negative errors', () => {
+    const res = computeBaselineDepletionFromDate({
+      awc_mm_per_m: 150,
+      rootDepth_m: 0.6,
+      cropCoefficient_Kc: 1.05,
+      dailyEt0_mm: 4.0,
+      lastIrrigationDate: '2026-10-25', // Future date
+      todayDate: '2026-10-22',
+    });
+
+    expect(res.elapsedDays).toBe(0);
+    expect(res.currentDepletion_mm).toBe(0);
+  });
+
+  it('accumulates exact ETc deficit across elapsed days', () => {
+    // dailyEtc = 4.0 * 1.05 = 4.2 mm/day
+    // 3 days elapsed -> 3 * 4.2 = 12.6 mm
+    const res = computeBaselineDepletionFromDate({
+      awc_mm_per_m: 150,
+      rootDepth_m: 0.6,
+      cropCoefficient_Kc: 1.05,
+      dailyEt0_mm: 4.0,
+      lastIrrigationDate: '2026-10-19',
+      todayDate: '2026-10-22',
+    });
+
+    expect(res.elapsedDays).toBe(3);
+    expect(res.dailyEtc_mm).toBe(4.2);
+    expect(res.currentDepletion_mm).toBe(12.6);
+  });
+
+  it('strictly bounds depletion by TAW (Permanent Wilting Point limit) for old dates', () => {
+    // TAW = 150 * 0.4 = 60 mm
+    // 90 days elapsed at 4.2 mm/day = 378 mm -> must be clamped to 60 mm
+    const res = computeBaselineDepletionFromDate({
+      awc_mm_per_m: 150,
+      rootDepth_m: 0.4,
+      cropCoefficient_Kc: 1.05,
+      dailyEt0_mm: 4.0,
+      lastIrrigationDate: '2026-07-24',
+      todayDate: '2026-10-22',
+    });
+
+    expect(res.elapsedDays).toBe(90);
+    expect(res.taw_mm).toBe(60);
+    expect(res.currentDepletion_mm).toBe(60); // Clamped at TAW
+  });
+
+  it('advances daily water balance day-by-day with rainfall and ETc', () => {
+    // Starting with 10 mm depletion
+    // Over 2 elapsed days: ETc = 3.0 mm/day, Rain = 0 mm
+    // Day 1: 10 + 3 = 13 mm
+    // Day 2: 13 + 3 = 16 mm
+    const stepDry = advanceSoilWaterBalanceToDate({
+      currentDepletion_mm: 10.0,
+      taw_mm: 60.0,
+      raw_mm: 30.0,
+      dailyEtc_mm: 3.0,
+      dailyRain_mm: 0.0,
+      lastCalculationDate: '2026-10-20',
+      todayDate: '2026-10-22',
+    });
+
+    expect(stepDry.elapsedDays).toBe(2);
+    expect(stepDry.newDepletion_mm).toBe(16.0);
+    expect(stepDry.isStressed).toBe(false);
+
+    // With rain replenishment: 20 mm rain on 16 mm depletion
+    // 16 - 16(effective) + 3(ETc) = 3 mm
+    const stepRain = advanceSoilWaterBalanceToDate({
+      currentDepletion_mm: 16.0,
+      taw_mm: 60.0,
+      raw_mm: 30.0,
+      dailyEtc_mm: 3.0,
+      dailyRain_mm: 20.0,
+      lastCalculationDate: '2026-10-21',
+      todayDate: '2026-10-22',
+    });
+
+    expect(stepRain.elapsedDays).toBe(1);
+    expect(stepRain.newDepletion_mm).toBe(3.0);
+  });
+});
+
 

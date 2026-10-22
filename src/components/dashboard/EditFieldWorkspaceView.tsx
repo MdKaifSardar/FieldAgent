@@ -46,6 +46,7 @@ import {
   Compass
 } from 'lucide-react';
 import { LocationMapPicker } from '../map/LocationMapPicker';
+import { computeBaselineDepletionFromDate, calculateTaw } from '../../core/fao56';
 
 interface EditFieldWorkspaceViewProps {
   initialFarm: FarmProfile;
@@ -206,6 +207,9 @@ export function EditFieldWorkspaceView({
     areaValue: number;
     areaUnit: AreaUnit;
     irrigationMethod: IrrigationMethod;
+    lastIrrigationDate?: string;
+    currentDepletion_mm?: number;
+    lastCalculationDate?: string;
   }[]>(
     initialFarm.plots.map((p, idx) => ({
       id: p.id || `plot-${idx + 1}`,
@@ -214,6 +218,9 @@ export function EditFieldWorkspaceView({
       areaValue: p.areaValue,
       areaUnit: p.areaUnit,
       irrigationMethod: p.irrigationMethod,
+      lastIrrigationDate: p.lastIrrigationDate || new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0],
+      currentDepletion_mm: p.currentDepletion_mm,
+      lastCalculationDate: p.lastCalculationDate,
     }))
   );
 
@@ -295,6 +302,7 @@ export function EditFieldWorkspaceView({
       if (p.areaValue !== orig.areaValue) return true;
       if (p.areaUnit !== orig.areaUnit) return true;
       if (p.irrigationMethod !== orig.irrigationMethod) return true;
+      if (p.lastIrrigationDate !== orig.lastIrrigationDate) return true;
     }
 
     return false;
@@ -319,6 +327,9 @@ export function EditFieldWorkspaceView({
         areaValue: p.areaValue,
         areaUnit: p.areaUnit,
         irrigationMethod: p.irrigationMethod,
+        lastIrrigationDate: p.lastIrrigationDate,
+        currentDepletion_mm: p.currentDepletion_mm,
+        lastCalculationDate: p.lastCalculationDate,
       }))
     );
     setStorageType(initialFarm.reserve.storageType);
@@ -358,6 +369,7 @@ export function EditFieldWorkspaceView({
       areaValue: number;
       areaUnit: AreaUnit;
       irrigationMethod: IrrigationMethod;
+      lastIrrigationDate: string;
     }>
   ) => {
     setPlots((prev) => prev.map((p, i) => (i === index ? { ...p, ...updates } : p)));
@@ -378,12 +390,37 @@ export function EditFieldWorkspaceView({
       finalAvailable = Math.min(availableLiters, totalCap);
     }
 
+    const todayStr = new Date().toISOString().split('T')[0];
+    const default5DaysAgo = new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0];
+
     const mappedPlots: CropBlock[] = plots.map((p, idx) => {
       const { rootDepth_m, cropCoefficient_Kc, depletionFraction_p } = getCropAgronomicParams(
         p.cropName,
         p.growthStage
       );
       const area_sq_meters = normalizeAreaToSqMeters(p.areaValue, p.areaUnit);
+      const plotLastIrrigation = p.lastIrrigationDate || default5DaysAgo;
+
+      const origPlot = initialFarm.plots.find((op) => op.id === p.id);
+      let finalDepletion = p.currentDepletion_mm;
+
+      // Recalculate baseline if user changed lastIrrigationDate or if no prior depletion was stored
+      if (finalDepletion === undefined || origPlot?.lastIrrigationDate !== plotLastIrrigation) {
+        const baseline = computeBaselineDepletionFromDate({
+          awc_mm_per_m,
+          rootDepth_m,
+          cropCoefficient_Kc,
+          dailyEt0_mm: 3.5,
+          lastIrrigationDate: plotLastIrrigation,
+          todayDate: todayStr,
+        });
+        finalDepletion = baseline.currentDepletion_mm;
+      } else {
+        // Zero-edge-case safety: ensure existing depletion doesn't exceed TAW for modified crop/root depth
+        const taw = calculateTaw(awc_mm_per_m, rootDepth_m);
+        finalDepletion = Math.max(0, Math.min(taw, finalDepletion));
+      }
+
       return {
         id: p.id || `plot-${idx + 1}`,
         cropName: p.cropName,
@@ -394,9 +431,10 @@ export function EditFieldWorkspaceView({
         rootDepth_m,
         cropCoefficient_Kc,
         depletionFraction_p,
-        currentDepletion_mm: 34.0,
+        currentDepletion_mm: Math.round(finalDepletion * 10) / 10,
         irrigationMethod: p.irrigationMethod,
-        lastIrrigationDate: new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0],
+        lastIrrigationDate: plotLastIrrigation,
+        lastCalculationDate: p.lastCalculationDate || todayStr,
       };
     });
 
@@ -746,6 +784,61 @@ export function EditFieldWorkspaceView({
                         >
                           {t.flood}
                         </button>
+                      </div>
+                    </div>
+
+                    {/* Baseline Irrigation Timeline Setup */}
+                    <div className="space-y-1.5 pt-1 border-t border-slate-100 dark:border-[#16364D]">
+                      <label className="text-[11px] font-semibold text-slate-700 dark:text-[#94A3B8] uppercase tracking-wider flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span>{t.lastIrrigationPrompt}</span>
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                        {[
+                          { daysAgo: 1, label: t.lastWateredToday },
+                          { daysAgo: 3, label: t.lastWatered3Days },
+                          { daysAgo: 5, label: t.lastWatered5Days },
+                        ].map((preset) => {
+                          const presetDate = new Date(Date.now() - preset.daysAgo * 86400000).toISOString().split('T')[0];
+                          const isSelected = plot.lastIrrigationDate === presetDate;
+
+                          return (
+                            <button
+                              key={preset.daysAgo}
+                              type="button"
+                              onClick={() => handleUpdatePlot(index, { lastIrrigationDate: presetDate })}
+                              className={`py-1.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center ${
+                                isSelected
+                                  ? 'bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                                  : 'bg-white dark:bg-[#0A1C2A] border-slate-200 dark:border-[#16364D] text-slate-600 dark:text-[#94A3B8] hover:border-emerald-500/40'
+                              }`}
+                            >
+                              {preset.label}
+                            </button>
+                          );
+                        })}
+
+                        {/* Custom Date Input */}
+                        <div className="relative">
+                          <input
+                            type="date"
+                            max={new Date().toISOString().split('T')[0]}
+                            value={plot.lastIrrigationDate || ''}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                handleUpdatePlot(index, { lastIrrigationDate: e.target.value });
+                              }
+                            }}
+                            className="w-full py-1.5 px-2 rounded-xl text-xs font-bold border bg-white dark:bg-[#0A1C2A] border-slate-200 dark:border-[#16364D] text-slate-800 dark:text-[#F0F9FF] focus:outline-none focus:border-emerald-500 text-center cursor-pointer"
+                            title={t.customDate}
+                          />
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-[#94A3B8] flex items-center justify-between">
+                        <span>
+                          {t.lastWateredLabel}: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{plot.lastIrrigationDate || '5 days ago'}</strong>
+                        </span>
+                        <span className="text-[9px] text-slate-400">Recalculates baseline soil deficit safely</span>
                       </div>
                     </div>
                   </div>

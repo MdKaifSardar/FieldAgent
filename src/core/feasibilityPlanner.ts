@@ -222,6 +222,7 @@ export function runFeasibilityPlanner(input: PlanningInput): DecisionResponse {
       irrigationMethod: method,
       irrigationEfficiency: efficiency,
       urgencyLevel,
+      lastIrrigationDate: plot.lastIrrigationDate,
     });
   }
 
