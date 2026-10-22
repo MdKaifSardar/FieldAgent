@@ -135,6 +135,7 @@ const BEDROCK_TOOLS: BedrockTool[] = [
           properties: {
             farmId: { type: 'string', description: 'The farm ID' },
             plotId: { type: 'string', description: 'Optional plot ID' },
+            cropName: { type: 'string', description: 'Optional crop name to compare (e.g. Onion, Wheat, Spinach, Tomato)' },
           },
           required: ['farmId'],
         },
@@ -258,6 +259,43 @@ async function runDeterministicFallback(
   const farm = await resolveFarm(activeFarmId);
   const farmId = farm?.id || activeFarmId;
 
+  // Detect if a specific crop is mentioned in the query (multilingual)
+  const CROP_SYNONYMS: Record<string, string> = {
+    onion: 'Onion',
+    प्याज: 'Onion',
+    পেঁয়াজ: 'Onion',
+    wheat: 'Wheat',
+    गेहूं: 'Wheat',
+    গম: 'Wheat',
+    spinach: 'Spinach',
+    पालक: 'Spinach',
+    পালং: 'Spinach',
+    potato: 'Potato',
+    आलू: 'Potato',
+    আলু: 'Potato',
+    mustard: 'Mustard',
+    सरसों: 'Mustard',
+    সরিষা: 'Mustard',
+    chilli: 'Chilli',
+    chili: 'Chilli',
+    मिर्च: 'Chilli',
+    লঙ্কা: 'Chilli',
+    tomato: 'Tomato',
+    टमाटर: 'Tomato',
+    টমেটো: 'Tomato',
+    paddy: 'Paddy',
+    rice: 'Paddy',
+    धान: 'Paddy',
+  };
+
+  let detectedCrop: string | undefined = undefined;
+  for (const [kw, cName] of Object.entries(CROP_SYNONYMS)) {
+    if (query.includes(kw)) {
+      detectedCrop = cName;
+      break;
+    }
+  }
+
   // 1. Water Allocation Scenario ("I have 800 Litres", "how to water with 500L", "budget")
   const budgetMatch = query.match(/(\d+)\s*(l|litres|liters|लीटर|লিটার)/i) || query.match(/(have|budget|tank|water)\s*(\d+)/i);
   if (budgetMatch || query.includes('allocate') || query.includes('budget') || query.includes('which plot') || query.includes('first')) {
@@ -275,7 +313,7 @@ async function runDeterministicFallback(
     toolAudits.push(audit);
 
     const alloc = result.allocations[0];
-    const cropName = alloc?.cropName || 'primary crop';
+    const cropName = alloc?.cropName || detectedCrop || 'primary crop';
     const allocatedL = alloc?.allocated_liters || budget;
     const pumpMins = alloc?.pumpRuntimeMinutes || Math.round(budget / 100);
 
@@ -296,16 +334,20 @@ async function runDeterministicFallback(
     };
   }
 
-  // 2. Irrigation Method Comparison ("switch to drip", "compare flood vs drip", "what if drip")
-  if (query.includes('drip') || query.includes('flood') || query.includes('sprinkler') || query.includes('compare') || query.includes('efficiency')) {
-    const { result, audit } = await executeMcpTool('compare_irrigation_methods', { farmId });
+  // 2. Irrigation Method Comparison ("switch to drip", "compare flood vs drip", "what if drip", "what about onion")
+  if (query.includes('drip') || query.includes('flood') || query.includes('sprinkler') || query.includes('compare') || query.includes('efficiency') || detectedCrop) {
+    const { result, audit } = await executeMcpTool('compare_irrigation_methods', {
+      farmId,
+      cropName: detectedCrop,
+    });
     toolAudits.push(audit);
 
+    const cropName = result.cropName || detectedCrop || 'crop';
     const savings = result.savingsWithDripVsFlood;
     const pct = savings.waterSavedPct ?? 33;
     const reply = language === 'hi'
-      ? `पारंपरिक नाली (Flood) के बजाय ड्रिप (Drip) सिंचाई अपनाने से आप प्रति सिंचाई चक्र ${savings.waterSavedLiters.toLocaleString()} लीटर पानी (${pct}% की बचत) और ${savings.pumpHoursSaved} घंटे पंप का समय बचा सकते हैं।`
-      : `Switching from Flood to Drip irrigation saves ${savings.waterSavedLiters.toLocaleString()} L of water per cycle (${pct}% reduction) and saves ${savings.pumpHoursSaved} hours of pump electricity runtime.`;
+      ? `पारंपरिक नाली (Flood) के बजाय ड्रिप (Drip) सिंचाई अपनाने से आप अपने ${cropName} के खेत में प्रति सिंचाई चक्र ${savings.waterSavedLiters.toLocaleString()} लीटर पानी (${pct}% की बचत) और ${savings.pumpHoursSaved} घंटे पंप का समय बचा सकते हैं।`
+      : `Switching from Flood to Drip irrigation on your ${cropName} plot saves ${savings.waterSavedLiters.toLocaleString()} L of water per cycle (${pct}% reduction) and saves ${savings.pumpHoursSaved} hours of pump electricity runtime.`;
 
     return {
       reply,

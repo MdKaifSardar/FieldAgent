@@ -330,9 +330,10 @@ export async function handleAllocateLimitedWater(args: {
 export const compareIrrigationMethodsSchema = {
   farmId: z.string().describe('The unique identifier of the farm'),
   plotId: z.string().optional().describe('Specific plot to compare. If omitted, uses first plot on farm.'),
+  cropName: z.string().optional().describe('Crop name to compare (e.g. "Onion", "Wheat", "Tomato", "Spinach").'),
 };
 
-export async function handleCompareIrrigationMethods(args: { farmId: string; plotId?: string }) {
+export async function handleCompareIrrigationMethods(args: { farmId: string; plotId?: string; cropName?: string }) {
   const farm = await resolveFarm(args.farmId);
   if (!farm) {
     return {
@@ -341,7 +342,47 @@ export async function handleCompareIrrigationMethods(args: { farmId: string; plo
     };
   }
 
-  const targetPlot = (args.plotId ? farm.plots.find(p => p.id === args.plotId) : farm.plots[0]) || farm.plots[0];
+  let targetPlot = farm.plots[0];
+  if (args.plotId) {
+    const found = farm.plots.find(p => p.id === args.plotId);
+    if (found) targetPlot = found;
+  } else if (args.cropName) {
+    const search = args.cropName.toLowerCase().trim();
+    const found = farm.plots.find(p => p.cropName.toLowerCase().includes(search));
+    if (found) {
+      targetPlot = found;
+    } else {
+      // Dynamic FAO-56 standard agronomic parameters for crops not yet added to the farm
+      const CROP_DEFAULTS: Record<string, { rootDepth_m: number; depletionFraction_p: number; cropCoefficient_Kc: number; name: string }> = {
+        onion: { rootDepth_m: 0.35, depletionFraction_p: 0.30, cropCoefficient_Kc: 1.05, name: 'Onion' },
+        wheat: { rootDepth_m: 0.90, depletionFraction_p: 0.55, cropCoefficient_Kc: 1.15, name: 'Wheat' },
+        spinach: { rootDepth_m: 0.25, depletionFraction_p: 0.20, cropCoefficient_Kc: 1.00, name: 'Spinach' },
+        potato: { rootDepth_m: 0.50, depletionFraction_p: 0.35, cropCoefficient_Kc: 1.10, name: 'Potato' },
+        mustard: { rootDepth_m: 0.60, depletionFraction_p: 0.50, cropCoefficient_Kc: 1.05, name: 'Mustard' },
+        chilli: { rootDepth_m: 0.55, depletionFraction_p: 0.40, cropCoefficient_Kc: 1.05, name: 'Chilli' },
+        paddy: { rootDepth_m: 0.50, depletionFraction_p: 0.20, cropCoefficient_Kc: 1.20, name: 'Paddy' },
+        tomato: { rootDepth_m: 0.60, depletionFraction_p: 0.45, cropCoefficient_Kc: 1.05, name: 'Tomato' },
+      };
+
+      const matchedKey = Object.keys(CROP_DEFAULTS).find(k => search.includes(k) || k.includes(search));
+      const cropSpec = matchedKey ? CROP_DEFAULTS[matchedKey] : { rootDepth_m: 0.5, depletionFraction_p: 0.4, cropCoefficient_Kc: 1.0, name: args.cropName };
+
+      targetPlot = {
+        id: `plot-${cropSpec.name.toLowerCase()}-simulated`,
+        cropName: cropSpec.name,
+        growthStage: 'mid_season',
+        areaValue: farm.plots[0]?.areaValue || 1.5,
+        areaUnit: farm.plots[0]?.areaUnit || 'bigha',
+        area_sq_meters: farm.plots[0]?.area_sq_meters || 2007,
+        rootDepth_m: cropSpec.rootDepth_m,
+        cropCoefficient_Kc: cropSpec.cropCoefficient_Kc,
+        depletionFraction_p: cropSpec.depletionFraction_p,
+        currentDepletion_mm: 0,
+        irrigationMethod: 'drip',
+      } as any;
+    }
+  }
+
   if (!targetPlot) {
     return {
       isError: true,
