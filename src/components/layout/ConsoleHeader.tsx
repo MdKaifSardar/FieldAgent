@@ -16,7 +16,8 @@ import {
   User, 
   LogOut, 
   Sprout,
-  Globe
+  Globe,
+  Sparkles
 } from 'lucide-react';
 
 interface ConsoleHeaderProps {
@@ -28,6 +29,7 @@ interface ConsoleHeaderProps {
   authSession: AuthSession | null;
   onSignOut: () => void;
   onToggleMobileSidebar: () => void;
+  onOpenAlexaModal?: () => void;
 }
 
 export function ConsoleHeader({
@@ -39,6 +41,7 @@ export function ConsoleHeader({
   authSession,
   onSignOut,
   onToggleMobileSidebar,
+  onOpenAlexaModal,
 }: ConsoleHeaderProps) {
   const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
@@ -159,6 +162,19 @@ export function ConsoleHeader({
 
       {/* 2. RIGHT: Desktop Controls & Profile */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Alexa+ Voice Advisor Header Button */}
+        {onOpenAlexaModal && (
+          <button
+            type="button"
+            onClick={onOpenAlexaModal}
+            className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-gradient-to-r from-sky-600 via-cyan-500 to-blue-600 hover:from-sky-500 hover:to-cyan-400 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm hover:shadow-cyan-500/25 transition-all cursor-pointer"
+            title="Open Alexa+ Voice Advisor"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-cyan-200 animate-pulse" />
+            <span className="hidden sm:inline">Alexa+ Advisor</span>
+          </button>
+        )}
+
         {/* Desktop Custom Language Dropdown */}
         <div className="hidden md:block">
           <LanguageSelector />

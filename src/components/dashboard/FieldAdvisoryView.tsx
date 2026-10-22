@@ -6,6 +6,7 @@ import { FarmProfile } from '../../types/farm';
 import { DailyWeatherForecast } from '../../types/weather';
 import { DecisionResponse } from '../../types/decision';
 import { DecisionCard } from '../DecisionCard';
+import { AlexaCopilotCard } from '../alexa/AlexaCopilotCard';
 import { LiveClimateStation } from '../climate/LiveClimateStation';
 import { WaterBudgetCard } from '../WaterBudgetCard';
 import { EnvironmentalLedgerCard } from '../EnvironmentalLedgerCard';
@@ -50,6 +51,7 @@ interface FieldAdvisoryViewProps {
   onRainSliderChange: (val: number) => void;
   interactiveTankLiters: number;
   onTankSliderChange: (val: number) => void;
+  onOpenAlexaModal?: (initialPrompt?: string) => void;
 }
 
 export function FieldAdvisoryView({
@@ -70,6 +72,7 @@ export function FieldAdvisoryView({
   onRainSliderChange,
   interactiveTankLiters,
   onTankSliderChange,
+  onOpenAlexaModal,
 }: FieldAdvisoryViewProps) {
   const { language, t } = useLanguage();
   const [activeTab, setActiveTab] = useState<AdvisoryTab>('advisory');
@@ -233,6 +236,22 @@ export function FieldAdvisoryView({
           {/* TAB 1: ⚡ DECISION & ADVISORY */}
           {activeTab === 'advisory' && (
             <div className="space-y-4">
+              {/* Alexa+ Agronomic Copilot Card */}
+              {onOpenAlexaModal && (
+                <AlexaCopilotCard
+                  farmId={currentFarm.id}
+                  farmName={currentFarm.farmName}
+                  currentAdviceText={
+                    language === 'hi' && decision.advisoryText.hindi
+                      ? decision.advisoryText.hindi
+                      : language === 'bn' && decision.advisoryText.bengali
+                      ? decision.advisoryText.bengali
+                      : decision.primaryAction
+                  }
+                  onOpenFullModal={onOpenAlexaModal}
+                />
+              )}
+
               <DecisionCard decision={decision} />
 
               {/* What-If Simulation Levers (Only visible in demo mode) */}

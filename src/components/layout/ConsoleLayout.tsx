@@ -15,6 +15,7 @@ interface ConsoleLayoutProps {
   onOpenNewParcelWizard: () => void;
   authSession: AuthSession | null;
   onSignOut: () => void;
+  onOpenAlexaModal?: () => void;
   children: React.ReactNode;
 }
 
@@ -27,6 +28,7 @@ export function ConsoleLayout({
   onOpenNewParcelWizard,
   authSession,
   onSignOut,
+  onOpenAlexaModal,
   children,
 }: ConsoleLayoutProps) {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
@@ -59,6 +61,7 @@ export function ConsoleLayout({
           authSession={authSession}
           onSignOut={onSignOut}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+          onOpenAlexaModal={onOpenAlexaModal}
         />
 
         {/* Viewport Workspace */}

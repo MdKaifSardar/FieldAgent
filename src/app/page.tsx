@@ -26,7 +26,8 @@ import { FieldsDirectoryView } from '../components/dashboard/FieldsDirectoryView
 import { FieldAdvisoryView } from '../components/dashboard/FieldAdvisoryView';
 import { RegisterFieldWorkspaceView } from '../components/dashboard/RegisterFieldWorkspaceView';
 import { EditFieldWorkspaceView } from '../components/dashboard/EditFieldWorkspaceView';
-import { X } from 'lucide-react';
+import { AlexaAdvisorModal } from '../components/alexa/AlexaAdvisorModal';
+import { X, Sparkles } from 'lucide-react';
 
 function FieldGuardApp() {
   const router = useRouter();
@@ -61,6 +62,15 @@ function FieldGuardApp() {
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [interactiveTankLiters, setInteractiveTankLiters] = useState<number>(3200);
   const [interactiveRainMm, setInteractiveRainMm] = useState<number>(22.0);
+
+  // Alexa+ Voice Assistant Modal State
+  const [isAlexaModalOpen, setIsAlexaModalOpen] = useState<boolean>(false);
+  const [alexaInitialPrompt, setAlexaInitialPrompt] = useState<string | undefined>(undefined);
+
+  const handleOpenAlexaModal = (initialPrompt?: string) => {
+    setAlexaInitialPrompt(initialPrompt);
+    setIsAlexaModalOpen(true);
+  };
 
   // Master Demo Mode Gate: Controlled by process.env.NEXT_PUBLIC_ENABLE_DEMO_SANDBOX
   const isDemoMode = process.env.NEXT_PUBLIC_ENABLE_DEMO_SANDBOX === 'true';
@@ -456,6 +466,7 @@ function FieldGuardApp() {
         onOpenNewParcelWizard={handleAddNewParcel}
         authSession={authSession}
         onSignOut={handleLogout}
+        onOpenAlexaModal={() => handleOpenAlexaModal()}
       >
         {/* Top Demo Banner (Only visible if running benchmark scenario) */}
         {activePresetId && (
@@ -528,6 +539,7 @@ function FieldGuardApp() {
             onRainSliderChange={handleRainSliderChange}
             interactiveTankLiters={interactiveTankLiters}
             onTankSliderChange={handleTankSliderChange}
+            onOpenAlexaModal={handleOpenAlexaModal}
           />
         )}
 
@@ -571,6 +583,28 @@ function FieldGuardApp() {
           onToggleSimulation={setIsSimulating}
         />
       )}
+
+      {/* Floating Alexa+ Copilot Quick-Access Button */}
+      <button
+        type="button"
+        onClick={() => handleOpenAlexaModal()}
+        className="fixed bottom-6 right-6 z-40 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full bg-gradient-to-r from-sky-600 via-cyan-500 to-blue-600 hover:from-sky-500 hover:to-cyan-400 text-white font-bold text-xs flex items-center gap-2 shadow-xl hover:shadow-cyan-500/30 transition-all cursor-pointer border border-cyan-400/40 group select-none"
+        title="Ask Alexa+ Field Advisor"
+      >
+        <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center animate-pulse">
+          <Sparkles className="w-3.5 h-3.5 text-white" />
+        </div>
+        <span className="font-['Outfit'] tracking-wide">Ask Alexa+</span>
+      </button>
+
+      {/* Alexa+ Simulated Field Advisor Modal */}
+      <AlexaAdvisorModal
+        isOpen={isAlexaModalOpen}
+        onClose={() => setIsAlexaModalOpen(false)}
+        farmId={currentFarm?.id || 'farm-bardhaman-01'}
+        farmName={currentFarm?.farmName || 'Your Farm'}
+        initialPrompt={alexaInitialPrompt}
+      />
     </div>
   );
 }
