@@ -22,10 +22,13 @@ import {
   MapPin,
   Thermometer,
   Wind,
-  Layers
+  Layers,
+  Copy,
+  Check
 } from 'lucide-react';
 import { useLanguage } from '../common/LanguageContext';
 import { ToolAuditEntry } from '../../core/agent/bedrockAgent';
+import { MarkdownMessage } from '../common/MarkdownMessage';
 
 interface ChatMessage {
   id: string;
@@ -63,10 +66,17 @@ export function AlexaAdvisorModal({
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handleCopyMessage = (text: string, idx: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx(null), 2000);
+  };
 
   // Initialize Web Speech Recognition
   useEffect(() => {
@@ -324,7 +334,7 @@ export function AlexaAdvisorModal({
 
         {/* CHAT MESSAGES CONTAINER */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 bg-radial from-slate-900 via-slate-950 to-black">
-          {messages.map((msg) => (
+          {messages.map((msg, idx) => (
             <div
               key={msg.id}
               className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} animate-in fade-in duration-200`}
@@ -337,18 +347,44 @@ export function AlexaAdvisorModal({
                     : 'bg-slate-800/90 border border-slate-700/70 text-slate-100 rounded-bl-xs'
                 }`}
               >
-                <p className="whitespace-pre-line">{msg.text}</p>
+                {msg.sender === 'user' ? (
+                  <p className="whitespace-pre-line">{msg.text}</p>
+                ) : (
+                  <MarkdownMessage content={msg.text} />
+                )}
 
-                {/* Read aloud icon on assistant message */}
-                {msg.sender === 'alexa' && msg.spokenText && (
-                  <button
-                    type="button"
-                    onClick={() => speakText(msg.spokenText!)}
-                    className="mt-2 text-[11px] text-sky-400 hover:text-sky-300 flex items-center gap-1 transition-colors cursor-pointer"
-                  >
-                    <Volume2 className="w-3.5 h-3.5" />
-                    <span>Play voice read-aloud</span>
-                  </button>
+                {/* Assistant actions: Read-aloud & Copy */}
+                {msg.sender === 'alexa' && (
+                  <div className="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[11px] text-slate-400">
+                    {msg.spokenText ? (
+                      <button
+                        type="button"
+                        onClick={() => speakText(msg.spokenText!)}
+                        className="text-sky-400 hover:text-sky-300 flex items-center gap-1 transition-colors cursor-pointer"
+                      >
+                        <Volume2 className="w-3.5 h-3.5" />
+                        <span>Play voice read-aloud</span>
+                      </button>
+                    ) : <span />}
+
+                    <button
+                      type="button"
+                      onClick={() => handleCopyMessage(msg.text, idx)}
+                      className="hover:text-slate-200 flex items-center gap-1 transition-colors cursor-pointer ml-auto"
+                    >
+                      {copiedIdx === idx ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-emerald-400">Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
 

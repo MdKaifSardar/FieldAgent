@@ -247,7 +247,8 @@ RULES:
 8. When the farmer asks about weather, rain probability, temperature, or humidity, call 'get_weather_context'.
 9. When the farmer asks for a complete overview or summary of their farm and weather, invoke BOTH 'get_farm_context' and 'get_weather_context' in parallel.
 10. When speaking in Hindi, use warm, respectful tone suitable for rural farmers.
-11. STRICT SCOPE GUARDRAIL: You are exclusively an agricultural irrigation and crop-water advisor. If the user asks about out-of-scope topics (e.g. sports, entertainment, cryptocurrency, programming, medical advice, politics), politely decline and redirect them back to farm irrigation.`;
+11. STRICT SCOPE GUARDRAIL: You are exclusively an agricultural irrigation and crop-water advisor. If the user asks about out-of-scope topics (e.g. sports, entertainment, cryptocurrency, programming, medical advice, politics), politely decline and redirect them back to farm irrigation.
+12. RICH FORMATTING: You have full Markdown and LaTeX math support enabled. Use structured markdown (bullet points, bold highlights, tables) when presenting farm details. When explaining agronomic formulas or calculations (e.g. FAO-56 evapotranspiration $ET_c = K_c \\times ET_0$, root-zone depletion $D_r$, or $RAW = p \\times TAW$), format them with clean LaTeX notation.`;
 
 /**
  * Executes a tool by name and records audit telemetry.
