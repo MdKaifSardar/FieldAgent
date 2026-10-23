@@ -68,6 +68,7 @@ export function cleanModelOutputText(rawText: string): string {
     .replace(/<think>[\s\S]*?<\/think>/gi, '')
     .replace(/<thought>[\s\S]*?<\/thought>/gi, '')
     .replace(/<\/?(?:thinking|think|thought)>/gi, '')
+    .replace(/<\/?(?:response|answer|output)>/gi, '')
     .trim();
 }
 

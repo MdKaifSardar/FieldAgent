@@ -243,13 +243,13 @@ export function AlexaAdvisorModal({
           .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
           .replace(/<think>[\s\S]*?<\/think>/gi, '')
           .replace(/<thought>[\s\S]*?<\/thought>/gi, '')
-          .replace(/<\/?(?:thinking|think|thought)>/gi, '')
+          .replace(/<\/?(?:thinking|think|thought|response|answer|output)>/gi, '')
           .trim();
         const cleanSpoken = (data.spokenReply || data.reply || '')
           .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
           .replace(/<think>[\s\S]*?<\/think>/gi, '')
           .replace(/<thought>[\s\S]*?<\/thought>/gi, '')
-          .replace(/<\/?(?:thinking|think|thought)>/gi, '')
+          .replace(/<\/?(?:thinking|think|thought|response|answer|output)>/gi, '')
           .trim();
 
         const alexaMsg: ChatMessage = {
