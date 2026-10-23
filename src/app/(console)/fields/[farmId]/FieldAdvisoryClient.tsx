@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFarm } from '@/context/FarmContext';
 import { FieldAdvisoryView } from '@/components/dashboard/FieldAdvisoryView';
+import { CockpitSkeleton } from '@/components/skeletons/CockpitSkeleton';
 import { FarmProfile } from '@/types/farm';
 
 export default function FieldAdvisoryClient({ farmId }: { farmId: string }) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   
   const {
     parcels,
@@ -16,6 +18,7 @@ export default function FieldAdvisoryClient({ farmId }: { farmId: string }) {
     selectParcel,
     currentForecast,
     decision,
+    isLoadingParcels,
     isRefreshingWeather,
     weatherErrorMessage,
     refreshWeather,
@@ -29,12 +32,20 @@ export default function FieldAdvisoryClient({ farmId }: { farmId: string }) {
     openAlexaModal,
   } = useFarm();
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // If activeParcel does not match farmId from URL, sync active parcel
   useEffect(() => {
     if (farmId && activeParcelId !== farmId && parcels.some(p => p.id === farmId)) {
       selectParcel(farmId);
     }
   }, [farmId, activeParcelId, parcels, selectParcel]);
+
+  if (!mounted || isLoadingParcels) {
+    return <CockpitSkeleton />;
+  }
 
   const targetFarm = parcels.find(p => p.id === farmId) || activeParcel;
 

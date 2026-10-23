@@ -1,18 +1,32 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFarm } from '@/context/FarmContext';
 import { ProfileOverviewView } from '@/components/dashboard/ProfileOverviewView';
 
 function ProfileContent() {
   const router = useRouter();
-  const { authSession, parcels, activeParcel, selectParcel } = useFarm();
+  const [mounted, setMounted] = useState(false);
+  const { authSession, parcels, activeParcel, selectParcel, isLoadingParcels } = useFarm();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSelectParcel = (id: string) => {
     selectParcel(id);
     router.push(`/fields/${id}`);
   };
+
+  if (!mounted || isLoadingParcels) {
+    return (
+      <div className="space-y-6 animate-pulse max-w-7xl mx-auto py-8">
+        <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/3" />
+        <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-2xl w-full" />
+      </div>
+    );
+  }
 
   return (
     <ProfileOverviewView

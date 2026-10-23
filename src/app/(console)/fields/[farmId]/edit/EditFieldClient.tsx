@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFarm } from '@/context/FarmContext';
 import { EditFieldWorkspaceView } from '@/components/dashboard/EditFieldWorkspaceView';
@@ -8,8 +8,13 @@ import { FarmProfile } from '@/types/farm';
 
 export default function EditFieldClient({ farmId }: { farmId: string }) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   
-  const { parcels, activeParcel, selectParcel, saveParcel, deleteParcel } = useFarm();
+  const { parcels, activeParcel, selectParcel, saveParcel, deleteParcel, isLoadingParcels } = useFarm();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const targetFarm = parcels.find(p => p.id === farmId) || (activeParcel?.id === farmId ? activeParcel : null);
 
@@ -18,6 +23,15 @@ export default function EditFieldClient({ farmId }: { farmId: string }) {
       selectParcel(farmId);
     }
   }, [farmId, targetFarm, activeParcel, selectParcel]);
+
+  if (!mounted || isLoadingParcels) {
+    return (
+      <div className="space-y-6 animate-pulse max-w-7xl mx-auto py-8">
+        <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/3" />
+        <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-2xl w-full" />
+      </div>
+    );
+  }
 
   if (!targetFarm) {
     return (

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFarm } from '@/context/FarmContext';
 import { FieldsDirectoryView } from '@/components/dashboard/FieldsDirectoryView';
@@ -8,7 +8,12 @@ import { FarmProfile } from '@/types/farm';
 
 function FieldsContent() {
   const router = useRouter();
-  const { parcels, activeParcelId, selectParcel, deleteParcel } = useFarm();
+  const [mounted, setMounted] = useState(false);
+  const { parcels, activeParcelId, selectParcel, deleteParcel, isLoadingParcels } = useFarm();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSelectParcel = (parcelId: string) => {
     selectParcel(parcelId);
@@ -19,6 +24,18 @@ function FieldsContent() {
     selectParcel(parcel.id);
     router.push(`/fields/${parcel.id}/edit`);
   };
+
+  if (!mounted || isLoadingParcels) {
+    return (
+      <div className="space-y-6 animate-pulse max-w-7xl mx-auto py-8">
+        <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/3" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+          <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <FieldsDirectoryView
