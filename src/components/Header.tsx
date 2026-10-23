@@ -10,33 +10,26 @@ import {
   Sun, 
   Moon, 
   LayoutDashboard, 
-  Home, 
-  Sprout,
-  Menu,
-  ChevronDown,
-  Check,
-  Layers
+  ChevronDown, 
+  Check 
 } from 'lucide-react';
 import { useLanguage } from './common/LanguageContext';
 import { useTheme } from './common/ThemeContext';
 import { SupportedLanguage } from '../adapters/speechAdapter';
 import { AuthSession } from '../adapters/cognitoAdapter';
 
-interface HeaderProps {
+export interface HeaderProps {
   authSession: AuthSession | null;
   onLogout: () => void;
-  activeView: 'landing' | 'dashboard';
-  onViewChange: (view: 'landing' | 'dashboard') => void;
-  onOpenSideDrawer: () => void;
+  activeView?: 'landing' | 'dashboard';
+  onViewChange?: (view: 'landing' | 'dashboard') => void;
+  onOpenSideDrawer?: () => void;
   parcelsCount?: number;
 }
 
 export function Header({
   authSession,
   onLogout,
-  activeView,
-  onViewChange,
-  onOpenSideDrawer,
   parcelsCount = 0,
 }: HeaderProps) {
   const { language, setLanguage, t } = useLanguage();
@@ -58,15 +51,14 @@ export function Header({
   }, [isLangDropdownOpen]);
 
   return (
-    <header className="w-full border-b border-[#E1E8DE] dark:border-[#1F2D24] bg-white/95 dark:bg-[#0D1310]/95 backdrop-blur-md sticky top-0 z-30 transition-colors">
+    <header className="w-full border-b border-[#E1E8DE] dark:border-[#1F2D24] bg-white/95 dark:bg-[#0D1310]/95 backdrop-blur-md sticky top-0 z-30 transition-colors select-none">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3">
         <div className="flex items-center justify-between gap-3 sm:gap-4">
           
           {/* Left: Logo & Direct Brand Navigation */}
           <div className="flex items-center gap-3 sm:gap-6">
-            <button
-              type="button"
-              onClick={() => onViewChange('landing')}
+            <Link
+              href="/"
               className="flex items-center gap-2.5 text-left cursor-pointer group"
             >
               <div className="h-9 w-9 rounded-xl overflow-hidden flex items-center justify-center shrink-0 shadow-xs border border-emerald-500/30 bg-white dark:bg-[#0D2232] p-0.5">
@@ -85,41 +77,10 @@ export function Header({
                   {t.tagline}
                 </p>
               </div>
-            </button>
-
-            {/* Dashboard Link - ONLY visible when authenticated */}
-            {authSession && (
-              <nav className="flex items-center bg-[#F0F4ED] dark:bg-[#1B2720] p-0.5 rounded-xl border border-[#E1E8DE] dark:border-[#2A3E31] text-xs">
-                <button
-                  type="button"
-                  onClick={() => onViewChange('landing')}
-                  className={`min-h-[34px] px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    activeView === 'landing'
-                      ? 'bg-white dark:bg-[#141D17] text-[#16A34A] dark:text-[#4ADE80] shadow-xs'
-                      : 'text-[#526356] dark:text-[#9BAEA0] hover:text-[#121C15] dark:hover:text-[#F0F4F1]'
-                  }`}
-                >
-                  <Home className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{t.overview}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => onViewChange('dashboard')}
-                  className={`min-h-[34px] px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    activeView === 'dashboard'
-                      ? 'bg-white dark:bg-[#141D17] text-[#16A34A] dark:text-[#4ADE80] shadow-xs'
-                      : 'text-[#526356] dark:text-[#9BAEA0] hover:text-[#121C15] dark:hover:text-[#F0F4F1]'
-                  }`}
-                >
-                  <LayoutDashboard className="w-3.5 h-3.5" />
-                  <span>{t.fieldAdvisor}</span>
-                </button>
-              </nav>
-            )}
+            </Link>
           </div>
 
-          {/* Right: Controls & Profile Action */}
+          {/* Right: Controls, Farm Dashboard & Profile Action */}
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             
             {/* Theme Toggle Button */}
@@ -184,40 +145,40 @@ export function Header({
               )}
             </div>
 
-            {/* Authenticated User Menu & Enterprise Side Drawer Trigger */}
+            {/* Authenticated User Menu & Farm Dashboard Action */}
             {authSession ? (
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                {/* Enterprise Parcels Drawer Button */}
-                <button
-                  type="button"
-                  onClick={onOpenSideDrawer}
-                  className="min-h-[36px] px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm hover:shadow-md transition-all cursor-pointer"
-                  title="Open Farm Command Center & Parcels"
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                {/* Primary Farm Dashboard CTA */}
+                <Link
+                  href="/fields"
+                  className="min-h-[36px] px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm hover:shadow-md transition-all cursor-pointer"
+                  title="Open Farm Dashboard & Parcels"
                 >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">My Fields</span>
-                  <span className="bg-emerald-800/60 px-1.5 py-0.2 rounded-full text-[10px]">
-                    {parcelsCount}
-                  </span>
-                </button>
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  <span>Farm Dashboard</span>
+                  {parcelsCount > 0 && (
+                    <span className="bg-emerald-800/70 text-emerald-100 px-1.5 py-0.2 rounded-full text-[10px] font-mono">
+                      {parcelsCount}
+                    </span>
+                  )}
+                </Link>
 
                 {/* Profile Pill & Logout */}
                 <div className="flex items-center gap-1.5 p-1 px-2.5 rounded-xl bg-[#F0F4ED] dark:bg-[#1B2720] border border-[#E1E8DE] dark:border-[#2A3E31] text-xs">
-                  <button
-                    type="button"
-                    onClick={onOpenSideDrawer}
-                    className="flex items-center gap-1.5 hover:text-emerald-600 transition-colors cursor-pointer"
-                    title="View Profile Details"
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-1.5 text-[#121C15] dark:text-[#F0F4F1] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer"
+                    title="View Farmer Profile"
                   >
                     <User className="w-3.5 h-3.5 text-[#16A34A] dark:text-[#4ADE80]" />
-                    <span className="hidden md:inline text-[#121C15] dark:text-[#F0F4F1] font-medium truncate max-w-[100px]">
+                    <span className="hidden md:inline font-medium truncate max-w-[110px]">
                       {authSession.displayName}
                     </span>
-                  </button>
+                  </Link>
                   <button
                     type="button"
                     onClick={onLogout}
-                    className="ml-1 p-0.5 text-[#526356] hover:text-rose-500 transition-colors cursor-pointer"
+                    className="ml-1 p-1 text-[#526356] hover:text-rose-500 dark:text-[#9BAEA0] dark:hover:text-rose-400 transition-colors cursor-pointer rounded-md hover:bg-black/5 dark:hover:bg-white/5"
                     title={t.signOut}
                   >
                     <LogOut className="w-3.5 h-3.5" />

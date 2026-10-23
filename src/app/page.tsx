@@ -37,9 +37,6 @@ export default function RootLandingPage() {
       <Header
         authSession={authSession}
         onLogout={signOut}
-        activeView="landing"
-        onViewChange={handleViewChange}
-        onOpenSideDrawer={() => {}}
         parcelsCount={parcels.length}
       />
 
