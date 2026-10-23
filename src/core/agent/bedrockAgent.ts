@@ -57,6 +57,20 @@ export interface AgentExecutionResult {
   newDecision?: any;
 }
 
+/**
+ * Strips internal reasoning/scratchpad tags (<thinking>, <think>, <thought>) produced by
+ * reasoning models (Amazon Nova Micro, Anthropic Claude, DeepSeek-R1, Qwen) before rendering.
+ */
+export function cleanModelOutputText(rawText: string): string {
+  if (!rawText) return '';
+  return rawText
+    .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<thought>[\s\S]*?<\/thought>/gi, '')
+    .replace(/<\/?(?:thinking|think|thought)>/gi, '')
+    .trim();
+}
+
 // Model & Region configuration (defaults to us-east-1 and Amazon Nova Micro)
 const BEDROCK_REGION = process.env.BEDROCK_REGION || 'us-east-1';
 const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID || 'us.amazon.nova-micro-v1:0';
@@ -953,7 +967,7 @@ async function runGroqAgent(
     // If no tool was requested, return final text
     if (toolCalls.length === 0) {
       const rawText = message.content || (latestStructuredData ? JSON.stringify(latestStructuredData) : 'Execution complete.');
-      const replyText = rawText.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '').trim();
+      const replyText = cleanModelOutputText(rawText);
       return {
         reply: replyText,
         spokenReply: replyText,
@@ -1118,7 +1132,8 @@ export async function runAlexaAgent(
         // If no tool was requested, return final text
         if (toolUseBlocks.length === 0) {
           const textBlock = message?.content?.find((c: any) => c.text);
-          const replyText = (textBlock as any)?.text || (latestStructuredData ? JSON.stringify(latestStructuredData) : 'Execution complete.');
+          const rawText = (textBlock as any)?.text || (latestStructuredData ? JSON.stringify(latestStructuredData) : 'Execution complete.');
+          const replyText = cleanModelOutputText(rawText);
           return {
             reply: replyText,
             spokenReply: replyText,
@@ -1157,9 +1172,16 @@ export async function runAlexaAgent(
           };
         }
 
+        const sanitizedContent = (message?.content || []).map((c: any) => {
+          if (c.text) {
+            return { ...c, text: cleanModelOutputText(c.text) };
+          }
+          return c;
+        });
+
         currentMessages.push({
           role: 'assistant',
-          content: message?.content || [],
+          content: sanitizedContent,
         });
 
         currentMessages.push({
