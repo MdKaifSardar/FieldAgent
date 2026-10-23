@@ -29,7 +29,8 @@ import {
   Lightbulb,
   ArrowRightLeft,
   Gauge,
-  CalendarCheck
+  CalendarCheck,
+  Square
 } from 'lucide-react';
 import { useLanguage } from '../common/LanguageContext';
 import { ToolAuditEntry } from '../../core/agent/bedrockAgent';
@@ -143,14 +144,50 @@ export function AlexaAdvisorModal({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
+  // Stop ongoing audio playback immediately (Polly Audio element or browser SpeechSynthesis)
+  const stopAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsPlayingAudio(false);
+  };
+
+  // Stop audio on modal close or unmount
+  useEffect(() => {
+    if (!isOpen) {
+      stopAudio();
+    }
+    return () => {
+      stopAudio();
+    };
+  }, [isOpen]);
+
+  const toggleMute = () => {
+    if (!isMuted || isPlayingAudio) {
+      stopAudio();
+    }
+    setIsMuted(!isMuted);
+  };
+
+  const handleClose = () => {
+    stopAudio();
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+    onClose();
+  };
+
   // Play audio via Polly / TTS endpoint
   const speakText = async (text: string) => {
     if (isMuted || !text) return;
 
     try {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
+      stopAudio();
 
       setIsPlayingAudio(true);
       const res = await fetch('/api/tts', {
@@ -193,6 +230,7 @@ export function AlexaAdvisorModal({
   };
 
   const toggleMic = () => {
+    stopAudio();
     if (!speechSupported || !recognitionRef.current) return;
 
     if (isListening) {
@@ -207,6 +245,7 @@ export function AlexaAdvisorModal({
   };
 
   const handleSendQuery = async (queryText?: string) => {
+    stopAudio();
     const textToSend = queryText || inputText;
     if (!textToSend.trim() || isLoading) return;
 
@@ -326,16 +365,31 @@ export function AlexaAdvisorModal({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Stop Voice button (prominently visible while speaking) */}
+            {isPlayingAudio && (
+              <button
+                type="button"
+                onClick={stopAudio}
+                className="px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer animate-pulse"
+                title="Stop speaking immediately"
+              >
+                <Square className="w-3.5 h-3.5 fill-rose-400 text-rose-400" />
+                <span className="hidden sm:inline">Stop Voice</span>
+              </button>
+            )}
+
             {/* Mute/Unmute audio button */}
             <button
               type="button"
-              onClick={() => setIsMuted(!isMuted)}
+              onClick={toggleMute}
               className={`p-2 rounded-lg border transition-all cursor-pointer ${
                 isMuted 
                   ? 'bg-slate-800 border-slate-700 text-slate-400' 
+                  : isPlayingAudio
+                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-300 hover:bg-amber-500/30 animate-pulse'
                   : 'bg-sky-500/20 border-sky-500/40 text-sky-300 hover:bg-sky-500/30'
               }`}
-              title={isMuted ? 'Voice Muted' : 'Voice Active (Polly)'}
+              title={isMuted ? 'Voice Muted (Click to enable)' : isPlayingAudio ? 'Speaking (Click to stop)' : 'Voice Active (Polly)'}
             >
               {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             </button>
@@ -343,8 +397,9 @@ export function AlexaAdvisorModal({
             {/* Close button */}
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700/60 transition-colors cursor-pointer"
+              title="Close modal and silence audio"
             >
               <X className="w-4 h-4" />
             </button>
@@ -378,11 +433,28 @@ export function AlexaAdvisorModal({
                     {msg.spokenText ? (
                       <button
                         type="button"
-                        onClick={() => speakText(msg.spokenText!)}
-                        className="text-sky-400 hover:text-sky-300 flex items-center gap-1 transition-colors cursor-pointer"
+                        onClick={() => {
+                          if (isPlayingAudio) {
+                            stopAudio();
+                          } else {
+                            speakText(msg.spokenText!);
+                          }
+                        }}
+                        className={`flex items-center gap-1 transition-colors cursor-pointer ${
+                          isPlayingAudio ? 'text-rose-400 hover:text-rose-300' : 'text-sky-400 hover:text-sky-300'
+                        }`}
                       >
-                        <Volume2 className="w-3.5 h-3.5" />
-                        <span>Play voice read-aloud</span>
+                        {isPlayingAudio ? (
+                          <>
+                            <Square className="w-3.5 h-3.5 fill-rose-400 text-rose-400" />
+                            <span>Stop voice</span>
+                          </>
+                        ) : (
+                          <>
+                            <Volume2 className="w-3.5 h-3.5" />
+                            <span>Play voice read-aloud</span>
+                          </>
+                        )}
                       </button>
                     ) : <span />}
 
