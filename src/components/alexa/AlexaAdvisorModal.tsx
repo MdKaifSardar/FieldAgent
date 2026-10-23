@@ -72,6 +72,8 @@ export function AlexaAdvisorModal({
   const [isListening, setIsListening] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
+  const [loadingAudioMsgId, setLoadingAudioMsgId] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
@@ -80,6 +82,7 @@ export function AlexaAdvisorModal({
   const [continuousMode, setContinuousMode] = useState(true);
   const [followUpCountdown, setFollowUpCountdown] = useState<number | null>(null);
   const followUpIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const ttsAbortControllerRef = useRef<AbortController | null>(null);
 
   // Zero-Latency Client-Side Stop Commands (English, Hindi, Bengali)
   const STOP_COMMAND_REGEX = /^(?:alexa\s+)?(?:stop|quiet|cancel|pause|shut\s*up|shutup|silence|ruko|ruk\s*jao|chup|chup\s*raho|shant|bas\s*karo|thamo|tham|bondho\s*koro)[\s.!,?]*$/i;
@@ -99,72 +102,95 @@ export function AlexaAdvisorModal({
     setTimeout(() => setCopiedIdx(null), 2000);
   };
 
-  // Initialize Web Speech Recognition with Continuous Listening & Voice Barge-In
+  // Cleanly abort & discard previous recognition instance
+  const stopRecognition = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.onspeechstart = null;
+        recognitionRef.current.abort();
+      } catch {}
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  };
+
+  // Start fresh Web Speech Recognition instance (Chrome/Edge require fresh instance after stop)
+  const startRecognition = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    stopRecognition();
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
+
+      // Mid-speech voice barge-in
+      recognition.onspeechstart = () => {
+        stopAudio();
+      };
+
+      recognition.onresult = (event: any) => {
+        const result = event.results[event.results.length - 1];
+        const transcript = result[0].transcript?.trim() || '';
+
+        // Immediate audio barge-in on speech detection
+        stopAudio();
+
+        if (isStopCommand(transcript)) {
+          setInputText('');
+          clearFollowUp();
+          stopAudio();
+          stopRecognition();
+          return;
+        }
+
+        if (result.isFinal) {
+          setInputText(transcript);
+          clearFollowUp();
+          stopRecognition();
+          handleSendQuery(transcript);
+        }
+      };
+
+      recognition.onerror = (e: any) => {
+        if (e?.error === 'not-allowed') {
+          clearFollowUp();
+          setIsListening(false);
+        }
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognition.start();
+      recognitionRef.current = recognition;
+      setIsListening(true);
+    } catch (err) {
+      console.warn('Speech recognition start notice:', err);
+      setIsListening(false);
+    }
+  };
+
+  // Initialize Speech Support
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRecognition) {
         setSpeechSupported(true);
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
-
-        // Voice Barge-In: The moment user speaks, immediately silence active Alexa speech
-        recognition.onspeechstart = () => {
-          if (audioRef.current && !audioRef.current.paused) {
-            stopAudio();
-          }
-          if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking) {
-            stopAudio();
-          }
-        };
-
-        recognition.onresult = (event: any) => {
-          const result = event.results[event.results.length - 1];
-          const transcript = result[0].transcript?.trim() || '';
-
-          // Mid-speech barge-in cutoff
-          if (audioRef.current && !audioRef.current.paused) {
-            stopAudio();
-          }
-
-          // Zero-Latency Client Stop Check: cancels audio & closes turn immediately without querying LLM
-          if (isStopCommand(transcript)) {
-            setInputText('');
-            clearFollowUp();
-            stopAudio();
-            setIsListening(false);
-            try {
-              recognition.stop();
-            } catch {}
-            return;
-          }
-
-          if (result.isFinal) {
-            setInputText(transcript);
-            clearFollowUp();
-            setIsListening(false);
-            try {
-              recognition.stop();
-            } catch {}
-            handleSendQuery(transcript);
-          }
-        };
-
-        recognition.onerror = () => {
-          clearFollowUp();
-          setIsListening(false);
-        };
-
-        recognition.onend = () => {
-          setIsListening(false);
-        };
-
-        recognitionRef.current = recognition;
       }
     }
-  }, [language]);
+    return () => {
+      stopRecognition();
+    };
+  }, []);
 
   // Initial welcome message
   useEffect(() => {
@@ -206,31 +232,35 @@ export function AlexaAdvisorModal({
   // Stop ongoing audio playback immediately (Polly Audio element or browser SpeechSynthesis)
   const stopAudio = () => {
     clearFollowUp();
+    if (ttsAbortControllerRef.current) {
+      ttsAbortControllerRef.current.abort();
+      ttsAbortControllerRef.current = null;
+    }
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
       audioRef.current.src = '';
+      audioRef.current = null;
     }
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
     setIsPlayingAudio(false);
+    setPlayingMessageId(null);
+    setLoadingAudioMsgId(null);
   };
 
   // Follow-Up Mode: Automatically open microphone for hands-free follow-up questions
   const triggerFollowUpListening = () => {
-    if (!isOpen || isMuted || !continuousMode || !speechSupported || !recognitionRef.current) return;
+    if (!isOpen || !continuousMode || !speechSupported) return;
 
     clearFollowUp();
-    setIsListening(true);
     setFollowUpCountdown(6);
 
-    try {
-      recognitionRef.current.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
-      recognitionRef.current.start();
-    } catch {
-      // SpeechRecognition may already be running
-    }
+    // Give 250ms for speaker output / audio tracks to clear before capturing mic
+    setTimeout(() => {
+      startRecognition();
+    }, 250);
 
     let remaining = 6;
     const interval = setInterval(() => {
@@ -239,12 +269,7 @@ export function AlexaAdvisorModal({
         clearInterval(interval);
         followUpIntervalRef.current = null;
         setFollowUpCountdown(null);
-        if (recognitionRef.current) {
-          try {
-            recognitionRef.current.stop();
-          } catch {}
-        }
-        setIsListening(false);
+        stopRecognition();
       } else {
         setFollowUpCountdown(remaining);
       }
@@ -256,6 +281,7 @@ export function AlexaAdvisorModal({
   useEffect(() => {
     if (!isOpen) {
       stopAudio();
+      stopRecognition();
       return;
     }
 
@@ -269,11 +295,12 @@ export function AlexaAdvisorModal({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       stopAudio();
+      stopRecognition();
     };
   }, [isOpen]);
 
   const toggleMute = () => {
-    if (!isMuted || isPlayingAudio) {
+    if (!isMuted && isPlayingAudio) {
       stopAudio();
     }
     setIsMuted(!isMuted);
@@ -282,23 +309,32 @@ export function AlexaAdvisorModal({
   const handleClose = () => {
     clearFollowUp();
     stopAudio();
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.abort();
-      } catch {}
-      setIsListening(false);
-    }
+    stopRecognition();
     onClose();
   };
 
   // Play audio via Polly / TTS endpoint
-  const speakText = async (text: string) => {
-    if (isMuted || !text) return;
+  const speakText = async (text: string, messageId?: string) => {
+    if (!text) return;
+
+    if (isMuted) {
+      if (continuousMode) {
+        triggerFollowUpListening();
+      }
+      return;
+    }
 
     try {
       stopAudio();
 
+      const activeId = messageId || `msg-${Date.now()}`;
+      setPlayingMessageId(activeId);
+      setLoadingAudioMsgId(activeId);
       setIsPlayingAudio(true);
+
+      const abortController = new AbortController();
+      ttsAbortControllerRef.current = abortController;
+
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -306,55 +342,82 @@ export function AlexaAdvisorModal({
           text,
           language: language === 'hi' ? 'hi' : 'en',
         }),
+        signal: abortController.signal,
       });
+
+      if (abortController.signal.aborted) return;
 
       if (res.ok) {
         const blob = await res.blob();
+        if (abortController.signal.aborted) return;
+
         const audioUrl = URL.createObjectURL(blob);
         const audio = new Audio(audioUrl);
         audioRef.current = audio;
+        setLoadingAudioMsgId(null);
 
         audio.onended = () => {
           setIsPlayingAudio(false);
+          setPlayingMessageId(null);
           triggerFollowUpListening();
         };
         audio.onerror = () => {
           setIsPlayingAudio(false);
+          setPlayingMessageId(null);
+          setLoadingAudioMsgId(null);
+          triggerFollowUpListening();
         };
-        await audio.play();
+
+        await audio.play().catch((playErr) => {
+          console.warn('Audio play policy notice:', playErr);
+          setIsPlayingAudio(false);
+          setPlayingMessageId(null);
+          setLoadingAudioMsgId(null);
+          triggerFollowUpListening();
+        });
       } else {
-        // Fallback to browser SpeechSynthesis
+        setLoadingAudioMsgId(null);
         if ('speechSynthesis' in window) {
           const utterance = new SpeechSynthesisUtterance(text);
           utterance.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
           utterance.onend = () => {
             setIsPlayingAudio(false);
+            setPlayingMessageId(null);
             triggerFollowUpListening();
           };
-          utterance.onerror = () => setIsPlayingAudio(false);
+          utterance.onerror = () => {
+            setIsPlayingAudio(false);
+            setPlayingMessageId(null);
+            triggerFollowUpListening();
+          };
           window.speechSynthesis.speak(utterance);
         } else {
           setIsPlayingAudio(false);
+          setPlayingMessageId(null);
+          triggerFollowUpListening();
         }
       }
-    } catch {
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.warn('TTS fetch/playback issue:', err);
+      }
       setIsPlayingAudio(false);
+      setPlayingMessageId(null);
+      setLoadingAudioMsgId(null);
+      triggerFollowUpListening();
     }
   };
 
   const toggleMic = () => {
     stopAudio();
     clearFollowUp();
-    if (!speechSupported || !recognitionRef.current) return;
+    if (!speechSupported) return;
 
     if (isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
+      stopRecognition();
     } else {
       setInputText('');
-      recognitionRef.current.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
-      recognitionRef.current.start();
-      setIsListening(true);
+      startRecognition();
     }
   };
 
@@ -417,7 +480,7 @@ export function AlexaAdvisorModal({
         };
 
         setMessages(prev => [...prev, alexaMsg]);
-        speakText(alexaMsg.spokenText || alexaMsg.text);
+        speakText(alexaMsg.spokenText || alexaMsg.text, alexaMsg.id);
 
         if (data.updatedFarm || data.newDecision) {
           onFarmStateModified?.(data.updatedFarm, data.newDecision);
@@ -569,31 +632,54 @@ export function AlexaAdvisorModal({
                 {msg.sender === 'alexa' && (
                   <div className="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[11px] text-slate-400">
                     {msg.spokenText ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (isPlayingAudio) {
-                            stopAudio();
-                          } else {
-                            speakText(msg.spokenText!);
-                          }
-                        }}
-                        className={`flex items-center gap-1 transition-colors cursor-pointer ${
-                          isPlayingAudio ? 'text-rose-400 hover:text-rose-300' : 'text-sky-400 hover:text-sky-300'
-                        }`}
-                      >
-                        {isPlayingAudio ? (
-                          <>
-                            <Square className="w-3.5 h-3.5 fill-rose-400 text-rose-400" />
-                            <span>Stop voice</span>
-                          </>
-                        ) : (
-                          <>
-                            <Volume2 className="w-3.5 h-3.5" />
-                            <span>Play voice read-aloud</span>
-                          </>
-                        )}
-                      </button>
+                      (() => {
+                        const isThisPlaying = isPlayingAudio && playingMessageId === msg.id;
+                        const isThisLoading = loadingAudioMsgId === msg.id;
+
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isThisPlaying || isThisLoading) {
+                                stopAudio();
+                              } else {
+                                if (isMuted) setIsMuted(false);
+                                speakText(msg.spokenText!, msg.id);
+                              }
+                            }}
+                            className={`flex items-center gap-1.5 transition-colors cursor-pointer font-medium ${
+                              isThisPlaying 
+                                ? 'text-rose-400 hover:text-rose-300' 
+                                : isThisLoading
+                                ? 'text-amber-400'
+                                : 'text-sky-400 hover:text-sky-300'
+                            }`}
+                            title={isThisPlaying ? 'Stop audio' : isThisLoading ? 'Synthesizing voice...' : 'Play voice read-aloud'}
+                          >
+                            {isThisLoading ? (
+                              <>
+                                <div className="w-3 h-3 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
+                                <span>Synthesizing...</span>
+                              </>
+                            ) : isThisPlaying ? (
+                              <>
+                                <Square className="w-3.5 h-3.5 fill-rose-400 text-rose-400 animate-pulse" />
+                                <span className="font-semibold">Stop audio</span>
+                                <span className="inline-flex gap-0.5 items-end h-3 ml-0.5">
+                                  <span className="w-0.5 h-2 bg-rose-400 animate-bounce" />
+                                  <span className="w-0.5 h-3 bg-rose-400 animate-bounce delay-75" />
+                                  <span className="w-0.5 h-1.5 bg-rose-400 animate-bounce delay-150" />
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <Volume2 className="w-3.5 h-3.5" />
+                                <span>Play voice read-aloud</span>
+                              </>
+                            )}
+                          </button>
+                        );
+                      })()
                     ) : <span />}
 
                     <button
