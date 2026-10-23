@@ -47,6 +47,7 @@ export default function EditFieldClient({ farmId }: { farmId: string }) {
 
   return (
     <EditFieldWorkspaceView
+      key={`${targetFarm.id}-${targetFarm.updatedAt || ''}`}
       initialFarm={targetFarm}
       onCancel={() => router.push(`/fields/${targetFarm.id}`)}
       onSubmit={handleSubmit}

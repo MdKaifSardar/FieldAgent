@@ -51,7 +51,7 @@ import { computeBaselineDepletionFromDate, calculateTaw } from '../../core/fao56
 interface EditFieldWorkspaceViewProps {
   initialFarm: FarmProfile;
   onCancel: () => void;
-  onSubmit: (farm: FarmProfile) => void;
+  onSubmit: (farm: FarmProfile) => void | Promise<void>;
   onDeleteParcel?: (parcelId: string) => void;
 }
 
@@ -235,6 +235,10 @@ export function EditFieldWorkspaceView({
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  useEffect(() => {
+    setIsSaving(false);
+  }, [initialFarm]);
+
   // Agronomic parameters lookup helper
   const getCropAgronomicParams = (
     crop: string,
@@ -376,7 +380,7 @@ export function EditFieldWorkspaceView({
   };
 
   // Save changes handler
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     setIsSaving(true);
 
     const awc_mm_per_m = soilTexture === 'sandy' ? 90 : soilTexture === 'clay_black' ? 180 : 150;
@@ -470,7 +474,13 @@ export function EditFieldWorkspaceView({
       updatedAt: new Date().toISOString(),
     };
 
-    onSubmit(updatedFarm);
+    try {
+      await onSubmit(updatedFarm);
+    } catch (err) {
+      console.error('Failed to submit farm changes:', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const totalCalculatedAreaM2 = plots.reduce(
