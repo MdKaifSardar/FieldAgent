@@ -57,9 +57,9 @@ export interface AgentExecutionResult {
   newDecision?: any;
 }
 
-// Model & Region configuration (defaults to us-east-1 for Claude 3 Haiku, with cross-region failover)
+// Model & Region configuration (defaults to us-east-1 and Amazon Nova Micro)
 const BEDROCK_REGION = process.env.BEDROCK_REGION || 'us-east-1';
-const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID || 'anthropic.claude-3-haiku-20240307-v1:0';
+const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID || 'us.amazon.nova-micro-v1:0';
 
 function getBedrockClient(): BedrockRuntimeClient | null {
   const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
