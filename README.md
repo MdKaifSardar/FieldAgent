@@ -1,9 +1,8 @@
 # FieldGuard
 ### Weather-Aware Groundwater Resilience & Agronomic Decision Cockpit
 
-> **FieldGuard Agronomic Intelligence — FieldGuard Autonomous Telemetry (Event 02)**  
-> **AI Telemetry: Heat & Water (Water Scarcity & Groundwater Resilience)**  
-> Organized by **AWS Serverless Architecture**  
+> **AI-Powered Precision Irrigation & Groundwater Resilience Cockpit**  
+> **Built for the Amazon Bedrock & Alexa+ Developer Hackathon 2026**  
 > *Author: Md Kaif Sardar*
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.4-black?logo=next.js)](https://nextjs.org/)
