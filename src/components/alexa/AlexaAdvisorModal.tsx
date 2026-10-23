@@ -30,7 +30,8 @@ import {
   ArrowRightLeft,
   Gauge,
   CalendarCheck,
-  Square
+  Square,
+  Radio
 } from 'lucide-react';
 import { useLanguage } from '../common/LanguageContext';
 import { ToolAuditEntry } from '../../core/agent/bedrockAgent';
@@ -75,6 +76,19 @@ export function AlexaAdvisorModal({
   const [speechSupported, setSpeechSupported] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
+  // Follow-Up & Duplex Voice States
+  const [continuousMode, setContinuousMode] = useState(true);
+  const [followUpCountdown, setFollowUpCountdown] = useState<number | null>(null);
+  const followUpIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Zero-Latency Client-Side Stop Commands (English, Hindi, Bengali)
+  const STOP_COMMAND_REGEX = /^(?:alexa\s+)?(?:stop|quiet|cancel|pause|shut\s*up|shutup|silence|ruko|ruk\s*jao|chup|chup\s*raho|shant|bas\s*karo|thamo|tham|bondho\s*koro)[\s.!,?]*$/i;
+  const isStopCommand = (text: string): boolean => {
+    if (!text) return false;
+    const clean = text.trim().toLowerCase();
+    return STOP_COMMAND_REGEX.test(clean) || clean === 'stop' || clean === 'alexa stop' || clean === 'ruko' || clean === 'chup';
+  };
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -85,25 +99,61 @@ export function AlexaAdvisorModal({
     setTimeout(() => setCopiedIdx(null), 2000);
   };
 
-  // Initialize Web Speech Recognition
+  // Initialize Web Speech Recognition with Continuous Listening & Voice Barge-In
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRecognition) {
         setSpeechSupported(true);
         const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
+        recognition.continuous = true;
+        recognition.interimResults = true;
         recognition.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
 
+        // Voice Barge-In: The moment user speaks, immediately silence active Alexa speech
+        recognition.onspeechstart = () => {
+          if (audioRef.current && !audioRef.current.paused) {
+            stopAudio();
+          }
+          if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking) {
+            stopAudio();
+          }
+        };
+
         recognition.onresult = (event: any) => {
-          const transcript = event.results[0][0].transcript;
-          setInputText(transcript);
-          setIsListening(false);
-          handleSendQuery(transcript);
+          const result = event.results[event.results.length - 1];
+          const transcript = result[0].transcript?.trim() || '';
+
+          // Mid-speech barge-in cutoff
+          if (audioRef.current && !audioRef.current.paused) {
+            stopAudio();
+          }
+
+          // Zero-Latency Client Stop Check: cancels audio & closes turn immediately without querying LLM
+          if (isStopCommand(transcript)) {
+            setInputText('');
+            clearFollowUp();
+            stopAudio();
+            setIsListening(false);
+            try {
+              recognition.stop();
+            } catch {}
+            return;
+          }
+
+          if (result.isFinal) {
+            setInputText(transcript);
+            clearFollowUp();
+            setIsListening(false);
+            try {
+              recognition.stop();
+            } catch {}
+            handleSendQuery(transcript);
+          }
         };
 
         recognition.onerror = () => {
+          clearFollowUp();
           setIsListening(false);
         };
 
@@ -144,11 +194,22 @@ export function AlexaAdvisorModal({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
+  // Clear follow-up timer
+  const clearFollowUp = () => {
+    if (followUpIntervalRef.current) {
+      clearInterval(followUpIntervalRef.current);
+      followUpIntervalRef.current = null;
+    }
+    setFollowUpCountdown(null);
+  };
+
   // Stop ongoing audio playback immediately (Polly Audio element or browser SpeechSynthesis)
   const stopAudio = () => {
+    clearFollowUp();
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
+      audioRef.current.src = '';
     }
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
@@ -156,12 +217,57 @@ export function AlexaAdvisorModal({
     setIsPlayingAudio(false);
   };
 
-  // Stop audio on modal close or unmount
+  // Follow-Up Mode: Automatically open microphone for hands-free follow-up questions
+  const triggerFollowUpListening = () => {
+    if (!isOpen || isMuted || !continuousMode || !speechSupported || !recognitionRef.current) return;
+
+    clearFollowUp();
+    setIsListening(true);
+    setFollowUpCountdown(6);
+
+    try {
+      recognitionRef.current.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
+      recognitionRef.current.start();
+    } catch {
+      // SpeechRecognition may already be running
+    }
+
+    let remaining = 6;
+    const interval = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        clearInterval(interval);
+        followUpIntervalRef.current = null;
+        setFollowUpCountdown(null);
+        if (recognitionRef.current) {
+          try {
+            recognitionRef.current.stop();
+          } catch {}
+        }
+        setIsListening(false);
+      } else {
+        setFollowUpCountdown(remaining);
+      }
+    }, 1000);
+    followUpIntervalRef.current = interval;
+  };
+
+  // Stop audio and handle Escape key on modal
   useEffect(() => {
     if (!isOpen) {
       stopAudio();
+      return;
     }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
     return () => {
+      window.removeEventListener('keydown', handleKeyDown);
       stopAudio();
     };
   }, [isOpen]);
@@ -174,9 +280,12 @@ export function AlexaAdvisorModal({
   };
 
   const handleClose = () => {
+    clearFollowUp();
     stopAudio();
-    if (isListening && recognitionRef.current) {
-      recognitionRef.current.stop();
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch {}
       setIsListening(false);
     }
     onClose();
@@ -207,6 +316,7 @@ export function AlexaAdvisorModal({
 
         audio.onended = () => {
           setIsPlayingAudio(false);
+          triggerFollowUpListening();
         };
         audio.onerror = () => {
           setIsPlayingAudio(false);
@@ -217,7 +327,10 @@ export function AlexaAdvisorModal({
         if ('speechSynthesis' in window) {
           const utterance = new SpeechSynthesisUtterance(text);
           utterance.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
-          utterance.onend = () => setIsPlayingAudio(false);
+          utterance.onend = () => {
+            setIsPlayingAudio(false);
+            triggerFollowUpListening();
+          };
           utterance.onerror = () => setIsPlayingAudio(false);
           window.speechSynthesis.speak(utterance);
         } else {
@@ -231,6 +344,7 @@ export function AlexaAdvisorModal({
 
   const toggleMic = () => {
     stopAudio();
+    clearFollowUp();
     if (!speechSupported || !recognitionRef.current) return;
 
     if (isListening) {
@@ -333,7 +447,12 @@ export function AlexaAdvisorModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
+    >
       <div className="w-full max-w-2xl h-[90vh] max-h-[820px] flex flex-col bg-slate-900 border border-sky-500/40 rounded-2xl shadow-2xl overflow-hidden text-slate-100 font-sans">
         
         {/* TOP ALEXA HEADER */}
@@ -365,6 +484,25 @@ export function AlexaAdvisorModal({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Follow-Up / Hands-Free Mode Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                const next = !continuousMode;
+                setContinuousMode(next);
+                if (!next) clearFollowUp();
+              }}
+              className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                continuousMode
+                  ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
+                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
+              }`}
+              title={continuousMode ? 'Follow-Up Mode: ON (Hands-free conversation)' : 'Follow-Up Mode: OFF (Push-to-talk only)'}
+            >
+              <Radio className={`w-3.5 h-3.5 ${continuousMode ? 'text-cyan-400 animate-pulse' : 'text-slate-500'}`} />
+              <span className="hidden sm:inline">Follow-Up</span>
+            </button>
+
             {/* Stop Voice button (prominently visible while speaking) */}
             {isPlayingAudio && (
               <button
@@ -876,6 +1014,29 @@ export function AlexaAdvisorModal({
 
         {/* BOTTOM INPUT BAR WITH MICROPHONE */}
         <div className="p-3 sm:p-4 border-t border-sky-500/20 bg-slate-950 shrink-0">
+          {/* Hands-Free Follow-Up Countdown Banner */}
+          {isListening && followUpCountdown !== null && (
+            <div className="mb-2.5 px-3 py-1.5 bg-cyan-950/70 border border-cyan-800/50 rounded-lg flex items-center justify-between text-xs text-cyan-300 animate-in fade-in duration-150">
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                <span>Hands-free listening ({followUpCountdown}s)... Say &quot;Stop&quot; or ask follow-up</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  clearFollowUp();
+                  if (recognitionRef.current) {
+                    try { recognitionRef.current.stop(); } catch {}
+                  }
+                  setIsListening(false);
+                }}
+                className="text-[11px] text-slate-400 hover:text-white underline cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -890,12 +1051,22 @@ export function AlexaAdvisorModal({
               disabled={!speechSupported}
               className={`p-3 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
                 isListening
-                  ? 'bg-red-500 text-white animate-pulse shadow-[0_0_15px_#ef4444]'
+                  ? followUpCountdown !== null
+                    ? 'bg-cyan-500 text-slate-950 animate-pulse shadow-[0_0_15px_#06b6d4]'
+                    : 'bg-red-500 text-white animate-pulse shadow-[0_0_15px_#ef4444]'
                   : speechSupported
                   ? 'bg-sky-500/20 hover:bg-sky-500/30 text-cyan-300 border border-sky-500/40'
                   : 'bg-slate-800 text-slate-500 cursor-not-allowed'
               }`}
-              title={speechSupported ? (isListening ? 'Listening... (Tap to stop)' : 'Tap to Speak') : 'Speech Recognition not supported in this browser'}
+              title={
+                speechSupported 
+                  ? (isListening 
+                      ? (followUpCountdown !== null 
+                          ? `Hands-free listening (${followUpCountdown}s) - Tap or say "Stop" to cancel` 
+                          : 'Listening... (Tap to stop)') 
+                      : 'Tap to Speak') 
+                  : 'Speech Recognition not supported in this browser'
+              }
             >
               {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
             </button>
@@ -905,7 +1076,11 @@ export function AlexaAdvisorModal({
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder={isListening ? 'Listening to your voice...' : 'Ask Alexa+ (e.g. "I have 800L of water...")'}
+              placeholder={
+                isListening 
+                  ? (followUpCountdown !== null ? `Hands-free listening (${followUpCountdown}s)...` : 'Listening to your voice...') 
+                  : 'Ask Alexa+ (e.g. "I have 800L of water...")'
+              }
               className="flex-1 bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition-colors"
             />
 
