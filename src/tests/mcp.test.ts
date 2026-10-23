@@ -163,6 +163,14 @@ describe('FieldGuard MCP Server & Tool Handlers', () => {
     expect(res5.toolAudits.length).toBe(0);
     expect(res5.structuredData).toBeUndefined();
     expect(res5.reply).toContain('FieldGuard');
+
+    // Test live Groq tool calling when key is present
+    if (process.env.GROQ_API_KEY) {
+      const groqRes = await runAlexaAgent('How should I irrigate if I have 1200 liters of water?', [], 'farm-bardhaman-01');
+      expect(groqRes.activeScenario).toBe('water_allocation');
+      expect(groqRes.structuredData).toBeDefined();
+      expect(groqRes.toolAudits.length).toBeGreaterThan(0);
+    }
   });
 
   it('agent: handles weather, parcel, and combined multi-tool overview queries', async () => {

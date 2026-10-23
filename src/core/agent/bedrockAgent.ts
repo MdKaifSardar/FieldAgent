@@ -874,8 +874,154 @@ async function runDeterministicFallback(
 }
 
 /**
+ * Groq Native Tool-Calling Adapter.
+ * Uses high-speed Llama / Qwen models on Groq LPUs with OpenAI-compatible tool calling.
+ */
+const GROQ_TOOLS = BEDROCK_TOOLS.map(t => ({
+  type: 'function' as const,
+  function: {
+    name: t.toolSpec?.name || '',
+    description: t.toolSpec?.description || '',
+    parameters: (t.toolSpec?.inputSchema as any)?.json || {},
+  },
+}));
+
+async function runGroqAgent(
+  userQuery: string,
+  conversationHistory: AgentChatMessage[] = [],
+  activeFarmId: string = 'farm-bardhaman-01',
+  language: string = 'en'
+): Promise<AgentExecutionResult | null> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) return null;
+
+  const prunedHistory = (conversationHistory || []).slice(-6);
+  const messages: any[] = [
+    {
+      role: 'system',
+      content: `${SYSTEM_PROMPT}\nActive farmId is "${activeFarmId}". Selected response language is "${language}". When calling tools, ensure farmId is always passed as "${activeFarmId}".`,
+    },
+    ...prunedHistory.map(m => ({
+      role: m.role,
+      content: m.content,
+    })),
+    {
+      role: 'user',
+      content: userQuery,
+    },
+  ];
+
+  let turns = 0;
+  const maxTurns = 3;
+  const accumulatedAudits: ToolAuditEntry[] = [];
+  let latestStructuredData: any = null;
+  let activeScenario: string = 'plot_status';
+
+  while (turns < maxTurns) {
+    turns++;
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'qwen/qwen3.8-27b',
+        messages,
+        tools: GROQ_TOOLS,
+        tool_choice: 'auto',
+        temperature: 0.1,
+        max_tokens: 600,
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.warn(`Groq API error HTTP ${res.status}: ${errText}`);
+      return null;
+    }
+
+    const data = await res.json();
+    const choice = data.choices?.[0];
+    const message = choice?.message;
+
+    if (!message) return null;
+
+    const toolCalls = message.tool_calls || [];
+
+    // If no tool was requested, return final text
+    if (toolCalls.length === 0) {
+      const rawText = message.content || (latestStructuredData ? JSON.stringify(latestStructuredData) : 'Execution complete.');
+      const replyText = rawText.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '').trim();
+      return {
+        reply: replyText,
+        spokenReply: replyText,
+        toolAudits: accumulatedAudits,
+        structuredData: latestStructuredData,
+        activeScenario,
+      };
+    }
+
+    // Execute requested tools in parallel
+    const toolExecutions = await Promise.all(
+      toolCalls.map((tc: any) => {
+        let args = {};
+        try {
+          args = typeof tc.function.arguments === 'string' ? JSON.parse(tc.function.arguments) : tc.function.arguments;
+        } catch {
+          args = {};
+        }
+        if (!(args as any).farmId) {
+          (args as any).farmId = activeFarmId;
+        }
+        return executeMcpTool(tc.function.name, args);
+      })
+    );
+
+    for (let i = 0; i < toolExecutions.length; i++) {
+      accumulatedAudits.push(toolExecutions[i].audit);
+      latestStructuredData = toolExecutions[i].result;
+      const tc = toolCalls[i];
+      const tName = tc.function.name;
+      if (tName === 'allocate_limited_water') activeScenario = 'water_allocation';
+      else if (tName === 'compare_irrigation_methods') activeScenario = 'method_comparison';
+      else if (tName === 'update_water_reserve') activeScenario = 'reserve_updated';
+      else if (tName === 'log_irrigation_event') activeScenario = 'irrigation_logged';
+      else if (tName === 'update_plot_method') activeScenario = 'method_updated';
+      else if (tName === 'get_weather_context') activeScenario = 'weather_context';
+      else if (tName === 'get_farm_context') activeScenario = 'farm_context';
+    }
+
+    // Parallel check for both farm and weather
+    const calledNames = toolCalls.map((tc: any) => tc.function.name);
+    if (calledNames.includes('get_farm_context') && calledNames.includes('get_weather_context')) {
+      activeScenario = 'parcel_and_weather';
+      latestStructuredData = {
+        farm: toolExecutions.find((_, idx) => calledNames[idx] === 'get_farm_context')?.result,
+        weather: toolExecutions.find((_, idx) => calledNames[idx] === 'get_weather_context')?.result,
+      };
+    }
+
+    messages.push(message);
+
+    for (let i = 0; i < toolCalls.length; i++) {
+      messages.push({
+        role: 'tool',
+        tool_call_id: toolCalls[i].id,
+        content: JSON.stringify(toolExecutions[i].result),
+      });
+    }
+  }
+
+  return null;
+}
+
+/**
  * Main Agent Execution Loop.
- * Tries Amazon Bedrock Converse API with toolConfig; supports parallel multi-tool calling; falls back cleanly to deterministic MCP router.
+ * 1. Immediate Scope Guardrails & Greetings.
+ * 2. Tries Amazon Bedrock Converse API with toolConfig.
+ * 3. If Bedrock is throttled / no quota, tries Groq LLM Adapter (qwen/qwen3.8-27b).
+ * 4. Falls back cleanly to deterministic MCP router.
  */
 export async function runAlexaAgent(
   userQuery: string,
@@ -883,6 +1029,48 @@ export async function runAlexaAgent(
   activeFarmId: string = 'farm-bardhaman-01',
   language: string = 'en'
 ): Promise<AgentExecutionResult> {
+  const query = userQuery.toLowerCase();
+
+  // 0. Strict Scope Guardrail (Topic boundary enforcement)
+  const OUT_OF_SCOPE_KEYWORDS = [
+    'cricket', 'ipl', 'football', 'bitcoin', 'crypto', 'stock market', 'movie', 'actor', 'actress',
+    'cinema', 'song', 'joke', 'python', 'javascript', 'coding', 'politics', 'election', 'minister', 'modi', 'biden'
+  ];
+  const isOutOfScope = OUT_OF_SCOPE_KEYWORDS.some(kw => query.includes(kw)) &&
+    !query.includes('water') && !query.includes('farm') && !query.includes('crop') && !query.includes('irrigation');
+
+  if (isOutOfScope) {
+    const reply = language === 'hi'
+      ? `मैं फील्डगार्ड (FieldGuard) हूँ, आपका सिंचाई और फसल-जल सलाहकार। मैं केवल आपकी फसलों, पानी के बजट, मिट्टी की नमी और मौसम से जुड़े सवालों में सहायता कर सकता हूँ। कृपया अपनी फसलों या सिंचाई के बारे में पूछें।`
+      : `I am FieldGuard, your irrigation and crop-water advisor. I can only assist with your crops, water scheduling, soil moisture, and agricultural weather. Please ask me about your farm or irrigation plan.`;
+
+    return {
+      reply,
+      spokenReply: reply,
+      toolAudits: [],
+      activeScenario: 'out_of_scope',
+    };
+  }
+
+  // 0. Casual Greeting Detection ("hi", "hello", "hey", "namaste", "good morning")
+  const GREETINGS = ['hi', 'hello', 'hey', 'namaste', 'namaskar', 'pranam', 'good morning', 'good afternoon', 'good evening', 'नमस्ते', 'नमस्कार', 'হ্যালো', 'নমস্কার'];
+  const cleanQuery = query.trim().replace(/[!?.,]/g, '');
+  const isGreeting = GREETINGS.includes(cleanQuery) ||
+    (GREETINGS.some(g => cleanQuery.startsWith(g + ' ') || cleanQuery === g) && cleanQuery.split(' ').length <= 4 && !query.includes('water') && !query.includes('crop') && !query.includes('farm') && !query.includes('pump') && !query.includes('tank'));
+
+  if (isGreeting) {
+    const reply = language === 'hi'
+      ? `नमस्ते! मैं फील्डगार्ड (FieldGuard) हूँ, आपका सिंचाई और फसल सलाहकार। आज मैं आपके खेत, मिट्टी की नमी या पंप संचालन में कैसे सहायता कर सकता हूँ?`
+      : `Hello! I am FieldGuard, your irrigation and crop-water advisor. How can I help you manage your field moisture, water reserve, or pump operations today?`;
+
+    return {
+      reply,
+      spokenReply: reply,
+      toolAudits: [],
+      activeScenario: 'general',
+    };
+  }
+
   const bedrock = getBedrockClient();
 
   if (bedrock) {
@@ -984,10 +1172,20 @@ export async function runAlexaAgent(
         });
       }
     } catch (bedrockErr: any) {
-      console.warn('Bedrock Converse execution failed, switching to resilient fallback router:', bedrockErr?.message);
+      console.warn('Bedrock Converse execution failed, trying Groq adapter / fallback:', bedrockErr?.message);
     }
   }
 
-  // Resilient Fallback Engine
+  // Tier 2: Groq High-Speed LLM Adapter (If GROQ_API_KEY is configured)
+  if (process.env.GROQ_API_KEY) {
+    try {
+      const groqResult = await runGroqAgent(userQuery, conversationHistory, activeFarmId, language);
+      if (groqResult) return groqResult;
+    } catch (groqErr: any) {
+      console.warn('Groq Agent execution failed, falling back to local deterministic engine:', groqErr?.message);
+    }
+  }
+
+  // Tier 3: Resilient Deterministic Fallback Engine
   return runDeterministicFallback(userQuery, activeFarmId, language);
 }
