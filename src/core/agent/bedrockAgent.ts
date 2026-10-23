@@ -348,6 +348,25 @@ async function runDeterministicFallback(
     };
   }
 
+  // 0. Casual Greeting Detection ("hi", "hello", "hey", "namaste", "good morning")
+  const GREETINGS = ['hi', 'hello', 'hey', 'namaste', 'namaskar', 'pranam', 'good morning', 'good afternoon', 'good evening', 'नमस्ते', 'नमस्कार', 'হ্যালো', 'নমস্কার'];
+  const cleanQuery = query.trim().replace(/[!?.,]/g, '');
+  const isGreeting = GREETINGS.includes(cleanQuery) ||
+    (GREETINGS.some(g => cleanQuery.startsWith(g + ' ') || cleanQuery === g) && cleanQuery.split(' ').length <= 4 && !query.includes('water') && !query.includes('crop') && !query.includes('farm') && !query.includes('pump') && !query.includes('tank'));
+
+  if (isGreeting) {
+    const reply = language === 'hi'
+      ? `नमस्ते! मैं फील्डगार्ड (FieldGuard) हूँ, आपका सिंचाई और फसल सलाहकार। आज मैं आपके खेत, मिट्टी की नमी या पंप संचालन में कैसे सहायता कर सकता हूँ?`
+      : `Hello! I am FieldGuard, your irrigation and crop-water advisor. How can I help you manage your field moisture, water reserve, or pump operations today?`;
+
+    return {
+      reply,
+      spokenReply: reply,
+      toolAudits: [],
+      activeScenario: 'general',
+    };
+  }
+
   // Detect if a specific crop is mentioned in the query (multilingual)
   const CROP_SYNONYMS: Record<string, string> = {
     onion: 'Onion',

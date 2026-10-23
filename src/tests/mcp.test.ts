@@ -156,6 +156,13 @@ describe('FieldGuard MCP Server & Tool Handlers', () => {
     expect(res4.activeScenario).toBe('reserve_updated');
     expect(res4.structuredData.totalCapacityLiters).toBe(8000);
     expect(res4.reply).toContain('8,000');
+
+    // Test casual conversation returns friendly text without triggering structured tool cards
+    const res5 = await runAlexaAgent('hi there', [], 'farm-bardhaman-01');
+    expect(res5.activeScenario).toBe('general');
+    expect(res5.toolAudits.length).toBe(0);
+    expect(res5.structuredData).toBeUndefined();
+    expect(res5.reply).toContain('FieldGuard');
   });
 
   it('agent: handles weather, parcel, and combined multi-tool overview queries', async () => {
