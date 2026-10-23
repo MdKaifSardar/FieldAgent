@@ -420,10 +420,20 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
       };
     });
 
+    let resolvedUserId = 'farmer-user';
+    if (typeof window !== 'undefined') {
+      try {
+        const authData = JSON.parse(localStorage.getItem('fieldguard_auth') || '{}');
+        if (authData?.userId) {
+          resolvedUserId = authData.userId;
+        }
+      } catch (e) {}
+    }
+
     const cropSummary = Array.from(new Set(plots.map((p) => p.cropName))).join(' & ');
     const farm: FarmProfile = {
       id: initialFarm?.id || `farm-${Date.now()}`,
-      userId: 'farmer-user',
+      userId: resolvedUserId,
       farmName: `${cropSummary} Field (${district || 'Local Parcel'})`,
       location: {
         latitude: lat,

@@ -69,6 +69,7 @@ export function cleanModelOutputText(rawText: string): string {
     .replace(/<thought>[\s\S]*?<\/thought>/gi, '')
     .replace(/<\/?(?:thinking|think|thought)>/gi, '')
     .replace(/<\/?(?:response|answer|output)>/gi, '')
+    .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F1E6}-\u{1F1FF}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}\u{200D}\u{FE0F}]/gu, '')
     .trim();
 }
 
@@ -251,19 +252,25 @@ const BEDROCK_TOOLS: BedrockTool[] = [
 const SYSTEM_PROMPT = `You are Alexa+, the AI Agricultural & Irrigation Advisor for FieldGuard.
 You assist Indian farmers in managing crop water requirements, root-zone moisture stress, and pump operations.
 
+CRITICAL DATABASE GROUNDING RULE:
+The live database record retrieved via MCP tools ('get_farm_context', 'update_water_reserve', 'get_plot_water_status') is the SOLE AND ABSOLUTE SOURCE OF TRUTH for all farm data (tank capacity, available water in liters, pump horsepower, soil texture, crop plots, and depletion).
+NEVER guess, hallucinate, or reuse numbers from prior conversation turns (e.g. NEVER invent 10,000L).
+When the farmer asks about their tank capacity, available water volume, or water storage, ALWAYS invoke 'get_farm_context' and directly quote the exact \`reserve.totalCapacity_liters\` and \`reserve.currentAvailable_liters\` values from the database tool result.
+
 RULES:
 1. NEVER hallucinate or guess water requirements, depletion numbers, or pump runtime. Always call MCP tools.
 2. When the farmer asks what to water with a limited budget (e.g. 800 Litres), call 'allocate_limited_water'.
-3. When the farmer mentions their tank is X% full or has X Liters, call 'update_water_reserve'.
+3. When the farmer mentions their tank is X% full or has X Liters, or wants to update capacity, call 'update_water_reserve'.
 4. When the farmer says they watered a plot (yesterday, today, or a date), call 'log_irrigation_event'.
 5. When the farmer asks about changing irrigation methods (e.g. Drip vs Flood), call 'compare_irrigation_methods' or 'update_plot_method'.
 6. In deficit conditions, always instruct the farmer to shut lateral valves to deferred plots and irrigate during cool hours (after 6 PM or before 7 AM).
-7. When the farmer asks about their parcel, land size, crops, soil, or pump rating, call 'get_farm_context'.
+7. When the farmer asks about their parcel, land size, crops, soil, pump rating, tank capacity, or water storage, call 'get_farm_context'.
 8. When the farmer asks about weather, rain probability, temperature, or humidity, call 'get_weather_context'.
 9. When the farmer asks for a complete overview or summary of their farm and weather, invoke BOTH 'get_farm_context' and 'get_weather_context' in parallel.
 10. When speaking in Hindi, use warm, respectful tone suitable for rural farmers.
 11. STRICT SCOPE GUARDRAIL: You are exclusively an agricultural irrigation and crop-water advisor. If the user asks about out-of-scope topics (e.g. sports, entertainment, cryptocurrency, programming, medical advice, politics), politely decline and redirect them back to farm irrigation.
-12. RICH FORMATTING: You have full Markdown and LaTeX math support enabled. Use structured markdown (bullet points, bold highlights, tables) when presenting farm details. When explaining agronomic formulas or calculations (e.g. FAO-56 evapotranspiration $ET_c = K_c \\times ET_0$, root-zone depletion $D_r$, or $RAW = p \\times TAW$), format them with clean LaTeX notation.`;
+12. RICH FORMATTING: You have full Markdown and LaTeX math support enabled. Use structured markdown (bullet points, bold highlights, tables) when presenting farm details. When explaining agronomic formulas or calculations (e.g. FAO-56 evapotranspiration $ET_c = K_c \\times ET_0$, root-zone depletion $D_r$, or $RAW = p \\times TAW$), format them with clean LaTeX notation.
+13. STRICT ZERO EMOJIS: Do NOT output any emojis, emoticons, or pictorial glyphs under any circumstances (e.g. no 🌾, 🚜, 💧, ☀️, 🌧️, 🌱, etc.). Keep all formatting, bullet points, LaTeX, bold text, and markdown exactly as requested, but strictly without any emojis.`;
 
 /**
  * Executes a tool by name and records audit telemetry.
@@ -566,6 +573,38 @@ async function runDeterministicFallback(
     }
   }
 
+  // 1b. Water Tank Capacity & Storage INQUIRY ("what is my tank capacity?", "how much water is in my tank?", "tank status", "water storage", "टंकी की क्षमता क्या है?", "टंकी में कितना पानी है?")
+  const isTankInquiry =
+    (query.includes('tank') || query.includes('tanki') || query.includes('sump') || query.includes('टंकी') || query.includes('टैंक') || query.includes('ট্যাঙ্ক') || query.includes('reserve') || query.includes('storage') || query.includes('reservoir')) &&
+    (query.includes('capacity') || query.includes('क्षमता') || query.includes('how much') || query.includes('what is') || query.includes('kitna') || query.includes('kitni') || query.includes('कितना') || query.includes('कितनी') || query.includes('क्या') || query.includes('status') || query.includes('level') || query.includes('available') || query.includes('water left') || query.includes('hold'));
+
+  if (isTankInquiry) {
+    const { result, audit } = await executeMcpTool('get_farm_context', { farmId });
+    toolAudits.push(audit);
+
+    const cap = result.reserve?.totalCapacity_liters || 5000;
+    const avail = result.reserve?.currentAvailable_liters ?? cap;
+    const pct = cap > 0 ? Math.round((avail / cap) * 100) : 0;
+    const pumpHp = result.reserve?.pumpPower_hp || 5;
+    const storageType = result.reserve?.storageType || 'water tank';
+
+    const reply = language === 'hi'
+      ? `डेटाबेस रिकॉर्ड के अनुसार, आपके खेत (${result.farmName}) की पानी की टंकी की कुल क्षमता ${cap.toLocaleString()} लीटर है। वर्तमान में इसमें ${avail.toLocaleString()} लीटर (${pct}%) पानी उपलब्ध है। आपके ${pumpHp} HP पंप के साथ यह भंडारण सिंचाई के लिए तैयार है।`
+      : `According to your live farm database record, the total water storage capacity for ${result.farmName} is ${cap.toLocaleString()} L (${storageType}). Currently, ${avail.toLocaleString()} L (${pct}%) is available in reserve, powered by your ${pumpHp} HP pump.`;
+
+    const spokenReply = language === 'hi'
+      ? `आपकी टंकी की कुल क्षमता ${cap} लीटर है और वर्तमान में ${avail} लीटर पानी उपलब्ध है।`
+      : `Your tank capacity is ${cap} Liters, with ${avail} Liters currently available.`;
+
+    return {
+      reply,
+      spokenReply,
+      toolAudits,
+      structuredData: result,
+      activeScenario: 'farm_context',
+    };
+  }
+
   // 2. Voice Past Irrigation Logging ("I watered onion yesterday", "I irrigated tomato on oct 10th", "मैंने प्याज में पानी दिया")
   const isIrrigationLog = 
     (query.includes('watered') || query.includes('irrigated') || query.includes('पानी दिया') || query.includes('সেচ দিয়েছি')) && 
@@ -817,19 +856,25 @@ async function runDeterministicFallback(
     };
   }
 
-  // 7. Parcel & Farm Infrastructure Query ("tell me about my parcel", "what crops do I have?", "what is my soil?", "pump horsepower", "खेत की जानकारी")
+  // 7. Parcel & Farm Infrastructure Query ("tell me about my parcel", "what crops do I have?", "what is my soil?", "pump horsepower", "tank capacity", "खेत की जानकारी")
   const isParcelQuery =
     query.includes('parcel') ||
     query.includes('farm') ||
     query.includes('land') ||
     query.includes('soil') ||
     query.includes('pump') ||
+    query.includes('tank') ||
+    query.includes('capacity') ||
+    query.includes('reserve') ||
+    query.includes('storage') ||
     query.includes('area') ||
     query.includes('bigha') ||
     query.includes('acre') ||
     query.includes('खेत') ||
     query.includes('मिट्टी') ||
     query.includes('पंप') ||
+    query.includes('टंकी') ||
+    query.includes('क्षमता') ||
     query.includes('जमीन') ||
     query.includes('জমি') ||
     query.includes('মাটি') ||
@@ -840,7 +885,14 @@ async function runDeterministicFallback(
     toolAudits.push(audit);
 
     let specificReply: string | null = null;
-    if (query.includes('pump') || query.includes('पंप')) {
+    if (query.includes('tank') || query.includes('capacity') || query.includes('reserve') || query.includes('storage') || query.includes('टंकी') || query.includes('क्षमता')) {
+      const cap = result.reserve?.totalCapacity_liters || 5000;
+      const avail = result.reserve?.currentAvailable_liters ?? cap;
+      const pct = cap > 0 ? Math.round((avail / cap) * 100) : 0;
+      specificReply = language === 'hi'
+        ? `आपके खेत की पानी की टंकी की क्षमता ${cap.toLocaleString()} लीटर है, जिसमें अभी ${avail.toLocaleString()} लीटर (${pct}%) पानी उपलब्ध है।`
+        : `Your farm water tank capacity is ${cap.toLocaleString()} L, with ${avail.toLocaleString()} L (${pct}%) currently available.`;
+    } else if (query.includes('pump') || query.includes('पंप')) {
       specificReply = language === 'hi'
         ? `आपके खेत में ${result.reserve.pumpPower_hp} HP का पंप लगा है, जो लगभग ${result.reserve.knownFlowRate_liters_per_hr?.toLocaleString() || '6,000'} लीटर प्रति घंटा पानी देता है।`
         : `Your farm is equipped with a ${result.reserve.pumpPower_hp} HP pump delivering approximately ${result.reserve.knownFlowRate_liters_per_hr?.toLocaleString() || '6,000'} Litres per hour.`;
@@ -915,7 +967,7 @@ async function runGroqAgent(
   const messages: any[] = [
     {
       role: 'system',
-      content: `${SYSTEM_PROMPT}\nActive farmId is "${activeFarmId}". Selected response language is "${language}". When calling tools, ensure farmId is always passed as "${activeFarmId}".`,
+      content: `${SYSTEM_PROMPT}\nActive farmId is "${activeFarmId}". Selected response language is "${language}". When calling tools, ensure farmId is always passed as "${activeFarmId}". CRITICAL: The database tool output is the ONLY source of truth. NEVER reuse or invent numbers from past conversation turns.`,
     },
     ...prunedHistory.map(m => ({
       role: m.role,
@@ -1100,7 +1152,7 @@ export async function runAlexaAgent(
         })),
         {
           role: 'user',
-          content: [{ text: `${userQuery}\n[Context: Active farmId is "${activeFarmId}", Language is "${language}"]` }],
+          content: [{ text: `${userQuery}\n[Context: Active farmId is "${activeFarmId}", Language is "${language}". The live database MCP tool output is the ONLY source of truth. NEVER reuse numbers from past messages.]` }],
         },
       ];
 
@@ -1211,5 +1263,10 @@ export async function runAlexaAgent(
   }
 
   // Tier 3: Resilient Deterministic Fallback Engine
-  return runDeterministicFallback(userQuery, activeFarmId, language);
+  const fallbackResult = await runDeterministicFallback(userQuery, activeFarmId, language);
+  return {
+    ...fallbackResult,
+    reply: cleanModelOutputText(fallbackResult.reply),
+    spokenReply: cleanModelOutputText(fallbackResult.spokenReply),
+  };
 }

@@ -65,9 +65,19 @@ export function OnboardingModal({ isOpen, onClose, onSubmit }: OnboardingModalPr
 
     const available_liters = Math.round((tankCapacity * fillPercent) / 100);
 
+    let resolvedUserId = 'farmer-user';
+    if (typeof window !== 'undefined') {
+      try {
+        const authData = JSON.parse(localStorage.getItem('fieldguard_auth') || '{}');
+        if (authData?.userId) {
+          resolvedUserId = authData.userId;
+        }
+      } catch (e) {}
+    }
+
     const newFarm: FarmProfile = {
       id: 'custom-farm-' + Date.now(),
-      userId: 'farmer-user',
+      userId: resolvedUserId,
       farmName,
       location: {
         latitude: lat,

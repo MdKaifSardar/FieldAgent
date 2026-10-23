@@ -58,27 +58,33 @@ const PRESET_FARMS: Record<string, FarmProfile> = {
 
 /**
  * Resolves a farm profile from DynamoDB, falling back to built-in presets.
+ * Always queries DynamoDB first as the absolute live source of truth.
  */
-export async function resolveFarm(farmId: string): Promise<FarmProfile | null> {
-  // Check active runtime cache first
-  if (farmRuntimeStore.has(farmId)) {
+export async function resolveFarm(farmId: string, bypassCache = false): Promise<FarmProfile | null> {
+  // 1. ALWAYS query DynamoDB FIRST as the authoritative live source of truth
+  try {
+    const dbFarm = await getFarmProfileFromDynamo(farmId);
+    if (dbFarm) {
+      farmRuntimeStore.set(farmId, dbFarm);
+      return dbFarm;
+    }
+  } catch (err) {
+    console.warn(`[resolveFarm] DynamoDB fetch error for ${farmId}:`, err);
+  }
+
+  // 2. Check active runtime cache if DynamoDB returned null or is unreachable
+  if (!bypassCache && farmRuntimeStore.has(farmId)) {
     return farmRuntimeStore.get(farmId)!;
   }
 
-  // Check presets
+  // 3. Check presets
   if (PRESET_FARMS[farmId]) {
     const cloned: FarmProfile = JSON.parse(JSON.stringify(PRESET_FARMS[farmId]));
     farmRuntimeStore.set(farmId, cloned);
     return cloned;
   }
-  // Check DynamoDB
-  const farm = await getFarmProfileFromDynamo(farmId);
-  if (farm) {
-    farmRuntimeStore.set(farmId, farm);
-    return farm;
-  }
 
-  // Partial match fallback (e.g. "bardhaman" -> PRESET_1)
+  // 4. Partial match fallback (e.g. "bardhaman" -> PRESET_1)
   const lower = farmId.toLowerCase();
   if (lower.includes('bardhaman') || lower.includes('tomato')) {
     const cloned: FarmProfile = JSON.parse(JSON.stringify(PRESET_1_RAIN_AVOIDANCE.farm));
