@@ -150,6 +150,12 @@ describe('FieldGuard MCP Server & Tool Handlers', () => {
     expect(res3.activeScenario).toBe('water_allocation');
     expect(res3.reply).toContain('valves');
     expect(res3.reply).toContain('6:00 PM');
+
+    // Test infrastructure capacity update from X to Y
+    const res4 = await runAlexaAgent('increase my tank capacity from 5000 litres to 8000 litres', [], 'farm-bardhaman-01');
+    expect(res4.activeScenario).toBe('reserve_updated');
+    expect(res4.structuredData.totalCapacityLiters).toBe(8000);
+    expect(res4.reply).toContain('8,000');
   });
 
   it('agent: handles weather, parcel, and combined multi-tool overview queries', async () => {

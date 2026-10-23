@@ -435,14 +435,30 @@ async function runDeterministicFallback(
     ভরা: 100,
   };
 
-  // 1. Voice Water Tank & Level Modification ("tank is half full", "tank at 60%", "tank has 2000L", "टंकी आधी भरी है", "mera tank aadha bhara hai")
+  // 1. Voice Water Tank & Level / Capacity Modification ("increase tank capacity to 8000L", "tank is half full", "tank at 60%", "tank has 2000L")
   const isTankUpdate = 
-    (query.includes('tank') || query.includes('tanki') || query.includes('sump') || query.includes('टंकी') || query.includes('टैंक') || query.includes('ট্যাঙ্ক') || query.includes('reservoir') || query.includes('reserve')) &&
-    (query.includes('%') || query.includes('percent') || query.includes('full') || query.includes('empty') || query.includes('half') || query.includes('quarter') || query.includes('आधा') || query.includes('आधी') || query.includes('aadha') || query.includes('adha') || query.includes('aadhi') || query.includes('खाली') || query.includes('khali') || query.includes('भर') || query.includes('bhara') || query.includes('bhari') || query.includes('pura') || query.includes('set') || query.includes('update') || query.includes('level') || query.includes('filled') || query.includes('put') || query.includes('added') || query.includes('poured') || query.includes('dala') || query.includes('dala'));
+    (query.includes('tank') || query.includes('tanki') || query.includes('sump') || query.includes('टंकी') || query.includes('टैंक') || query.includes('ট্যাঙ্ক') || query.includes('reservoir') || query.includes('reserve') || query.includes('capacity') || query.includes('क्षमता')) &&
+    (query.includes('%') || query.includes('percent') || query.includes('full') || query.includes('empty') || query.includes('half') || query.includes('quarter') || query.includes('आधा') || query.includes('आधी') || query.includes('aadha') || query.includes('adha') || query.includes('aadhi') || query.includes('खाली') || query.includes('khali') || query.includes('भर') || query.includes('bhara') || query.includes('bhari') || query.includes('pura') || query.includes('set') || query.includes('update') || query.includes('level') || query.includes('filled') || query.includes('put') || query.includes('added') || query.includes('poured') || query.includes('dala') || query.includes('capacity') || query.includes('increase') || query.includes('upgrade') || query.includes('expand') || query.includes('size') || query.includes('बढ़ा') || query.includes('बदल'));
 
   if (isTankUpdate) {
     let fillPct: number | undefined = undefined;
     let availL: number | undefined = undefined;
+    let totalCap: number | undefined = undefined;
+
+    const isCapacityQuery = query.includes('capacity') || query.includes('क्षमता') || query.includes('size') || query.includes('upgrade') || query.includes('expand') || query.includes('increase') || query.includes('बढ़ा');
+
+    // Check for "from X to Y" pattern: e.g. "from 5000 litres to 8000 litres" or "5000 to 8000"
+    const fromToMatch = query.match(/(?:from\s*)?(\d+)\s*(?:l|litres|liters)?\s*(?:to|se|badha kar)\s*(\d+)\s*(?:l|litres|liters|लीटर|লিটার)?/i);
+    if (fromToMatch && fromToMatch[2]) {
+      totalCap = parseInt(fromToMatch[2], 10);
+    } else if (isCapacityQuery) {
+      const capMatch = query.match(/(?:capacity|to|size)\s*(?:of|is|to)?\s*(\d+)\s*(?:l|litres|liters|लीटर)?/i) ||
+                       query.match(/(\d+)\s*(?:l|litres|liters|लीटर)\s*capacity/i) ||
+                       query.match(/(\d+)\s*(?:l|litres|liters|लीटर|লিটার)/i);
+      if (capMatch) {
+        totalCap = parseInt(capMatch[1], 10);
+      }
+    }
 
     const pctMatch = query.match(/(\d+)\s*%/);
     if (pctMatch) {
@@ -457,15 +473,16 @@ async function runDeterministicFallback(
     }
 
     const ltrMatch = query.match(/(\d+)\s*(l|litres|liters|लीटर|লিটার)/i);
-    if (ltrMatch && fillPct === undefined) {
+    if (ltrMatch && fillPct === undefined && !isCapacityQuery) {
       availL = parseInt(ltrMatch[1], 10);
     }
 
-    if (fillPct !== undefined || availL !== undefined) {
+    if (fillPct !== undefined || availL !== undefined || totalCap !== undefined) {
       const { result, audit } = await executeMcpTool('update_water_reserve', {
         farmId,
         fillPercent: fillPct,
         availableLiters: availL,
+        totalCapacityLiters: totalCap,
       });
       toolAudits.push(audit);
 
@@ -475,17 +492,32 @@ async function runDeterministicFallback(
             : ` (Note: Entered volume exceeded physical tank capacity of ${result.totalCapacityLiters.toLocaleString()} L; capped at 100% full.)`)
         : '';
 
-      const reply = language === 'hi'
-        ? `अपडेट किया गया! आपकी पानी की टंकी ${result.availableLiters.toLocaleString()} लीटर (${result.fillPercent}%) पर सेट है।${overflowMsg} ${
-            result.isDeficit 
-              ? `चेतावनी: पानी की कमी है। केवल ${result.newDecision.plots[0]?.cropName || 'प्राथमिक फसल'} के वाल्व खोलें और बाकी खेतों के वाल्व बंद रखें। धूप में वाष्पीकरण से बचने के लिए शाम 6 बजे के बाद या सुबह 7 बजे से पहले सिंचाई करें।`
-              : `आज सभी फसलों के लिए पर्याप्त पानी उपलब्ध है।`
-          }`
-        : `Updated! Your water tank is set to ${result.availableLiters.toLocaleString()} L (${result.fillPercent}%).${overflowMsg} ${
-            result.isDeficit
-              ? `Deficit Active: Direct all ${result.availableLiters.toLocaleString()} L to ${result.newDecision.plots[0]?.cropName || 'primary crop'} and keep other lateral valves shut. Irrigate after 6:00 PM or before 7:00 AM to eliminate solar evaporation.`
-              : `You have adequate water to satisfy all crop requirements today.`
-          }`;
+      let reply = '';
+      if (isCapacityQuery && totalCap !== undefined) {
+        reply = language === 'hi'
+          ? `टंकी की क्षमता सफलतापूर्वक बढ़ाकर ${result.totalCapacityLiters.toLocaleString()} लीटर कर दी गई है! वर्तमान में उपलब्ध जल: ${result.availableLiters.toLocaleString()} लीटर (${result.fillPercent}%)। ${
+              result.isDeficit
+                ? `चेतावनी: कुल आवश्यकता ${result.totalDemand_liters.toLocaleString()} लीटर है। प्राथमिकता वाली फसलों को पहले सींचें।`
+                : `वर्तमान भंडारण आपकी फसलों के लिए पर्याप्त है।`
+            }`
+          : `Updated! Tank storage capacity expanded to ${result.totalCapacityLiters.toLocaleString()} L. Currently available: ${result.availableLiters.toLocaleString()} L (${result.fillPercent}% full). ${
+              result.isDeficit
+                ? `Deficit Note: Farm demand is ${result.totalDemand_liters.toLocaleString()} L. Prioritize moisture-stressed plots.`
+                : `Adequate storage available for all crop demands.`
+            }`;
+      } else {
+        reply = language === 'hi'
+          ? `अपडेट किया गया! आपकी पानी की टंकी ${result.availableLiters.toLocaleString()} लीटर (${result.fillPercent}%) पर सेट है।${overflowMsg} ${
+              result.isDeficit 
+                ? `चेतावनी: पानी की कमी है। केवल ${result.newDecision?.plots?.[0]?.cropName || 'प्राथमिक फसल'} के वाल्व खोलें और बाकी खेतों के वाल्व बंद रखें। धूप में वाष्पीकरण से बचने के लिए शाम 6 बजे के बाद या सुबह 7 बजे से पहले सिंचाई करें।`
+                : `आज सभी फसलों के लिए पर्याप्त पानी उपलब्ध है।`
+            }`
+          : `Updated! Your water tank is set to ${result.availableLiters.toLocaleString()} L (${result.fillPercent}%).${overflowMsg} ${
+              result.isDeficit
+                ? `Deficit Active: Direct all ${result.availableLiters.toLocaleString()} L to ${result.newDecision?.plots?.[0]?.cropName || 'primary crop'} and keep other lateral valves shut. Irrigate after 6:00 PM or before 7:00 AM to eliminate solar evaporation.`
+                : `You have adequate water to satisfy all crop requirements today.`
+            }`;
+      }
 
       return {
         reply,
