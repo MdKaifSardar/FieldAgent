@@ -47,6 +47,7 @@ import {
 } from 'lucide-react';
 import { LocationMapPicker } from '../map/LocationMapPicker';
 import { computeBaselineDepletionFromDate, calculateTaw } from '../../core/fao56';
+import { CropBadge } from '../common/CropBadge';
 
 interface EditFieldWorkspaceViewProps {
   initialFarm: FarmProfile;
@@ -683,13 +684,14 @@ export function EditFieldWorkspaceView({
                             key={c}
                             type="button"
                             onClick={() => handleUpdatePlot(index, { cropName: c })}
-                            className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center ${
+                            className={`py-2 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center flex items-center justify-center gap-2 ${
                               plot.cropName === c
                                 ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
                                 : 'bg-white dark:bg-[#0A1C2A] border-slate-200 dark:border-[#16364D] text-slate-700 dark:text-[#CBD5E1] hover:border-emerald-500'
                             }`}
                           >
-                            {localizeCrop(c, language)}
+                            <CropBadge cropName={c} size="xs" />
+                            <span>{localizeCrop(c, language)}</span>
                           </button>
                         ))}
                       </div>

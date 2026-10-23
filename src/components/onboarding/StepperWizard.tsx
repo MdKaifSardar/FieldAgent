@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { LocationMapPicker } from '../map/LocationMapPicker';
 import { computeBaselineDepletionFromDate } from '../../core/fao56';
+import { CropBadge } from '../common/CropBadge';
 
 interface StepperWizardProps {
   isOpen: boolean;
@@ -866,13 +867,14 @@ export function StepperWizard({ isOpen, onClose, onSubmit, initialFarm }: Steppe
                             key={c.id}
                             type="button"
                             onClick={() => handleUpdatePlot(index, { cropName: c.id })}
-                            className={`py-1.5 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center ${
+                            className={`py-1.5 px-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border text-center flex items-center justify-center gap-2 ${
                               plot.cropName === c.id
                                 ? 'bg-[#16A34A] text-white border-[#16A34A] shadow-xs'
                                 : 'bg-[#F0F4ED] dark:bg-[#1B2720] border-[#E1E8DE] dark:border-[#2A3E31] text-[#4D6653] dark:text-[#8FA894] hover:border-[#16A34A]/40'
                             }`}
                           >
-                            {c.label}
+                            <CropBadge cropName={c.id} size="xs" />
+                            <span>{c.label}</span>
                           </button>
                         ))}
                       </div>

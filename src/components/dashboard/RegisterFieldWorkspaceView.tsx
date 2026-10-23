@@ -52,6 +52,7 @@ import {
   SOIL_VISUAL_ASSETS, 
   IRRIGATION_VISUAL_ASSETS 
 } from '../../data/agriculturalVisualAssets';
+import { CropBadge } from '../common/CropBadge';
 
 interface RegisterFieldWorkspaceViewProps {
   onCancel: () => void;
@@ -878,8 +879,9 @@ export function RegisterFieldWorkspaceView({ onCancel, onSubmit }: RegisterField
                             <label className="text-[11px] font-semibold text-slate-600 dark:text-[#94A3B8] uppercase tracking-wider">
                               {t.selectCropLabel}
                             </label>
-                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-semibold">
-                              {CROP_VISUAL_ASSETS[plot.cropName]?.emoji} {localizeCrop(plot.cropName, language)}
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-semibold flex items-center gap-1.5">
+                              <CropBadge cropName={plot.cropName} size="xs" />
+                              <span>{localizeCrop(plot.cropName, language)}</span>
                             </span>
                           </div>
 
@@ -940,7 +942,7 @@ export function RegisterFieldWorkspaceView({ onCancel, onSubmit }: RegisterField
                                   {/* Card Label */}
                                   <div className="p-2 text-center">
                                     <span className="text-xs font-bold text-slate-900 dark:text-[#F0F9FF] font-['Outfit'] block truncate">
-                                      {crop?.emoji} {localizeCrop(c, language)}
+                                      {localizeCrop(c, language)}
                                     </span>
                                     <span className="text-[10px] text-slate-400 block truncate mt-0.5">
                                       {crop?.category[language]}

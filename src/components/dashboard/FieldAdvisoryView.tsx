@@ -235,7 +235,7 @@ export function FieldAdvisoryView({
       {/* WORKSPACE TAB CONTENT: Renders only the active tool with focused clarity */}
       {decision && currentForecast && (
         <div className="space-y-5">
-          {/* TAB 1: ⚡ DECISION & ADVISORY */}
+          {/* TAB 1: DECISION & ADVISORY */}
           {activeTab === 'advisory' && (
             <div className="space-y-4">
               {/* Alexa+ Agronomic Copilot Card */}
@@ -306,7 +306,7 @@ export function FieldAdvisoryView({
             </div>
           )}
 
-          {/* TAB 2: 💧 WATER BUDGET & SUMP */}
+          {/* TAB 2: WATER BUDGET & SUMP */}
           {activeTab === 'water' && (
             <div className="rounded-lg">
               <WaterBudgetCard
@@ -321,7 +321,7 @@ export function FieldAdvisoryView({
             </div>
           )}
 
-          {/* TAB 3: 🌦️ MICRO-CLIMATE STATION */}
+          {/* TAB 3: MICRO-CLIMATE STATION */}
           {activeTab === 'climate' && (
             <div className="rounded-lg">
               <LiveClimateStation
@@ -339,7 +339,7 @@ export function FieldAdvisoryView({
             </div>
           )}
 
-          {/* TAB 4: 📜 ENVIRONMENTAL LEDGER */}
+          {/* TAB 4: ENVIRONMENTAL LEDGER */}
           {activeTab === 'ledger' && (
             <div className="rounded-lg">
               <EnvironmentalLedgerCard ledger={decision.environmentalLedger} />

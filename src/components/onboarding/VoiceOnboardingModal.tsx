@@ -480,8 +480,9 @@ export function VoiceOnboardingModal({ isOpen, onClose, onComplete, onSwitchToLo
                 />
               </div>
               {gpsNotice && (
-                <p className="text-[11px] text-[#16A34A] dark:text-[#4ADE80] mt-1 font-medium">
-                  ✓ {gpsNotice}
+                <p className="text-[11px] text-[#16A34A] dark:text-[#4ADE80] mt-1 font-medium flex items-center gap-1">
+                  <Check className="w-3 h-3 shrink-0" />
+                  <span>{gpsNotice}</span>
                 </p>
               )}
             </div>

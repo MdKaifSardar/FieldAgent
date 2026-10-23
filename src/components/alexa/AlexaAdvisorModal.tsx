@@ -24,11 +24,17 @@ import {
   Wind,
   Layers,
   Copy,
-  Check
+  Check,
+  CloudSun,
+  Lightbulb,
+  ArrowRightLeft,
+  Gauge,
+  CalendarCheck
 } from 'lucide-react';
 import { useLanguage } from '../common/LanguageContext';
 import { ToolAuditEntry } from '../../core/agent/bedrockAgent';
 import { MarkdownMessage } from '../common/MarkdownMessage';
+import { CropBadge } from '../common/CropBadge';
 
 interface ChatMessage {
   id: string;
@@ -491,7 +497,10 @@ export function AlexaAdvisorModal({
                   </div>
 
                   <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 flex items-center justify-between">
-                    <span>💧 Drip Saves:</span>
+                    <span className="flex items-center gap-1.5">
+                      <Droplets className="w-3.5 h-3.5 text-cyan-400" />
+                      Drip Saves:
+                    </span>
                     <span className="font-bold">
                       {msg.structuredData.savingsWithDripVsFlood.waterSavedLiters.toLocaleString()} L ({msg.structuredData.savingsWithDripVsFlood.waterSavedPct}%)
                     </span>
@@ -533,8 +542,9 @@ export function AlexaAdvisorModal({
                   </div>
 
                   {msg.structuredData.advisoryDirective && (
-                    <div className="p-2 rounded-lg bg-cyan-950/40 border border-cyan-800/40 text-[11px] text-cyan-300 italic">
-                      💡 {msg.structuredData.advisoryDirective}
+                    <div className="p-2 rounded-lg bg-cyan-950/40 border border-cyan-800/40 text-[11px] text-cyan-300 italic flex items-center gap-1.5">
+                      <Lightbulb className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                      <span>{msg.structuredData.advisoryDirective}</span>
                     </div>
                   )}
                 </div>
@@ -556,7 +566,10 @@ export function AlexaAdvisorModal({
                   <div className="p-2.5 rounded-lg bg-slate-900/80 border border-emerald-800/40 space-y-1.5">
                     <div className="flex items-center justify-between text-slate-300">
                       <span>Plot / Crop:</span>
-                      <span className="font-bold text-white">🌾 {msg.structuredData.cropName}</span>
+                      <span className="font-bold text-white flex items-center gap-1.5">
+                        <CropBadge cropName={msg.structuredData.cropName} size="xs" />
+                        <span>{msg.structuredData.cropName}</span>
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-slate-300">
                       <span>Current Root Depletion (Dr):</span>
@@ -584,10 +597,14 @@ export function AlexaAdvisorModal({
                   </div>
 
                   <div className="p-2.5 rounded-lg bg-slate-900/80 border border-indigo-800/40 flex items-center justify-between text-slate-300">
-                    <span>🌾 {msg.structuredData.cropName}</span>
+                    <span className="flex items-center gap-1.5 font-bold text-white">
+                      <CropBadge cropName={msg.structuredData.cropName} size="xs" />
+                      <span>{msg.structuredData.cropName}</span>
+                    </span>
                     {msg.structuredData.waterSavedPct > 0 ? (
-                      <span className="font-bold text-emerald-400 font-mono">
-                        💧 Saves {msg.structuredData.waterSavedPct}% Water / cycle
+                      <span className="font-bold text-emerald-400 font-mono flex items-center gap-1">
+                        <Droplets className="w-3.5 h-3.5 text-cyan-400" />
+                        Saves {msg.structuredData.waterSavedPct}% Water / cycle
                       </span>
                     ) : (
                       <span className="text-slate-400">Baseline configuration</span>
@@ -716,9 +733,10 @@ export function AlexaAdvisorModal({
                             <span className="text-[10px] text-slate-400 uppercase font-semibold block">Cultivated Plots</span>
                             {f.plots.map((p: any) => (
                               <div key={p.id} className="flex items-center justify-between text-[11px] border-b border-slate-800 last:border-b-0 pb-1 last:pb-0">
-                                <div>
-                                  <span className="font-bold text-white">🌾 {p.cropName}</span>
-                                  <span className="text-slate-400 text-[10px] ml-1.5">({p.variety || 'Standard'}, {p.growthStage})</span>
+                                <div className="flex items-center gap-1.5">
+                                  <CropBadge cropName={p.cropName} size="xs" />
+                                  <span className="font-bold text-white">{p.cropName}</span>
+                                  <span className="text-slate-400 text-[10px] ml-1">({p.variety || 'Standard'}, {p.growthStage})</span>
                                 </div>
                                 <div className="text-right">
                                   <span className="font-mono text-cyan-300 font-semibold">{p.areaValue} {p.areaUnit}</span>
@@ -752,20 +770,21 @@ export function AlexaAdvisorModal({
         {/* QUICK SUGGESTION CHIPS */}
         <div className="px-4 py-2 border-t border-slate-800 bg-slate-950/80 flex items-center gap-2 overflow-x-auto shrink-0">
           {[
-            { label: '⛅ Weather & Rain', query: 'What is the weather today and will it rain?' },
-            { label: '🌾 Parcel & Soil Details', query: 'Tell me about my parcel, crops, and soil' },
-            { label: '💧 800L Water Budget', query: 'I have 800 Litres of water. Which plot should I irrigate first?' },
-            { label: '🔄 Compare Drip vs Flood', query: 'What if I switch from Flood to Drip irrigation?' },
-            { label: '🚰 Tank 80% Full', query: 'My water tank is 80% full' },
-            { label: '🚿 Log Watering', query: 'I watered tomato yesterday' },
+            { label: 'Weather & Rain', icon: <CloudSun className="w-3.5 h-3.5 text-sky-400" />, query: 'What is the weather today and will it rain?' },
+            { label: 'Parcel & Soil Details', icon: <Layers className="w-3.5 h-3.5 text-amber-400" />, query: 'Tell me about my parcel, crops, and soil' },
+            { label: '800L Water Budget', icon: <Droplets className="w-3.5 h-3.5 text-cyan-400" />, query: 'I have 800 Litres of water. Which plot should I irrigate first?' },
+            { label: 'Compare Drip vs Flood', icon: <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-400" />, query: 'What if I switch from Flood to Drip irrigation?' },
+            { label: 'Tank 80% Full', icon: <Gauge className="w-3.5 h-3.5 text-sky-400" />, query: 'My water tank is 80% full' },
+            { label: 'Log Watering', icon: <CalendarCheck className="w-3.5 h-3.5 text-emerald-400" />, query: 'I watered tomato yesterday' },
           ].map((chip, idx) => (
             <button
               key={idx}
               type="button"
               onClick={() => handleSendQuery(chip.query)}
-              className="px-2.5 py-1 rounded-full text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 whitespace-nowrap transition-colors cursor-pointer"
+              className="px-2.5 py-1 rounded-full text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5"
             >
-              {chip.label}
+              {chip.icon}
+              <span>{chip.label}</span>
             </button>
           ))}
         </div>
